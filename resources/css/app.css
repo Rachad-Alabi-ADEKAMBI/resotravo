@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* resources/css/app.css */
+body {
+    font-size: 5em; /* augmente ici, 15px par défaut dans front.blade.php */
+}

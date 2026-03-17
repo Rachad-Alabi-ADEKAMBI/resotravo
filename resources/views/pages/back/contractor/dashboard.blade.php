@@ -1,0 +1,50 @@
+@extends('layouts.back')
+
+@section('title', 'Mon espace prestataire')
+
+@section('content')
+
+    <contractor-dashboard-component
+        :user="{{ json_encode([
+            'name'   => $user->name,
+            'email'  => $user->email,
+            'role'   => $user->role,
+            'status' => $user->status,
+        ]) }}"
+        :contractor-profile="{{ json_encode([
+            'first_name'         => $contractor?->first_name         ?? '',
+            'last_name'          => $contractor?->last_name          ?? '',
+            'phone'              => $contractor?->phone              ?? '',
+            'city'               => $contractor?->city               ?? 'Cotonou',
+            'specialty'          => $contractor?->specialty          ?? '',
+            'specialties'        => $contractor?->specialties        ?? [],
+            'intervention_zone'  => $contractor?->intervention_zone  ?? '',
+            'experience_years'   => $contractor?->experience_years   ?? 0,
+            'bio'                => $contractor?->bio                ?? '',
+            'accreditation'      => $contractor?->accreditation      ?? 'none',
+            'available'          => $contractor?->available          ?? true,
+            'start_time'         => $contractor?->start_time         ?? '08:00',
+            'end_time'           => $contractor?->end_time           ?? '18:00',
+            'radius_km'          => $contractor?->radius_km          ?? 10,
+            'total_missions'     => $contractor?->total_missions     ?? 0,
+            'completed_missions' => $contractor?->completed_missions ?? 0,
+            'average_rating'     => $contractor?->average_rating     ?? 0,
+            'reviews_count'      => $contractor?->reviews_count      ?? 0,
+        ]) }}"
+        :doc-progress-data="{{ json_encode($docProgress) }}"
+        :documents-data="{{ json_encode($documents) }}"
+        :routes="{{ json_encode([
+            'missions_index'     => route('contractor.missions.index'),
+            'missions_show'      => url('/contractor/missions/{id}'),
+            'missions_status'    => url('/contractor/missions/{id}/status'),
+            'notifications'      => route('notifications.index'),
+            'notifications_read' => url('/notifications/{id}/read'),
+            'notifications_all'  => route('notifications.read-all'),
+            'availability'       => route('contractor.disponibilite'),
+            'documents_upload'   => route('documents.upload'),
+            'documents_index'    => route('documents.index'),
+            'profil'             => route('contractor.profil.show'),
+        ]) }}"
+    ></contractor-dashboard-component>
+
+@endsection

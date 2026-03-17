@@ -1,0 +1,148 @@
+<?php
+
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\ClientController;
+use App\Http\Controllers\ContractorController;
+use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\MissionController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\UserController;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+
+// ══════════════════════════════════════════════════════════════════
+// PAGES PUBLIQUES (front)
+// ══════════════════════════════════════════════════════════════════
+
+Route::get('/',           fn() => view('pages.front.home'))->name('home');
+Route::get('/consulting', fn() => view('pages.front.consulting'))->name('consulting');
+Route::get('/talent',     fn() => view('pages.front.talent'))->name('talent');
+Route::get('/market',     fn() => view('pages.front.market'))->name('market');
+Route::get('/cgu',        fn() => view('pages.front.cgu'))->name('cgu');
+Route::get('/policy',     fn() => view('pages.front.policy'))->name('policy');
+
+// ── Inscription ──────────────────────────────────────────────────
+Route::get ('/register/client',           fn() => view('pages.front.registerClient'))     ->name('register.client');
+Route::get ('/register/contractor',       fn() => view('pages.front.registerContractor')) ->name('register.contractor');
+Route::post('/register/client/store',     [UserController::class, 'storeClient'])         ->name('register.client.store');
+Route::post('/register/contractor/store', [UserController::class, 'storeContractor'])     ->name('register.contractor.store');
+
+// ══════════════════════════════════════════════════════════════════
+// AUTHENTIFIÉ
+// ══════════════════════════════════════════════════════════════════
+
+Route::middleware('auth')->group(function () {
+
+    // ── Redirection dashboard selon le rôle ─────────────────────
+    Route::get('/dashboard', function () {
+        $user = Auth::user();
+
+        if (!$user || !in_array($user->role, ['admin', 'client', 'contractor', 'talent'])) {
+            Auth::logout();
+            return redirect()->route('login')
+                ->withErrors(['role' => 'Rôle non reconnu. Veuillez vous reconnecter.']);
+        }
+
+        return redirect()->intended(match ($user->role) {
+            'admin'      => route('admin.dashboard'),
+            'client'     => route('client.dashboard'),
+            'contractor' => route('contractor.dashboard'),
+            'talent'     => route('talent.dashboard'),
+        });
+    })->name('dashboard');
+
+    // ── Profil Breeze ────────────────────────────────────────────
+    Route::get   ('/profile', [ProfileController::class, 'edit'])   ->name('profile.edit');
+    Route::patch ('/profile', [ProfileController::class, 'update']) ->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // ── Documents (tous rôles) ───────────────────────────────────
+    Route::prefix('documents')->name('documents.')->group(function () {
+        Route::get   ('/',                    [DocumentController::class, 'index'])   ->name('index');
+        Route::post  ('/upload',              [DocumentController::class, 'upload'])  ->name('upload');
+        Route::delete('/{document}',          [DocumentController::class, 'destroy']) ->name('destroy');
+        Route::post  ('/{document}/approve',  [DocumentController::class, 'approve']) ->name('approve');
+        Route::post  ('/{document}/reject',   [DocumentController::class, 'reject'])  ->name('reject');
+        Route::get   ('/{document}/download', [DocumentController::class, 'download'])->name('download');
+    });
+
+    // ── Notifications (tous rôles) ───────────────────────────────
+    Route::prefix('notifications')->name('notifications.')->group(function () {
+        Route::get  ('/',              [NotificationController::class, 'index'])      ->name('index');
+        Route::patch('/read-all',      [NotificationController::class, 'markAllRead'])->name('read-all');
+        Route::patch('/{id}/read',     [NotificationController::class, 'markRead'])   ->name('read');
+    });
+
+    // ══════════════════════════════════════════════════════════════
+    // ADMIN
+    // ══════════════════════════════════════════════════════════════
+
+    Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
+
+        // Vues
+        Route::get('/dashboard',  fn() => view('pages.back.admin.dashboard'))            ->name('dashboard');
+        Route::get('/validation', fn() => view('pages.back.admin.validation_documents')) ->name('validation');
+
+        // API — tableau de bord
+        Route::get('/stats', [AdminController::class, 'stats'])->name('stats');
+
+        // API — validation documents
+        Route::get  ('/documents/dossiers',  [DocumentController::class, 'dossiers'])        ->name('documents.dossiers');
+        Route::patch('/users/{user}/status', [DocumentController::class, 'updateUserStatus'])->name('users.status');
+
+        // API — contractors
+        Route::get  ('/contractors',                            [ContractorController::class, 'adminIndex'])         ->name('contractors.index');
+        Route::patch('/contractors/{contractor}/accreditation', [ContractorController::class, 'updateAccreditation'])->name('contractors.accreditation');
+        Route::patch('/contractors/{contractor}/statut',        [ContractorController::class, 'updateStatut'])       ->name('contractors.statut');
+
+        // API — missions
+        Route::get('/missions', [MissionController::class, 'adminIndex'])->name('missions.index');
+    });
+
+    // ══════════════════════════════════════════════════════════════
+    // CLIENT
+    // ══════════════════════════════════════════════════════════════
+
+    Route::middleware('role:client')->prefix('client')->name('client.')->group(function () {
+
+        Route::get('/dashboard', [ClientController::class, 'index'])->name('dashboard');
+
+        // Missions
+        Route::get  ('/missions',                  [MissionController::class, 'index'])       ->name('missions.index');
+        Route::post ('/missions',                  [MissionController::class, 'store'])       ->name('missions.store');
+        Route::get  ('/missions/{mission}',        [MissionController::class, 'show'])        ->name('missions.show');
+        Route::patch('/missions/{mission}/status', [MissionController::class, 'updateStatus'])->name('missions.status');
+    });
+
+    // ══════════════════════════════════════════════════════════════
+    // CONTRACTOR (Prestataire)
+    // ══════════════════════════════════════════════════════════════
+
+    Route::middleware('role:contractor')->prefix('contractor')->name('contractor.')->group(function () {
+
+        Route::get  ('/dashboard',     [ContractorController::class, 'dashboardIndex'])     ->name('dashboard');
+        Route::get  ('/profil',        [ContractorController::class, 'show'])               ->name('profil.show');
+        Route::post ('/profil',        [ContractorController::class, 'store'])              ->name('profil.store');
+        Route::put  ('/profil',        [ContractorController::class, 'update'])             ->name('profil.update');
+        Route::post ('/photo',         [ContractorController::class, 'updatePhoto'])        ->name('photo');
+        Route::patch('/disponibilite', [ContractorController::class, 'updateDisponibilite'])->name('disponibilite');
+        Route::patch('/position',      [ContractorController::class, 'updatePosition'])     ->name('position');
+
+        // Missions
+        Route::get  ('/missions',                  [MissionController::class, 'index'])       ->name('missions.index');
+        Route::get  ('/missions/{mission}',        [MissionController::class, 'show'])        ->name('missions.show');
+        Route::patch('/missions/{mission}/status', [MissionController::class, 'updateStatus'])->name('missions.status');
+    });
+
+    // ══════════════════════════════════════════════════════════════
+    // TALENT
+    // ══════════════════════════════════════════════════════════════
+
+    Route::middleware('role:talent')->prefix('talent')->name('talent.')->group(function () {
+        Route::get('/dashboard', fn() => view('pages.back.talent.dashboard'))->name('dashboard');
+    });
+
+});
+
+require __DIR__ . '/auth.php';
