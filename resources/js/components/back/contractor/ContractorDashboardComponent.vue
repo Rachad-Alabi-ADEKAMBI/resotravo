@@ -54,8 +54,6 @@
                             {{ unreadCount > 9 ? "9+" : unreadCount }}
                         </span>
                     </button>
-
-                    <!-- Dropdown notifications -->
                     <div class="ctr-notif-dropdown" v-if="notifOpen">
                         <div class="ctr-notif-header">
                             <span>Notifications</span>
@@ -99,7 +97,7 @@
 
         <!-- ══════════════ CONTENU ══════════════ -->
         <div class="ctr-content">
-            <!-- ── Bannière : dossier en attente ── -->
+            <!-- Bannière dossier en attente -->
             <div class="ctr-banner-pending" v-if="userStatus === 'pending'">
                 <div class="ctr-banner-icon">⏳</div>
                 <div>
@@ -120,7 +118,7 @@
                 </button>
             </div>
 
-            <!-- ── Bannière : documents incomplets ── -->
+            <!-- Bannière documents incomplets -->
             <div
                 class="ctr-banner-warning"
                 v-if="
@@ -131,20 +129,18 @@
                 <div class="ctr-banner-icon">📂</div>
                 <div>
                     <div class="ctr-banner-title">
-                        {{
-                            docProgress.total - docProgress.approved
-                        }}
+                        {{ docProgress.total - docProgress.approved }}
                         document(s) manquant(s) ou refusé(s)
                     </div>
                     <div class="ctr-banner-sub">
                         Le badge <strong>Profil Certifié</strong> sera accordé
                         uniquement après validation de <strong>tous</strong> vos
-                        documents par l'admin Resotravo.
+                        documents.
                     </div>
                 </div>
             </div>
 
-            <!-- ── Bannière : profil certifié ── -->
+            <!-- Bannière profil certifié -->
             <div class="ctr-banner-certified" v-if="userStatus === 'approved'">
                 <div class="ctr-banner-icon">✅</div>
                 <div>
@@ -154,12 +150,21 @@
                     <div class="ctr-banner-sub">
                         Vous pouvez accepter des missions et apparaître dans les
                         recherches clients.
+                        <span
+                            v-if="
+                                contractorProfile.accreditation &&
+                                contractorProfile.accreditation !== 'none'
+                            "
+                        >
+                            · Accréditation :
+                            <strong>{{ accreditationLabel }}</strong>
+                        </span>
                     </div>
                 </div>
                 <span class="ctr-badge-certified">🏅 Certifié</span>
             </div>
 
-            <!-- ── KPIs ── -->
+            <!-- KPIs -->
             <div class="ctr-kpis">
                 <div
                     class="ctr-kpi"
@@ -179,7 +184,7 @@
                 </div>
             </div>
 
-            <!-- ── GRILLE MILIEU ── -->
+            <!-- GRILLE MILIEU -->
             <div class="ctr-mid-grid">
                 <!-- Missions -->
                 <div class="ctr-card ctr-card-main">
@@ -201,7 +206,6 @@
                         </div>
                     </div>
 
-                    <!-- Loader -->
                     <div class="ctr-loading" v-if="missionsLoading">
                         <div
                             class="ctr-skeleton-row"
@@ -209,8 +213,6 @@
                             :key="n"
                         ></div>
                     </div>
-
-                    <!-- Erreur -->
                     <div class="ctr-alert-error" v-else-if="missionsError">
                         ⚠️ {{ missionsError }}
                         <button
@@ -220,8 +222,6 @@
                             Réessayer
                         </button>
                     </div>
-
-                    <!-- Vide -->
                     <div
                         class="ctr-empty"
                         v-else-if="filteredMissions.length === 0"
@@ -247,7 +247,6 @@
                         </div>
                     </div>
 
-                    <!-- Liste -->
                     <div class="ctr-mission-list" v-else>
                         <div
                             class="ctr-mission-item"
@@ -276,9 +275,8 @@
                                 <span
                                     class="ctr-badge"
                                     :class="badgeClass(m.status)"
+                                    >{{ labelOf(m) }}</span
                                 >
-                                    {{ labelOf(m) }}
-                                </span>
                                 <div class="ctr-mission-price">
                                     {{
                                         m.total_amount
@@ -336,9 +334,7 @@
                                     v-if="contractorProfile.average_rating > 0"
                                 >
                                     ⭐ {{ contractorProfile.average_rating }} /
-                                    5 ({{
-                                        contractorProfile.reviews_count
-                                    }}
+                                    5 ({{ contractorProfile.reviews_count }}
                                     avis)
                                 </div>
                             </div>
@@ -354,6 +350,15 @@
                         >
                             <span class="ctr-accred-badge"
                                 >🏅 {{ accreditationLabel }}</span
+                            >
+                        </div>
+                        <div
+                            class="ctr-accred-row ctr-accred-none"
+                            v-else-if="userStatus === 'approved'"
+                        >
+                            <span class="ctr-accred-none-text"
+                                >⚠️ Aucune accréditation — contactez
+                                l'admin</span
                             >
                         </div>
 
@@ -384,10 +389,16 @@
                         </div>
                     </div>
 
-                    <!-- Disponibilité -->
+                    <!-- ── DISPONIBILITÉ & HORAIRES ── -->
                     <div class="ctr-card">
                         <div class="ctr-card-header">
                             <h3>📅 Disponibilité</h3>
+                            <button
+                                class="ctr-btn ctr-btn-ghost ctr-btn-sm"
+                                @click="openScheduleModal"
+                            >
+                                ✏️ Gérer mes horaires
+                            </button>
                         </div>
                         <div class="ctr-dispo-info">
                             <div class="ctr-dispo-row">
@@ -425,13 +436,6 @@
                                 >
                             </div>
                         </div>
-                        <button
-                            class="ctr-btn ctr-btn-ghost"
-                            style="width: 100%; margin-top: 10px"
-                            @click="wip('Gérer ma disponibilité')"
-                        >
-                            Gérer mes horaires
-                        </button>
                     </div>
 
                     <!-- Actions rapides -->
@@ -482,7 +486,7 @@
                 </div>
             </div>
 
-            <!-- ── Documents ── -->
+            <!-- Documents -->
             <div class="ctr-card" ref="docsSection">
                 <div class="ctr-card-header">
                     <h3>📂 Mes documents</h3>
@@ -493,22 +497,17 @@
                                 complete: docProgress.percentage === 100,
                             }"
                         >
-                            {{ docProgress.approved }}/{{
-                                docProgress.total
-                            }}
+                            {{ docProgress.approved }}/{{ docProgress.total }}
                             validés
                         </span>
-                        <!-- Badge certifié UNIQUEMENT si admin a validé tous les docs ET status = approved -->
                         <span
                             class="ctr-certified-pill"
                             v-if="userStatus === 'approved'"
+                            >🏅 Profil certifié</span
                         >
-                            🏅 Profil certifié
-                        </span>
                     </div>
                 </div>
 
-                <!-- Bannière certifié dans la section docs -->
                 <div
                     class="ctr-docs-certified"
                     v-if="userStatus === 'approved'"
@@ -525,19 +524,15 @@
                     </div>
                 </div>
 
-                <!-- Avertissement badge conditionnel -->
                 <div
                     class="ctr-docs-badge-info"
                     v-if="userStatus !== 'approved'"
                 >
                     ℹ️ Le badge <strong>Profil Certifié</strong> est accordé
                     uniquement après que l'équipe Resotravo a validé
-                    <strong>l'ensemble</strong> de vos documents. Déposer tous
-                    vos fichiers ne suffit pas — chaque document doit être
-                    approuvé individuellement.
+                    <strong>l'ensemble</strong> de vos documents.
                 </div>
 
-                <!-- Barre de progression globale -->
                 <div
                     class="ctr-docs-progress-bar"
                     v-if="userStatus !== 'approved'"
@@ -553,7 +548,6 @@
                     </div>
                 </div>
 
-                <!-- Liste documents -->
                 <div class="ctr-docs-list">
                     <div
                         class="ctr-doc-item"
@@ -584,7 +578,6 @@
                             </div>
                         </div>
                         <div class="ctr-doc-actions">
-                            <!-- Upload si manquant ou refusé -->
                             <label
                                 class="ctr-btn ctr-btn-orange ctr-btn-sm ctr-upload-label"
                                 v-if="
@@ -610,7 +603,6 @@
                                     :disabled="doc.uploading"
                                 />
                             </label>
-                            <!-- Remplacer si pending ou approved -->
                             <label
                                 class="ctr-btn ctr-btn-ghost ctr-btn-sm ctr-upload-label"
                                 v-if="
@@ -672,29 +664,24 @@
                         <span
                             class="ctr-badge"
                             :class="badgeClass(activeMission.status)"
+                            >{{ labelOf(activeMission) }}</span
                         >
-                            {{ labelOf(activeMission) }}
-                        </span>
                     </div>
                     <div class="ctr-detail-row">
-                        <span>Étape</span>
-                        <strong>{{ activeMission.step }} / 12</strong>
-                    </div>
-                    <div class="ctr-detail-row">
-                        <span>Client</span>
-                        <strong>{{
+                        <span>Client</span
+                        ><strong>{{
                             activeMission.client
                                 ? activeMission.client.name
                                 : "—"
                         }}</strong>
                     </div>
                     <div class="ctr-detail-row">
-                        <span>Adresse</span>
-                        <strong>{{ activeMission.address }}</strong>
+                        <span>Adresse</span
+                        ><strong>{{ activeMission.address }}</strong>
                     </div>
                     <div class="ctr-detail-row">
-                        <span>Description</span>
-                        <strong>{{ activeMission.description }}</strong>
+                        <span>Description</span
+                        ><strong>{{ activeMission.description }}</strong>
                     </div>
                     <div
                         class="ctr-detail-row"
@@ -717,38 +704,35 @@
                         }}</strong>
                     </div>
 
-                    <!-- Barre de progression -->
-                    <div class="ctr-step-bar">
-                        <div
-                            class="ctr-step-fill"
-                            :style="{
-                                width: (activeMission.step / 12) * 100 + '%',
-                            }"
-                        ></div>
-                    </div>
-                    <div class="ctr-step-label">
-                        {{ labelOf(activeMission) }}
-                    </div>
+                    <!-- Barre progression -->
 
-                    <!-- Action : accepter la mission -->
+                    <!-- ── ACTION : Accepter ou refuser la mission ── -->
                     <div
-                        class="ctr-action-block"
+                        class="ctr-action-block ctr-action-assigned"
                         v-if="activeMission.status === 'assigned'"
                     >
-                        <p>
-                            📬 Une nouvelle mission vous a été attribuée.
-                            Acceptez-vous cette mission ?
-                        </p>
+                        <div class="ctr-action-assigned-header">
+                            <div class="ctr-action-assigned-icon">📬</div>
+                            <div>
+                                <div class="ctr-action-title">
+                                    Nouvelle mission proposée
+                                </div>
+                                <div class="ctr-action-sub">
+                                    Vous avez 5 minutes pour accepter ou refuser
+                                    cette mission.
+                                </div>
+                            </div>
+                        </div>
                         <div class="ctr-action-row">
                             <button
                                 class="ctr-btn ctr-btn-red"
-                                @click="updateStatus(activeMission, 'rejected')"
+                                @click="openRefuseModal(activeMission)"
                                 :disabled="actionLoading"
                             >
-                                Refuser
+                                ✗ Refuser
                             </button>
                             <button
-                                class="ctr-btn ctr-btn-orange"
+                                class="ctr-btn ctr-btn-green"
                                 @click="updateStatus(activeMission, 'accepted')"
                                 :disabled="actionLoading"
                             >
@@ -756,7 +740,7 @@
                                     class="ctr-spinner"
                                     v-if="actionLoading"
                                 ></div>
-                                <span v-else>Accepter la mission ✓</span>
+                                <span v-else>✓ Accepter la mission</span>
                             </button>
                         </div>
                     </div>
@@ -865,6 +849,223 @@
             </div>
         </div>
 
+        <!-- ══════════════ MODAL REFUS MISSION ══════════════ -->
+        <div
+            class="ctr-modal-overlay"
+            v-if="refuseModal.visible"
+            @click.self="refuseModal.visible = false"
+        >
+            <div class="ctr-modal">
+                <div class="ctr-modal-header">
+                    <div>
+                        <h3>Refuser la mission</h3>
+                        <div class="ctr-modal-sub">
+                            {{ refuseModal.mission?.service }}
+                        </div>
+                    </div>
+                    <button
+                        class="ctr-modal-close"
+                        @click="refuseModal.visible = false"
+                    >
+                        &#215;
+                    </button>
+                </div>
+                <div class="ctr-modal-body">
+                    <p class="ctr-refuse-info">
+                        ⚠️ En refusant cette mission, elle sera reattribuée à un
+                        autre prestataire disponible. Cette action est
+                        irréversible.
+                    </p>
+                    <label class="ctr-form-label"
+                        >Motif du refus
+                        <span class="ctr-required">*</span></label
+                    >
+                    <div class="ctr-refuse-options">
+                        <label
+                            class="ctr-radio-opt"
+                            v-for="opt in refuseOptions"
+                            :key="opt.value"
+                        >
+                            <input
+                                type="radio"
+                                :value="opt.value"
+                                v-model="refuseModal.reason"
+                            />
+                            <span>{{ opt.label }}</span>
+                        </label>
+                    </div>
+                    <input
+                        class="ctr-input"
+                        type="text"
+                        v-model="refuseModal.customReason"
+                        v-if="refuseModal.reason === 'other'"
+                        placeholder="Précisez votre motif…"
+                    />
+                </div>
+                <div class="ctr-modal-footer">
+                    <button
+                        class="ctr-btn ctr-btn-ghost"
+                        @click="refuseModal.visible = false"
+                    >
+                        Annuler
+                    </button>
+                    <button
+                        class="ctr-btn ctr-btn-red"
+                        @click="confirmRefuse"
+                        :disabled="!refuseModal.reason || refuseModal.loading"
+                    >
+                        <div
+                            class="ctr-spinner"
+                            v-if="refuseModal.loading"
+                        ></div>
+                        <span v-else>✗ Confirmer le refus</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════ MODAL HORAIRES ══════════════ -->
+        <div
+            class="ctr-modal-overlay"
+            v-if="scheduleModal.visible"
+            @click.self="scheduleModal.visible = false"
+        >
+            <div class="ctr-modal">
+                <div class="ctr-modal-header">
+                    <div>
+                        <h3>⏰ Gérer mes horaires</h3>
+                        <div class="ctr-modal-sub">
+                            Définissez vos créneaux de disponibilité
+                        </div>
+                    </div>
+                    <button
+                        class="ctr-modal-close"
+                        @click="scheduleModal.visible = false"
+                    >
+                        &#215;
+                    </button>
+                </div>
+                <div class="ctr-modal-body">
+                    <!-- Toggle disponibilité -->
+                    <div class="ctr-schedule-toggle-row">
+                        <div>
+                            <div class="ctr-schedule-label">
+                                Statut de disponibilité
+                            </div>
+                            <div class="ctr-schedule-sub">
+                                Activez pour recevoir des missions
+                            </div>
+                        </div>
+                        <button
+                            class="ctr-toggle-btn"
+                            :class="{ on: scheduleModal.available }"
+                            @click="
+                                scheduleModal.available =
+                                    !scheduleModal.available
+                            "
+                        >
+                            <span class="ctr-toggle-knob"></span>
+                        </button>
+                    </div>
+
+                    <!-- Horaires -->
+                    <div class="ctr-schedule-section">
+                        <div class="ctr-schedule-section-title">
+                            Horaires de travail
+                        </div>
+                        <div class="ctr-time-row">
+                            <div class="ctr-time-field">
+                                <label class="ctr-form-label"
+                                    >Heure de début</label
+                                >
+                                <input
+                                    type="time"
+                                    class="ctr-input"
+                                    v-model="scheduleModal.start_time"
+                                />
+                            </div>
+                            <div class="ctr-time-sep">—</div>
+                            <div class="ctr-time-field">
+                                <label class="ctr-form-label"
+                                    >Heure de fin</label
+                                >
+                                <input
+                                    type="time"
+                                    class="ctr-input"
+                                    v-model="scheduleModal.end_time"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Jours de travail -->
+                    <div class="ctr-schedule-section">
+                        <div class="ctr-schedule-section-title">
+                            Jours travaillés
+                        </div>
+                        <div class="ctr-days-grid">
+                            <label
+                                class="ctr-day-chip"
+                                v-for="d in weekDays"
+                                :key="d.value"
+                                :class="{
+                                    active: scheduleModal.working_days.includes(
+                                        d.value,
+                                    ),
+                                }"
+                            >
+                                <input
+                                    type="checkbox"
+                                    :value="d.value"
+                                    v-model="scheduleModal.working_days"
+                                    style="display: none"
+                                />
+                                {{ d.label }}
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Rayon d'intervention -->
+                    <div class="ctr-schedule-section">
+                        <div class="ctr-schedule-section-title">
+                            Rayon d'intervention
+                        </div>
+                        <div class="ctr-radius-row">
+                            <input
+                                type="range"
+                                min="1"
+                                max="50"
+                                v-model.number="scheduleModal.radius_km"
+                                class="ctr-range"
+                            />
+                            <span class="ctr-radius-val"
+                                >{{ scheduleModal.radius_km }} km</span
+                            >
+                        </div>
+                    </div>
+                </div>
+                <div class="ctr-modal-footer">
+                    <button
+                        class="ctr-btn ctr-btn-ghost"
+                        @click="scheduleModal.visible = false"
+                    >
+                        Annuler
+                    </button>
+                    <button
+                        class="ctr-btn ctr-btn-orange"
+                        @click="saveSchedule"
+                        :disabled="scheduleModal.loading"
+                    >
+                        <div
+                            class="ctr-spinner"
+                            v-if="scheduleModal.loading"
+                        ></div>
+                        <span v-else>💾 Enregistrer</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- WIP MODAL -->
         <div
             class="ctr-wip-overlay"
@@ -941,10 +1142,7 @@ export default {
             type: Object,
             default: () => ({ approved: 0, total: 5, percentage: 0 }),
         },
-        documentsData: {
-            type: Array,
-            default: () => [],
-        },
+        documentsData: { type: Array, default: () => [] },
         routes: {
             type: Object,
             default: () => ({
@@ -964,7 +1162,6 @@ export default {
 
     data() {
         return {
-            // UI
             tab: "all",
             activeMission: null,
             wipVisible: false,
@@ -974,25 +1171,59 @@ export default {
             toastId: 0,
             actionLoading: false,
             availLoading: false,
-
-            // Statut local réactif
             userStatus: "",
 
-            // Missions
             missions: [],
             missionsLoading: true,
             missionsError: null,
 
-            // Notifications
             notifications: [],
             notifOpen: false,
             notifLoading: false,
             unreadCount: 0,
             notifInterval: null,
 
-            // Documents
             localDocuments: [],
             localDocProgress: null,
+
+            // Modal refus mission
+            refuseModal: {
+                visible: false,
+                mission: null,
+                reason: "",
+                customReason: "",
+                loading: false,
+            },
+            refuseOptions: [
+                { value: "zone", label: "📍 Hors de ma zone d'intervention" },
+                { value: "specialty", label: "🔧 Hors de ma spécialité" },
+                { value: "busy", label: "📆 Je suis déjà occupé" },
+                {
+                    value: "distance",
+                    label: "🚗 Trop loin de ma position actuelle",
+                },
+                { value: "other", label: "✏️ Autre motif" },
+            ],
+
+            // Modal horaires
+            scheduleModal: {
+                visible: false,
+                available: true,
+                start_time: "08:00",
+                end_time: "18:00",
+                working_days: [],
+                radius_km: 10,
+                loading: false,
+            },
+            weekDays: [
+                { value: "monday", label: "Lun" },
+                { value: "tuesday", label: "Mar" },
+                { value: "wednesday", label: "Mer" },
+                { value: "thursday", label: "Jeu" },
+                { value: "friday", label: "Ven" },
+                { value: "saturday", label: "Sam" },
+                { value: "sunday", label: "Dim" },
+            ],
 
             tabs: [
                 { key: "all", label: "Toutes" },
@@ -1029,9 +1260,9 @@ export default {
             return (
                 {
                     none: "Aucune",
-                    residential: "Domicile",
-                    business: "Entreprise",
-                    both: "Domicile + Entreprise",
+                    home: "🏠 Domicile",
+                    business: "🏢 Entreprise",
+                    both: "🏠 Domicile + 🏢 Entreprise",
                 }[this.contractorProfile.accreditation] ?? "Aucune"
             );
         },
@@ -1120,7 +1351,7 @@ export default {
     },
 
     methods: {
-        // ── Missions ────────────────────────────────────────────
+        // ── Missions ──────────────────────────────────────────────
         async fetchMissions() {
             this.missionsLoading = true;
             this.missionsError = null;
@@ -1131,7 +1362,7 @@ export default {
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
                 this.missions = Array.isArray(data) ? data : (data.data ?? []);
-            } catch (e) {
+            } catch {
                 this.missionsError = "Impossible de charger les missions.";
             } finally {
                 this.missionsLoading = false;
@@ -1141,13 +1372,13 @@ export default {
         async updateStatus(mission, status) {
             this.actionLoading = true;
             try {
+                const csrf = document.querySelector(
+                    'meta[name="csrf-token"]',
+                )?.content;
                 const url = this.routes.missions_status.replace(
                     "{id}",
                     mission.id,
                 );
-                const csrf = document.querySelector(
-                    'meta[name="csrf-token"]',
-                )?.content;
                 const res = await fetch(url, {
                     method: "PATCH",
                     headers: {
@@ -1162,19 +1393,165 @@ export default {
                     this.showToast(data.message ?? "Erreur.", "error");
                     return;
                 }
-
                 const idx = this.missions.findIndex((m) => m.id === mission.id);
                 if (idx !== -1) this.missions.splice(idx, 1, data.mission);
                 this.activeMission = data.mission;
                 this.showToast("Statut mis à jour.", "success");
-            } catch (e) {
+            } catch {
                 this.showToast("Erreur réseau.", "error");
             } finally {
                 this.actionLoading = false;
             }
         },
 
-        // ── Disponibilité ────────────────────────────────────────
+        // ── Refus mission ─────────────────────────────────────────
+        openRefuseModal(mission) {
+            this.refuseModal = {
+                visible: true,
+                mission,
+                reason: "",
+                customReason: "",
+                loading: false,
+            };
+        },
+
+        async confirmRefuse() {
+            const reason =
+                this.refuseModal.reason === "other"
+                    ? this.refuseModal.customReason
+                    : (this.refuseOptions.find(
+                          (o) => o.value === this.refuseModal.reason,
+                      )?.label ?? this.refuseModal.reason);
+
+            this.refuseModal.loading = true;
+            try {
+                const csrf = document.querySelector(
+                    'meta[name="csrf-token"]',
+                )?.content;
+                const url = this.routes.missions_status.replace(
+                    "{id}",
+                    this.refuseModal.mission.id,
+                );
+                const res = await fetch(url, {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": csrf,
+                        Accept: "application/json",
+                    },
+                    body: JSON.stringify({
+                        status: "proposal_rejected",
+                        reported_issue: reason,
+                    }),
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    this.showToast(data.message ?? "Erreur.", "error");
+                    return;
+                }
+                // Retirer la mission de la liste — elle n'est plus visible pour ce prestataire
+                this.missions = this.missions.filter(
+                    (m) => m.id !== this.refuseModal.mission.id,
+                );
+                this.refuseModal.visible = false;
+                this.activeMission = null;
+                this.showToast(
+                    "Mission refusée. Elle sera réattribuée automatiquement.",
+                    "success",
+                );
+            } catch {
+                this.showToast("Erreur réseau.", "error");
+            } finally {
+                this.refuseModal.loading = false;
+            }
+        },
+
+        // ── Horaires ──────────────────────────────────────────────
+        openScheduleModal() {
+            this.scheduleModal = {
+                visible: true,
+                available: this.contractorProfile.available,
+                start_time: (
+                    this.contractorProfile.start_time ?? "08:00"
+                ).substring(0, 5),
+                end_time: (
+                    this.contractorProfile.end_time ?? "18:00"
+                ).substring(0, 5),
+                working_days: [...(this.contractorProfile.working_days ?? [])],
+                radius_km: this.contractorProfile.radius_km ?? 10,
+                loading: false,
+            };
+        },
+
+        async saveSchedule() {
+            this.scheduleModal.loading = true;
+            try {
+                const csrf = document.querySelector(
+                    'meta[name="csrf-token"]',
+                )?.content;
+                const payload = {
+                    available: this.scheduleModal.available,
+                    start_time: this.scheduleModal.start_time,
+                    end_time: this.scheduleModal.end_time,
+                    working_days: this.scheduleModal.working_days,
+                    radius_km: this.scheduleModal.radius_km,
+                };
+                console.log("[Horaires] URL    :", this.routes.availability);
+                console.log(
+                    "[Horaires] Payload:",
+                    JSON.stringify(payload, null, 2),
+                );
+                const res = await fetch(this.routes.availability, {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": csrf,
+                        Accept: "application/json",
+                    },
+                    body: JSON.stringify(payload),
+                });
+                const data = await res.json();
+                console.log("[Horaires] HTTP", res.status, "— Réponse:", data);
+                if (!res.ok) {
+                    if (data.errors) {
+                        console.error(
+                            "[Horaires] Erreurs validation:",
+                            data.errors,
+                        );
+                        const msg = Object.entries(data.errors)
+                            .map(([k, v]) => k + ": " + v.join(", "))
+                            .join(" | ");
+                        this.showToast("Validation : " + msg, "error");
+                    } else {
+                        this.showToast(
+                            data.message ?? "Erreur " + res.status,
+                            "error",
+                        );
+                    }
+                    return;
+                }
+                // Mise à jour locale réactive
+                this.contractorProfile.available = this.scheduleModal.available;
+                this.contractorProfile.start_time =
+                    this.scheduleModal.start_time;
+                this.contractorProfile.end_time = this.scheduleModal.end_time;
+                this.contractorProfile.working_days =
+                    this.scheduleModal.working_days;
+                this.contractorProfile.radius_km = this.scheduleModal.radius_km;
+                this.scheduleModal.visible = false;
+                this.showToast(
+                    "✅ Horaires mis à jour avec succès.",
+                    "success",
+                );
+            } catch (e) {
+                console.error("[Horaires] Erreur JS:", e);
+                this.showToast("Erreur lors de la mise à jour.", "error");
+            } finally {
+                this.scheduleModal.loading = false;
+            }
+        },
+
+        // ── Disponibilité rapide (topbar) ─────────────────────────
         async toggleAvailability() {
             const newVal = !this.contractorProfile.available;
             this.availLoading = true;
@@ -1191,7 +1568,31 @@ export default {
                     },
                     body: JSON.stringify({ available: newVal }),
                 });
-                if (!res.ok) throw new Error();
+                const data = await res.json();
+                console.log(
+                    "[Toggle dispo] HTTP",
+                    res.status,
+                    "— Réponse:",
+                    data,
+                );
+                if (!res.ok) {
+                    if (data.errors) {
+                        console.error(
+                            "[Toggle dispo] Erreurs validation:",
+                            data.errors,
+                        );
+                        const msg = Object.entries(data.errors)
+                            .map(([k, v]) => k + ": " + v.join(", "))
+                            .join(" | ");
+                        this.showToast("Validation : " + msg, "error");
+                    } else {
+                        this.showToast(
+                            data.message ?? "Erreur " + res.status,
+                            "error",
+                        );
+                    }
+                    return;
+                }
                 this.contractorProfile.available = newVal;
                 this.showToast(
                     newVal
@@ -1199,14 +1600,15 @@ export default {
                         : "Vous êtes maintenant indisponible.",
                     "success",
                 );
-            } catch {
+            } catch (e) {
+                console.error("[Toggle dispo] Erreur JS:", e);
                 this.showToast("Erreur lors de la mise à jour.", "error");
             } finally {
                 this.availLoading = false;
             }
         },
 
-        // ── Notifications ────────────────────────────────────────
+        // ── Notifications ─────────────────────────────────────────
         async fetchNotifications() {
             this.notifLoading = true;
             try {
@@ -1230,13 +1632,13 @@ export default {
 
         async openNotif(n) {
             if (!n.read) {
+                const csrf = document.querySelector(
+                    'meta[name="csrf-token"]',
+                )?.content;
                 const url = this.routes.notifications_read.replace(
                     "{id}",
                     n.id,
                 );
-                const csrf = document.querySelector(
-                    'meta[name="csrf-token"]',
-                )?.content;
                 await fetch(url, {
                     method: "PATCH",
                     headers: {
@@ -1263,7 +1665,7 @@ export default {
             this.unreadCount = 0;
         },
 
-        // ── Documents ────────────────────────────────────────────
+        // ── Documents ─────────────────────────────────────────────
         async uploadDocument(doc, event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -1338,8 +1740,6 @@ export default {
                     percentage:
                         total > 0 ? Math.round((approved / total) * 100) : 0,
                 };
-
-                // Vérifier la certification — le badge ne s'affiche que si user.status = approved (décision admin)
                 await this.checkCertification();
             } catch {
                 /* silencieux */
@@ -1347,8 +1747,6 @@ export default {
         },
 
         async checkCertification() {
-            // Le badge certifié est accordé uniquement par l'admin
-            // On ne le dérive PAS des documents locaux — on vérifie le statut serveur
             try {
                 const res = await fetch(this.routes.profil, {
                     headers: { Accept: "application/json" },
@@ -1369,7 +1767,7 @@ export default {
             }
         },
 
-        // ── Helpers d'affichage ──────────────────────────────────
+        // ── Helpers ───────────────────────────────────────────────
         countByTab(key) {
             if (key === "all") return this.missions.length;
             const active = [
@@ -1461,7 +1859,7 @@ export default {
                 peinture: "🎨",
                 maintenance: "🛠️",
             };
-            return icons[service] ?? "🔨";
+            return icons[service?.toLowerCase()] ?? "🔨";
         },
 
         formatDate(iso) {
@@ -1509,21 +1907,18 @@ export default {
             }, 3500);
         },
 
-        // Fermer le dropdown notifs si clic en dehors
         handleClickOutside(e) {
             if (
                 this.$refs.notifWrap &&
                 !this.$refs.notifWrap.contains(e.target)
-            ) {
+            )
                 this.notifOpen = false;
-            }
         },
     },
 
     mounted() {
         this.userStatus = this.user.status;
 
-        // Initialiser documents locaux
         const defaultDocs = [
             {
                 type: "cip",
@@ -1577,19 +1972,13 @@ export default {
         });
         this.localDocProgress = { ...this.docProgressData };
 
-        // Charger les données
         this.fetchMissions();
         this.fetchNotifications();
-
-        // Polling notifications toutes les 30s
         this.notifInterval = setInterval(
             () => this.fetchNotifications(),
             30000,
         );
-
-        // Fermer notif dropdown au clic extérieur
         document.addEventListener("click", this.handleClickOutside);
-
         window.addEventListener("ab-sidebar-close", () => {
             this.sidebarOpen = false;
         });
@@ -1680,7 +2069,7 @@ export default {
     color: var(--dk);
 }
 
-/* AVATAR */
+/* Avatar */
 .ctr-avatar {
     width: 36px;
     height: 36px;
@@ -1695,7 +2084,7 @@ export default {
     flex-shrink: 0;
 }
 
-/* BURGER */
+/* Burger */
 .ad-burger {
     background: none;
     border: none;
@@ -1714,7 +2103,7 @@ export default {
     border-radius: 2px;
 }
 
-/* DISPO BTN */
+/* Dispo btn */
 .ctr-dispo-btn {
     display: flex;
     align-items: center;
@@ -1750,7 +2139,7 @@ export default {
     background: #22c55e;
 }
 
-/* NOTIFICATIONS */
+/* Notifications */
 .ctr-notif-wrap {
     position: relative;
 }
@@ -1830,13 +2219,13 @@ export default {
     display: flex;
     gap: 10px;
     padding: 12px 16px;
-    border-bottom: 1px solid #faf7f5;
+    border-bottom: 1px solid var(--cr);
     cursor: pointer;
     transition: background 0.15s;
     position: relative;
 }
 .ctr-notif-item:hover {
-    background: #faf7f5;
+    background: var(--cr);
 }
 .ctr-notif-item.unread {
     background: #fff8f5;
@@ -1898,42 +2287,41 @@ export default {
     flex-wrap: wrap;
 }
 .ctr-banner-pending {
-    background: #fef9c3;
-    border: 1px solid #fde047;
+    background: #fef3c7;
+    border: 1.5px solid #fcd34d;
+}
+.ctr-banner-warning {
+    background: #fee2e2;
+    border: 1.5px solid #fca5a5;
 }
 .ctr-banner-certified {
     background: #f0fdf4;
-    border: 1px solid #bbf7d0;
-}
-.ctr-banner-warning {
-    background: #fff7ed;
-    border: 1px solid #fed7aa;
+    border: 1.5px solid #bbf7d0;
 }
 .ctr-banner-icon {
-    font-size: 24px;
+    font-size: 28px;
     flex-shrink: 0;
 }
 .ctr-banner-title {
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 800;
     color: var(--dk);
 }
 .ctr-banner-sub {
     font-size: 12.5px;
     color: var(--gr);
     margin-top: 3px;
-    line-height: 1.5;
 }
 .ctr-badge-certified {
-    display: inline-flex;
-    align-items: center;
-    padding: 5px 14px;
+    background: linear-gradient(135deg, var(--or), var(--or2));
+    color: #fff;
     border-radius: 99px;
-    background: #dcfce7;
-    color: #15803d;
+    padding: 5px 14px;
     font-size: 12px;
     font-weight: 700;
+    white-space: nowrap;
     flex-shrink: 0;
+    align-self: center;
 }
 
 /* KPIs */
@@ -1942,7 +2330,7 @@ export default {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
 }
-@media (min-width: 768px) {
+@media (min-width: 600px) {
     .ctr-kpis {
         grid-template-columns: repeat(4, 1fr);
     }
@@ -1950,38 +2338,39 @@ export default {
 .ctr-kpi {
     background: var(--wh);
     border-radius: 14px;
-    padding: 18px;
-    border: 1.5px solid var(--grl);
-}
-.ctr-kpi.orange {
-    border-color: #fed7aa;
-    background: #fff7ed;
+    padding: 16px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border-left: 4px solid transparent;
 }
 .ctr-kpi.green {
-    border-color: #bbf7d0;
-    background: #f0fdf4;
+    border-left-color: #22c55e;
+}
+.ctr-kpi.orange {
+    border-left-color: var(--or);
 }
 .ctr-kpi-icon {
-    font-size: 22px;
-    margin-bottom: 6px;
+    font-size: 20px;
 }
 .ctr-kpi-val {
-    font-size: 28px;
+    font-size: 22px;
     font-weight: 800;
     color: var(--dk);
 }
 .ctr-kpi-label {
-    font-size: 12px;
+    font-size: 11.5px;
     color: var(--gr);
-    margin-top: 2px;
+    font-weight: 600;
 }
 .ctr-skeleton-val {
     display: inline-block;
-    width: 48px;
-    height: 28px;
+    width: 50px;
+    height: 20px;
     background: var(--grl);
     border-radius: 6px;
-    animation: ctr-pulse 1.4s ease infinite;
+    animation: ctr-pulse 1.2s infinite;
 }
 @keyframes ctr-pulse {
     0%,
@@ -1995,139 +2384,164 @@ export default {
 
 /* MID GRID */
 .ctr-mid-grid {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 20px;
 }
-@media (min-width: 1024px) {
+@media (min-width: 900px) {
     .ctr-mid-grid {
-        grid-template-columns: 1fr 320px;
+        display: grid;
+        grid-template-columns: 1fr 340px;
     }
 }
 .ctr-side-col {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
 }
 
 /* CARD */
 .ctr-card {
     background: var(--wh);
     border-radius: 16px;
-    border: 1.5px solid var(--grl);
-    overflow: hidden;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 .ctr-card-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 18px 0;
+    gap: 10px;
+    margin-bottom: 16px;
     flex-wrap: wrap;
-    gap: 8px;
 }
 .ctr-card-header h3 {
-    font-size: 14px;
-    font-weight: 700;
+    font-size: 14.5px;
+    font-weight: 800;
     color: var(--dk);
 }
 
 /* TABS */
 .ctr-tabs {
     display: flex;
-    gap: 4px;
+    gap: 6px;
     flex-wrap: wrap;
 }
 .ctr-tab {
-    background: none;
-    border: 1.5px solid var(--grl);
+    padding: 6px 12px;
     border-radius: 8px;
-    padding: 5px 12px;
-    font-size: 12.5px;
-    font-weight: 600;
-    cursor: pointer;
+    border: 1.5px solid transparent;
+    background: var(--grl);
+    font-size: 12px;
+    font-weight: 700;
     color: var(--gr);
-    font-family: "Poppins", sans-serif;
+    cursor: pointer;
     transition: all 0.18s;
+    font-family: "Poppins", sans-serif;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
+}
+.ctr-tab:hover {
+    background: var(--or3);
+    color: var(--or);
 }
 .ctr-tab.active {
-    background: var(--or);
-    border-color: var(--or);
+    background: linear-gradient(135deg, var(--or), var(--or2));
     color: #fff;
+    border-color: transparent;
 }
 .ctr-tab-count {
     background: rgba(0, 0, 0, 0.12);
     border-radius: 99px;
-    padding: 1px 7px;
-    font-size: 11px;
+    font-size: 10px;
+    font-weight: 800;
+    min-width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
 }
 .ctr-tab.active .ctr-tab-count {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.25);
 }
 
 /* MISSIONS */
 .ctr-loading {
-    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 .ctr-skeleton-row {
-    height: 56px;
+    height: 64px;
     background: var(--grl);
-    border-radius: 10px;
-    margin-bottom: 10px;
-    animation: ctr-pulse 1.4s ease infinite;
+    border-radius: 12px;
+    animation: ctr-pulse 1.2s infinite;
 }
 .ctr-alert-error {
-    margin: 16px 18px;
-    background: #fef2f2;
-    border: 1px solid #fecaca;
+    background: #fee2e2;
     border-radius: 10px;
     padding: 12px 16px;
     font-size: 13px;
     color: #dc2626;
     display: flex;
     align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
+    gap: 8px;
+}
+.ctr-empty {
+    text-align: center;
+    padding: 40px 20px;
+}
+.ctr-empty-icon {
+    font-size: 36px;
+    margin-bottom: 8px;
+}
+.ctr-empty-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--dk);
+}
+.ctr-empty-sub {
+    font-size: 12.5px;
+    color: var(--gr);
+    margin-top: 4px;
 }
 .ctr-mission-list {
-    padding: 8px 10px 12px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
 }
 .ctr-mission-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 10px;
-    border-radius: 10px;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1.5px solid var(--grl);
     cursor: pointer;
-    transition: background 0.15s;
-    gap: 10px;
+    transition: all 0.18s;
 }
 .ctr-mission-item:hover {
-    background: #faf7f5;
+    border-color: var(--am);
+    background: var(--or3);
 }
 .ctr-mission-left {
     display: flex;
-    align-items: center;
-    gap: 12px;
-    min-width: 0;
+    align-items: flex-start;
+    gap: 10px;
     flex: 1;
+    min-width: 0;
 }
 .ctr-mission-icon {
-    font-size: 22px;
+    font-size: 24px;
     flex-shrink: 0;
 }
 .ctr-mission-title {
-    font-size: 13.5px;
+    font-size: 14px;
     font-weight: 700;
     color: var(--dk);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 220px;
 }
 .ctr-mission-meta {
     font-size: 12px;
@@ -2135,9 +2549,9 @@ export default {
     margin-top: 2px;
 }
 .ctr-mission-addr {
-    font-size: 11.5px;
-    color: var(--grm);
-    margin-top: 2px;
+    font-size: 12px;
+    color: var(--gr);
+    margin-top: 1px;
 }
 .ctr-mission-right {
     display: flex;
@@ -2147,48 +2561,26 @@ export default {
     flex-shrink: 0;
 }
 .ctr-mission-price {
-    font-size: 12px;
-    color: var(--gr);
-    font-weight: 600;
-}
-
-/* EMPTY */
-.ctr-empty {
-    padding: 40px 20px;
-    text-align: center;
-}
-.ctr-empty-icon {
-    font-size: 40px;
-    margin-bottom: 10px;
-}
-.ctr-empty-title {
-    font-size: 14px;
-    color: var(--gr);
-    font-weight: 600;
-}
-.ctr-empty-sub {
-    font-size: 12px;
-    color: var(--grm);
-    margin-top: 6px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--dk);
 }
 
 /* BADGES */
 .ctr-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 3px 10px;
+    padding: 4px 10px;
     border-radius: 99px;
     font-size: 11.5px;
     font-weight: 700;
     white-space: nowrap;
 }
 .ctr-badge.pending {
-    background: #fef9c3;
-    color: #a16207;
+    background: #fef3c7;
+    color: #d97706;
 }
 .ctr-badge.warning {
-    background: #fff7ed;
-    color: #c2410c;
+    background: #ffedd5;
+    color: var(--or2);
 }
 .ctr-badge.active {
     background: #dbeafe;
@@ -2196,11 +2588,11 @@ export default {
 }
 .ctr-badge.done {
     background: #dcfce7;
-    color: #15803d;
+    color: #16a34a;
 }
 .ctr-badge.cancelled {
-    background: #f1f5f9;
-    color: #64748b;
+    background: #fee2e2;
+    color: #dc2626;
 }
 
 /* PROFIL */
@@ -2208,150 +2600,165 @@ export default {
     display: flex;
     align-items: flex-start;
     gap: 14px;
-    padding: 14px 18px;
+    margin-bottom: 12px;
 }
 .ctr-profile-av {
-    width: 48px;
-    height: 48px;
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--or), var(--or2));
+    background: linear-gradient(135deg, var(--or3), #fde68a);
+    color: var(--or2);
+    font-weight: 800;
+    font-size: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #fff;
-    font-weight: 800;
-    font-size: 16px;
     flex-shrink: 0;
     position: relative;
 }
 .ctr-profile-av.certified {
-    background: linear-gradient(135deg, #22c55e, #16a34a);
+    background: linear-gradient(135deg, var(--or), var(--or2));
+    color: #fff;
 }
 .ctr-certified-dot {
     position: absolute;
     bottom: -2px;
     right: -2px;
+    background: #16a34a;
+    color: #fff;
+    border-radius: 50%;
     width: 16px;
     height: 16px;
-    border-radius: 50%;
-    background: #22c55e;
-    border: 2px solid #fff;
+    font-size: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 9px;
-    color: #fff;
-    font-weight: 900;
+    border: 2px solid var(--wh);
 }
 .ctr-profile-name {
-    font-size: 14px;
-    font-weight: 700;
+    font-size: 15px;
+    font-weight: 800;
     color: var(--dk);
 }
 .ctr-profile-spec {
     font-size: 12.5px;
     color: var(--or);
     font-weight: 600;
-    margin-top: 1px;
 }
 .ctr-profile-meta {
     font-size: 12px;
     color: var(--gr);
     margin-top: 3px;
 }
+
+/* ACCRÉDITATION */
 .ctr-accred-row {
-    padding: 0 18px 14px;
+    padding: 10px 0 0;
+    border-top: 1px solid var(--grl);
+    margin-top: 4px;
 }
 .ctr-accred-badge {
-    display: inline-flex;
-    padding: 4px 12px;
+    background: linear-gradient(135deg, #eff6ff, #f0fdf4);
+    color: #1d4ed8;
+    border: 1.5px solid #bfdbfe;
     border-radius: 99px;
-    background: #fff7ed;
-    color: #c2410c;
-    border: 1.5px solid #fed7aa;
-    font-size: 12px;
+    padding: 5px 14px;
+    font-size: 12.5px;
     font-weight: 700;
+    display: inline-block;
+}
+.ctr-accred-none {
+}
+.ctr-accred-none-text {
+    font-size: 12px;
+    color: #d97706;
+    font-weight: 600;
 }
 
-/* PROGRESSION DOSSIER */
+/* DOC PROGRESS */
 .ctr-doc-progress {
-    padding: 0 18px 16px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--grl);
 }
 .ctr-doc-progress-label {
     font-size: 12px;
     color: var(--gr);
-    font-weight: 600;
     margin-bottom: 6px;
 }
 .ctr-doc-track {
-    background: var(--grl);
     height: 6px;
+    background: var(--grl);
     border-radius: 99px;
     overflow: hidden;
 }
 .ctr-doc-fill {
     height: 100%;
-    border-radius: 99px;
     background: linear-gradient(90deg, var(--or), var(--or2));
-    transition: width 0.4s ease;
+    border-radius: 99px;
+    transition: width 0.4s;
 }
 .ctr-doc-progress-note {
-    font-size: 11.5px;
+    font-size: 11px;
     color: var(--grm);
-    margin-top: 6px;
-    line-height: 1.5;
+    margin-top: 5px;
 }
 
-/* DISPO */
+/* DISPONIBILITÉ */
 .ctr-dispo-info {
-    padding: 12px 18px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 2px;
 }
 .ctr-dispo-row {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--grl);
     font-size: 13px;
-}
-.ctr-dispo-row span:first-child {
     color: var(--gr);
+}
+.ctr-dispo-row:last-child {
+    border-bottom: none;
+}
+.ctr-dispo-row strong {
+    font-weight: 700;
+    color: var(--dk);
 }
 .ctr-dispo-status {
     font-weight: 700;
-    color: var(--grm);
 }
 .ctr-dispo-status.available {
-    color: #16a34a;
+    color: #15803d;
 }
 
-/* QUICK ACTIONS */
+/* ACTIONS RAPIDES */
 .ctr-quick-actions {
-    padding: 12px 18px 16px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
 }
 .ctr-quick-btn {
     display: flex;
     align-items: center;
     gap: 10px;
-    background: var(--cr);
-    border: 1.5px solid var(--grl);
-    border-radius: 10px;
     padding: 10px 14px;
+    border-radius: 10px;
+    border: 1.5px solid var(--grl);
+    background: var(--wh);
     font-size: 13px;
     font-weight: 600;
-    cursor: pointer;
-    font-family: "Poppins", sans-serif;
     color: var(--dk);
+    cursor: pointer;
     transition: all 0.18s;
+    font-family: "Poppins", sans-serif;
     text-align: left;
 }
 .ctr-quick-btn:hover {
-    border-color: var(--or);
-    background: #fff8f5;
+    border-color: var(--am);
+    background: var(--or3);
+    color: var(--or);
 }
 
 /* DOCUMENTS */
@@ -2363,18 +2770,20 @@ export default {
 .ctr-doc-summary {
     font-size: 12.5px;
     font-weight: 700;
-    color: var(--grm);
+    color: var(--gr);
+    background: var(--grl);
+    padding: 4px 10px;
+    border-radius: 99px;
 }
 .ctr-doc-summary.complete {
+    background: #dcfce7;
     color: #16a34a;
 }
 .ctr-certified-pill {
-    display: inline-flex;
-    align-items: center;
-    padding: 3px 12px;
+    background: linear-gradient(135deg, var(--or), var(--or2));
+    color: #fff;
     border-radius: 99px;
-    background: #dcfce7;
-    color: #15803d;
+    padding: 4px 12px;
     font-size: 12px;
     font-weight: 700;
 }
@@ -2382,91 +2791,86 @@ export default {
     display: flex;
     align-items: flex-start;
     gap: 12px;
-    margin: 14px 18px 0;
-    padding: 14px;
     background: #f0fdf4;
     border-radius: 12px;
-    border: 1px solid #bbf7d0;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    border: 1.5px solid #bbf7d0;
 }
 .ctr-docs-certified-icon {
     font-size: 22px;
     flex-shrink: 0;
 }
 .ctr-docs-certified-title {
-    font-size: 13.5px;
-    font-weight: 700;
+    font-size: 14px;
+    font-weight: 800;
     color: #15803d;
 }
 .ctr-docs-certified-sub {
-    font-size: 12px;
-    color: #16a34a;
-    margin-top: 2px;
+    font-size: 12.5px;
+    color: #166534;
+    margin-top: 3px;
 }
 .ctr-docs-badge-info {
-    margin: 14px 18px 0;
-    padding: 12px 16px;
-    background: #fff7ed;
-    border: 1px solid #fed7aa;
+    background: #fef9c3;
+    border: 1.5px solid #fde047;
     border-radius: 10px;
+    padding: 12px 14px;
     font-size: 12.5px;
-    color: #92400e;
-    line-height: 1.6;
-}
-.ctr-docs-badge-info strong {
-    color: var(--dk);
+    color: #854d0e;
+    margin-bottom: 12px;
 }
 .ctr-docs-progress-bar {
-    margin: 14px 18px 0;
+    margin-bottom: 14px;
 }
 .ctr-docs-pb-track {
-    background: var(--grl);
     height: 8px;
+    background: var(--grl);
     border-radius: 99px;
     overflow: hidden;
 }
 .ctr-docs-pb-fill {
     height: 100%;
-    border-radius: 99px;
     background: linear-gradient(90deg, var(--or), var(--or2));
-    transition: width 0.4s ease;
+    border-radius: 99px;
+    transition: width 0.4s;
 }
 .ctr-docs-pb-label {
-    font-size: 12px;
-    color: var(--grm);
-    font-weight: 600;
+    font-size: 11.5px;
+    color: var(--gr);
     margin-top: 5px;
+    text-align: right;
 }
 .ctr-docs-list {
-    padding: 12px 10px;
     display: flex;
     flex-direction: column;
     gap: 8px;
+    margin-top: 6px;
 }
 .ctr-doc-item {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 12px;
-    padding: 12px 10px;
-    border-radius: 10px;
+    padding: 12px 14px;
+    border-radius: 12px;
     border: 1.5px solid var(--grl);
-    transition: border-color 0.15s;
+    background: var(--wh);
 }
 .ctr-doc-item.approved {
     border-color: #bbf7d0;
     background: #f0fdf4;
 }
 .ctr-doc-item.rejected {
-    border-color: #fecaca;
-    background: #fef2f2;
+    border-color: #fca5a5;
+    background: #fff1f2;
 }
 .ctr-doc-item.pending {
     border-color: #fde68a;
-    background: #fefce8;
+    background: #fffbeb;
 }
 .ctr-doc-icon {
     font-size: 22px;
     flex-shrink: 0;
-    margin-top: 2px;
 }
 .ctr-doc-info {
     flex: 1;
@@ -2479,8 +2883,7 @@ export default {
 }
 .ctr-doc-status-label {
     font-size: 12px;
-    margin-top: 3px;
-    font-weight: 600;
+    margin-top: 2px;
 }
 .ctr-doc-status-label.approved {
     color: #16a34a;
@@ -2492,7 +2895,7 @@ export default {
     color: #dc2626;
 }
 .ctr-doc-status-label.missing {
-    color: var(--grm);
+    color: var(--gr);
 }
 .ctr-doc-reject-reason {
     font-size: 11.5px;
@@ -2503,149 +2906,22 @@ export default {
     font-size: 11.5px;
     color: var(--grm);
     margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .ctr-doc-actions {
+    display: flex;
+    gap: 6px;
     flex-shrink: 0;
 }
-.ctr-upload-label {
-    cursor: pointer;
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-.ctr-upload-label.loading {
-    opacity: 0.7;
-    pointer-events: none;
-}
-.ctr-mini-spinner {
-    width: 14px;
-    height: 14px;
-    border: 2px solid rgba(255, 255, 255, 0.35);
-    border-top-color: #fff;
-    border-radius: 50%;
-    animation: ctr-spin 0.7s linear infinite;
-}
-@keyframes ctr-spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
 .ctr-docs-note {
-    margin: 14px 18px 16px;
-    padding: 12px 14px;
-    background: var(--cr);
-    border-radius: 9px;
-    font-size: 12.5px;
-    color: var(--gr);
-    line-height: 1.6;
-}
-.ctr-docs-note strong {
-    color: var(--dk);
-}
-
-/* STEP BAR */
-.ctr-step-bar {
-    background: var(--grl);
-    height: 6px;
-    border-radius: 99px;
-    overflow: hidden;
-    margin: 16px 0 4px;
-}
-.ctr-step-fill {
-    height: 100%;
-    border-radius: 99px;
-    background: linear-gradient(90deg, var(--or), var(--or2));
-    transition: width 0.4s ease;
-}
-.ctr-step-label {
     font-size: 12px;
     color: var(--grm);
-    font-weight: 600;
-    margin-bottom: 12px;
-}
-
-/* ACTION BLOCKS */
-.ctr-action-block {
-    background: #faf7f5;
-    border: 1.5px solid var(--grl);
-    border-radius: 12px;
-    padding: 14px 16px;
-    margin-top: 14px;
-}
-.ctr-action-block p {
-    font-size: 13.5px;
-    color: var(--gr);
-    line-height: 1.5;
-    margin-bottom: 12px;
-}
-.ctr-action-row {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-/* BTNS */
-.ctr-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 10px 18px;
-    border-radius: 9px;
-    font-weight: 700;
-    font-size: 13.5px;
-    cursor: pointer;
-    border: none;
-    font-family: "Poppins", sans-serif;
-    transition: all 0.18s;
-}
-.ctr-btn-orange {
-    background: linear-gradient(135deg, var(--or), var(--or2));
-    color: #fff;
-    box-shadow: 0 3px 10px rgba(249, 115, 22, 0.3);
-}
-.ctr-btn-orange:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 5px 16px rgba(249, 115, 22, 0.4);
-}
-.ctr-btn-orange:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-}
-.ctr-btn-ghost {
+    margin-top: 12px;
     background: var(--grl);
-    color: var(--dk);
-}
-.ctr-btn-ghost:hover {
-    background: #d5c9c0;
-}
-.ctr-btn-red {
-    background: #ef4444;
-    color: #fff;
-}
-.ctr-btn-red:hover {
-    background: #dc2626;
-}
-.ctr-btn-green {
-    background: #22c55e;
-    color: #fff;
-}
-.ctr-btn-green:hover {
-    background: #16a34a;
-}
-.ctr-btn-sm {
-    font-size: 12px;
-    padding: 6px 12px;
-}
-.ctr-spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.35);
-    border-top-color: #fff;
-    border-radius: 50%;
-    animation: ctr-spin 0.7s linear infinite;
+    border-radius: 8px;
+    padding: 10px 12px;
 }
 
 /* MODAL */
@@ -2749,6 +3025,337 @@ export default {
     text-align: right;
 }
 
+/* ACTION BLOCK */
+.ctr-step-bar {
+    height: 6px;
+    background: var(--grl);
+    border-radius: 99px;
+    overflow: hidden;
+    margin: 16px 0 6px;
+}
+.ctr-step-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--or), var(--or2));
+    border-radius: 99px;
+    transition: width 0.4s;
+}
+.ctr-step-label {
+    font-size: 12px;
+    color: var(--gr);
+    text-align: center;
+    margin-bottom: 16px;
+}
+.ctr-action-block {
+    background: #faf7f5;
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 12px;
+    border: 1.5px solid var(--grl);
+}
+.ctr-action-block p {
+    font-size: 13.5px;
+    color: var(--gr);
+    margin-bottom: 12px;
+    line-height: 1.6;
+}
+.ctr-action-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.ctr-action-row .ctr-btn {
+    flex: 1;
+    justify-content: center;
+}
+
+/* ACTION ASSIGNED (accepter/refuser) */
+.ctr-action-assigned {
+    border-color: #fde68a;
+    background: #fffbeb;
+}
+.ctr-action-assigned-header {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 14px;
+}
+.ctr-action-assigned-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+}
+.ctr-action-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--dk);
+}
+.ctr-action-sub {
+    font-size: 12.5px;
+    color: var(--gr);
+    margin-top: 3px;
+}
+
+/* MODAL REFUS */
+.ctr-refuse-info {
+    background: #fee2e2;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #dc2626;
+    margin-bottom: 16px;
+    line-height: 1.6;
+}
+.ctr-refuse-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.ctr-radio-opt {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--dk);
+    background: var(--grl);
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1.5px solid transparent;
+    transition: all 0.15s;
+}
+.ctr-radio-opt:hover {
+    border-color: var(--am);
+    background: var(--or3);
+}
+.ctr-radio-opt input[type="radio"] {
+    accent-color: var(--or);
+}
+
+/* MODAL HORAIRES */
+.ctr-schedule-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--grl);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+}
+.ctr-schedule-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--dk);
+}
+.ctr-schedule-sub {
+    font-size: 12px;
+    color: var(--gr);
+    margin-top: 2px;
+}
+.ctr-toggle-btn {
+    width: 46px;
+    height: 26px;
+    border-radius: 99px;
+    background: #d1d5db;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+.ctr-toggle-btn.on {
+    background: var(--or);
+}
+.ctr-toggle-knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+.ctr-toggle-btn.on .ctr-toggle-knob {
+    transform: translateX(20px);
+}
+.ctr-schedule-section {
+    margin-bottom: 16px;
+}
+.ctr-schedule-section-title {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--gr);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+}
+.ctr-time-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+}
+.ctr-time-field {
+    flex: 1;
+}
+.ctr-time-sep {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--gr);
+    padding-bottom: 8px;
+}
+.ctr-days-grid {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.ctr-day-chip {
+    padding: 7px 12px;
+    border-radius: 8px;
+    border: 1.5px solid var(--grl);
+    background: var(--wh);
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--gr);
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+}
+.ctr-day-chip.active {
+    background: var(--or);
+    color: #fff;
+    border-color: var(--or2);
+}
+.ctr-radius-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.ctr-range {
+    flex: 1;
+    accent-color: var(--or);
+}
+.ctr-radius-val {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--or);
+    min-width: 50px;
+    text-align: right;
+}
+
+/* FORM */
+.ctr-form-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--dk);
+    margin-bottom: 6px;
+    display: block;
+}
+.ctr-required {
+    color: #dc2626;
+}
+.ctr-input {
+    width: 100%;
+    border: 2px solid var(--grl);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13.5px;
+    font-family: "Poppins", sans-serif;
+    color: var(--dk);
+    transition: border 0.15s;
+    box-sizing: border-box;
+}
+.ctr-input:focus {
+    outline: none;
+    border-color: var(--or);
+}
+
+/* BOUTONS */
+.ctr-btn {
+    padding: 9px 18px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 13.5px;
+    cursor: pointer;
+    border: none;
+    font-family: "Poppins", sans-serif;
+    transition: all 0.18s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.ctr-btn-orange {
+    background: linear-gradient(135deg, var(--or), var(--or2));
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(249, 115, 22, 0.3);
+}
+.ctr-btn-orange:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 16px rgba(249, 115, 22, 0.4);
+}
+.ctr-btn-ghost {
+    background: var(--grl);
+    color: var(--dk);
+}
+.ctr-btn-ghost:hover {
+    background: #d5c9c0;
+}
+.ctr-btn-red {
+    background: #ef4444;
+    color: #fff;
+}
+.ctr-btn-red:hover:not(:disabled) {
+    background: #dc2626;
+}
+.ctr-btn-green {
+    background: #22c55e;
+    color: #fff;
+}
+.ctr-btn-green:hover:not(:disabled) {
+    background: #16a34a;
+}
+.ctr-btn-sm {
+    font-size: 12px;
+    padding: 6px 12px;
+}
+.ctr-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+.ctr-upload-label {
+    cursor: pointer;
+}
+.ctr-upload-label.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+.ctr-mini-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: ctr-spin 0.7s linear infinite;
+}
+
+/* SPINNER */
+.ctr-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: ctr-spin 0.7s linear infinite;
+}
+@keyframes ctr-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 /* WIP */
 .ctr-wip-overlay {
     position: fixed;
@@ -2760,15 +3367,6 @@ export default {
     align-items: center;
     justify-content: center;
     padding: 20px;
-    animation: ctr-fade-in 0.2s ease;
-}
-@keyframes ctr-fade-in {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
 }
 .ctr-wip-modal {
     background: #fff;
@@ -2844,5 +3442,19 @@ export default {
 }
 .ctr-toast.error {
     background: #dc2626;
+}
+
+@media (max-width: 480px) {
+    .ctr-dispo-btn {
+        display: none;
+    }
+    .ctr-modal {
+        max-height: 100vh;
+        border-radius: 18px 18px 0 0;
+    }
+    .ctr-modal-overlay {
+        align-items: flex-end;
+        padding: 0;
+    }
 }
 </style>

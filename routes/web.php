@@ -69,9 +69,9 @@ Route::middleware('auth')->group(function () {
 
     // ── Notifications (tous rôles) ───────────────────────────────
     Route::prefix('notifications')->name('notifications.')->group(function () {
-        Route::get  ('/',              [NotificationController::class, 'index'])      ->name('index');
-        Route::patch('/read-all',      [NotificationController::class, 'markAllRead'])->name('read-all');
-        Route::patch('/{id}/read',     [NotificationController::class, 'markRead'])   ->name('read');
+        Route::get  ('/',          [NotificationController::class, 'index'])      ->name('index');
+        Route::patch('/read-all',  [NotificationController::class, 'markAllRead'])->name('read-all');
+        Route::patch('/{id}/read', [NotificationController::class, 'markRead'])   ->name('read');
     });
 
     // ══════════════════════════════════════════════════════════════
@@ -80,24 +80,47 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
 
-        // Vues
-        Route::get('/dashboard',  fn() => view('pages.back.admin.dashboard'))            ->name('dashboard');
-        Route::get('/validation', fn() => view('pages.back.admin.validation_documents')) ->name('validation');
+        // ── Vues ────────────────────────────────────────────────
+        Route::get('/dashboard',      [AdminController::class, 'dashboard'])     ->name('dashboard');
+        Route::get('/missions',       [AdminController::class, 'missions'])      ->name('missions');
+        Route::get('/accreditation',  [AdminController::class, 'accreditation']) ->name('accreditation');
+        Route::get('/validation',     fn() => view('pages.back.admin.validation_documents'))->name('validation');
 
-        // API — tableau de bord
+        // ── Stats (AdminDashboardComponent) ─────────────────────
         Route::get('/stats', [AdminController::class, 'stats'])->name('stats');
 
-        // API — validation documents
-        Route::get  ('/documents/dossiers',  [DocumentController::class, 'dossiers'])        ->name('documents.dossiers');
-        Route::patch('/users/{user}/status', [DocumentController::class, 'updateUserStatus'])->name('users.status');
+        // ── Documents ────────────────────────────────────────────
+        // Liste des dossiers prestataires (avec leurs documents groupés)
+        Route::get  ('/documents/dossiers',           [DocumentController::class, 'dossiers'])       ->name('documents.dossiers');
+        // Validation / rejet unifié d'un document (PATCH status + reason)
+        Route::patch('/documents/{document}/status',  [DocumentController::class, 'updateStatus'])   ->name('documents.status');
+        // Mise à jour statut utilisateur (approved / suspended)
+        Route::patch('/users/{user}/status',          [DocumentController::class, 'updateUserStatus'])->name('users.status');
 
-        // API — contractors
-        Route::get  ('/contractors',                            [ContractorController::class, 'adminIndex'])         ->name('contractors.index');
-        Route::patch('/contractors/{contractor}/accreditation', [ContractorController::class, 'updateAccreditation'])->name('contractors.accreditation');
-        Route::patch('/contractors/{contractor}/statut',        [ContractorController::class, 'updateStatut'])       ->name('contractors.statut');
+        // ── Contractors ──────────────────────────────────────────
+        // Liste complète de tous les prestataires
+        Route::get('/contractors',                              [ContractorController::class, 'adminIndex'])          ->name('contractors.index');
+        // Liste des prestataires en attente de validation (AdminDashboardComponent tab "pending")
+        Route::get('/contractors/pending',                      [ContractorController::class, 'adminPending'])        ->name('contractors.pending');
+        // Liste des prestataires disponibles pour une mission (AdminMissionComponent)
+        // Params attendus : service, location_type, mission_id
+        Route::get('/contractors/available',                    [ContractorController::class, 'adminAvailable'])      ->name('contractors.available');
+        // Mise à jour du statut compte (approved / suspended / rejected)
+        Route::patch('/contractors/{contractor}/status',        [ContractorController::class, 'updateStatut'])        ->name('contractors.status');
+        // Mise à jour accréditation (none / residential / business / both)
+        Route::patch('/contractors/{contractor}/accreditation', [ContractorController::class, 'updateAccreditation']) ->name('contractors.accreditation');
 
-        // API — missions
-        Route::get('/missions', [MissionController::class, 'adminIndex'])->name('missions.index');
+        // ── Missions ─────────────────────────────────────────────
+        // API JSON — liste paginée (fetch par AdminMissionComponent + AdminDashboardComponent)
+        Route::get  ('/missions/list',               [MissionController::class, 'adminIndex'])   ->name('missions.index');
+        // Détail d'une mission (JSON)
+        Route::get  ('/missions/{mission}',          [MissionController::class, 'adminShow'])    ->name('missions.show');
+        // Annulation / réouverture par l'admin
+        Route::patch('/missions/{mission}/status',   [MissionController::class, 'adminStatus'])  ->name('missions.status');
+        // ── PROPOSITION MULTI-PRESTATAIRES ──────────────────────
+        // Body : { contractor_ids: [1, 2, 3] }
+        // Le premier à accepter est assigné ; les autres → superseded.
+        Route::post ('/missions/{mission}/propose',  [MissionController::class, 'adminPropose']) ->name('missions.propose');
     });
 
     // ══════════════════════════════════════════════════════════════

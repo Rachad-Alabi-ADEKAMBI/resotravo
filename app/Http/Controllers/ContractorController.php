@@ -153,18 +153,26 @@ class ContractorController extends Controller
     public function updateDisponibilite(Request $request)
     {
         $request->validate([
-            'available'   => ['required', 'boolean'],
-            'start_time'  => ['nullable', 'date_format:H:i'],
-            'end_time'    => ['nullable', 'date_format:H:i'],
-            'working_days'=> ['nullable', 'array'],
+            'available'    => ['required', 'boolean'],
+            'start_time'   => ['nullable', 'date_format:H:i'],
+            'end_time'     => ['nullable', 'date_format:H:i'],
+            'working_days' => ['nullable', 'array'],
+            'working_days.*' => ['string'],
+            'radius_km'    => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
         $contractor = Contractor::where('user_id', Auth::id())->firstOrFail();
-        $contractor->update($request->only(['available', 'start_time', 'end_time', 'working_days']));
+        $contractor->update($request->only([
+            'available', 'start_time', 'end_time', 'working_days', 'radius_km',
+        ]));
 
         return response()->json([
-            'message'   => 'Availability updated.',
-            'available' => $contractor->available,
+            'message'      => 'Availability updated.',
+            'available'    => $contractor->available,
+            'start_time'   => $contractor->start_time,
+            'end_time'     => $contractor->end_time,
+            'working_days' => $contractor->working_days,
+            'radius_km'    => $contractor->radius_km,
         ]);
     }
 
@@ -193,18 +201,16 @@ class ContractorController extends Controller
     // ══════════════════════════════════════════════════════════════
 
     /**
-     * Lister tous les prestataires (admin)
+     * Lister tous les prestataires avec filtre optionnel ?status=
      * GET /admin/contractors
      */
     public function adminIndex(Request $request)
     {
-        abort_unless(Auth::user()->role === 'admin', 403);
-
-        $query = Contractor::with('user')
+        $query = Contractor::with(['user.documents'])
             ->when($request->specialty,     fn($q) => $q->bySpecialty($request->specialty))
             ->when($request->city,          fn($q) => $q->byCity($request->city))
-            ->when($request->status,        fn($q) => $q->whereHas('user', fn($u) => $u->where('status', $request->status)))
             ->when($request->accreditation, fn($q) => $q->where('accreditation', $request->accreditation))
+            ->when($request->status,        fn($q) => $q->whereHas('user', fn($u) => $u->where('status', $request->status)))
             ->when($request->search,        fn($q) => $q->where(function ($q) use ($request) {
                 $q->where('first_name', 'like', "%{$request->search}%")
                   ->orWhere('last_name',  'like', "%{$request->search}%")
@@ -212,17 +218,90 @@ class ContractorController extends Controller
             }))
             ->orderByDesc('created_at');
 
-        return response()->json($query->paginate(20));
+        return response()->json(
+            $query->paginate(50)->through(fn($c) => $this->formatForAdmin($c))
+        );
     }
 
     /**
-     * Attribuer une accréditation (admin)
+     * Prestataires en attente de validation (onglet "Dossiers en attente")
+     * GET /admin/contractors/pending
+     */
+    public function adminPending()
+    {
+        $contractors = Contractor::with(['user.documents'])
+            ->whereHas('user', fn($q) => $q->where('status', 'pending'))
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(fn($c) => $this->formatForAdmin($c));
+
+        return response()->json($contractors);
+    }
+
+    /**
+     * Prestataires disponibles pour proposition de mission
+     * GET /admin/contractors/available?location_type=residential|business
+     */
+    public function adminAvailable(Request $request)
+    {
+        $locationType = $request->input('location_type', 'residential');
+
+        // home = domicile, business = entreprise, both = les deux
+        $accredFilter = match ($locationType) {
+            'business' => ['business', 'both'],
+            default    => ['home', 'both'],
+        };
+
+        $contractors = Contractor::with('user')
+            ->whereHas('user', fn($q) => $q->where('status', 'approved'))
+            ->where('available', true)
+            ->whereIn('accreditation', $accredFilter)
+            ->orderByDesc('average_rating')
+            ->get()
+            ->map(fn($c) => [
+                // On expose user_id comme "id" car AdminMissionComponent
+                // envoie contractor_ids qui sont des user IDs dans MissionProposal
+                'id'                 => $c->user_id,
+                'contractor_id'      => $c->id,
+                'first_name'         => $c->first_name,
+                'last_name'          => $c->last_name,
+                'specialty'          => $c->specialty,
+                'city'               => $c->city ?? 'Cotonou',
+                'phone'              => $c->phone,
+                'accreditation'      => $c->accreditation,
+                'available'          => (bool) $c->available,
+                'average_rating'     => (float) ($c->average_rating ?? 0),
+                'completed_missions' => $c->completed_missions ?? 0,
+                'radius_km'          => $c->radius_km ?? 10,
+            ]);
+
+        return response()->json($contractors);
+    }
+
+    /**
+     * Changer le statut d'un prestataire (approved / suspended / rejected)
+     * PATCH /admin/contractors/{contractor}/status
+     */
+    public function updateStatut(Request $request, Contractor $contractor)
+    {
+        $request->validate([
+            'status' => ['required', 'in:pending,approved,rejected,suspended'],
+        ]);
+
+        $contractor->user->update(['status' => $request->status]);
+
+        return response()->json([
+            'success' => true,
+            'status'  => $request->status,
+        ]);
+    }
+
+    /**
+     * Attribuer une accréditation (none / home / business / both)
      * PATCH /admin/contractors/{contractor}/accreditation
      */
     public function updateAccreditation(Request $request, Contractor $contractor)
     {
-        abort_unless(Auth::user()->role === 'admin', 403);
-
         $request->validate([
             'accreditation' => ['required', 'in:' . implode(',', array_keys(Contractor::$accreditations))],
         ]);
@@ -230,28 +309,66 @@ class ContractorController extends Controller
         $contractor->update(['accreditation' => $request->accreditation]);
 
         return response()->json([
-            'message'       => 'Accreditation updated.',
-            'accreditation' => $contractor->accreditation_label,
+            'success'       => true,
+            'accreditation' => $contractor->accreditation,
         ]);
     }
 
+    // ══════════════════════════════════════════════════════════════
+    // HELPER PRIVÉ
+    // ══════════════════════════════════════════════════════════════
+
     /**
-     * Changer le statut d'un prestataire (admin)
-     * PATCH /admin/contractors/{contractor}/statut
+     * Formate un Contractor pour les composants admin (AdminDashboardComponent).
+     * Retourne les données à plat avec le statut user et les documents.
      */
-    public function updateStatut(Request $request, Contractor $contractor)
+    private function formatForAdmin(Contractor $c): array
     {
-        abort_unless(Auth::user()->role === 'admin', 403);
+        $docLabels = [
+            'cip'         => 'CIP / CNI / Passeport',
+            'photo'       => "Photo d'identité",
+            'attestation' => 'Attestation de résidence',
+            'casier'      => 'Casier judiciaire',
+            'diplome'     => 'Diplôme / Qualification',
+        ];
+        $docIcons = [
+            'cip'         => '🪪',
+            'photo'       => '📷',
+            'attestation' => '📄',
+            'casier'      => '⚖️',
+            'diplome'     => '🎓',
+        ];
 
-        $request->validate([
-            'status' => ['required', 'in:pending,approved,rejected'],
-        ]);
+        $documents = ($c->user->documents ?? collect())->map(fn($d) => [
+            'id'            => $d->id,
+            'type'          => $d->type,
+            'label'         => $docLabels[$d->type] ?? $d->type,
+            'icon'          => $docIcons[$d->type]  ?? '📄',
+            'status'        => $d->status,
+            'filename'      => $d->original_name ?? $d->filename ?? null,
+            'reject_reason' => $d->reject_reason  ?? null,
+            'url'           => $d->url            ?? null,
+        ])->values();
 
-        $contractor->user->update(['status' => $request->status]);
-
-        return response()->json([
-            'message' => 'Status updated.',
-            'status'  => $request->status,
-        ]);
+        return [
+            'id'                => $c->user_id,
+            'contractor_id'     => $c->id,
+            'email'             => $c->user->email   ?? null,
+            'status'            => $c->user->status  ?? 'pending',
+            'created_at'        => $c->created_at,
+            'first_name'        => $c->first_name,
+            'last_name'         => $c->last_name,
+            'phone'             => $c->phone,
+            'city'              => $c->city              ?? 'Cotonou',
+            'specialty'         => $c->specialty         ?? '',
+            'intervention_zone' => $c->intervention_zone ?? '',
+            'experience_years'  => $c->experience_years  ?? 0,
+            'bio'               => $c->bio               ?? '',
+            'accreditation'     => $c->accreditation     ?? 'none',
+            'available'         => (bool) $c->available,
+            'average_rating'    => (float) ($c->average_rating ?? 0),
+            'total_missions'    => $c->total_missions     ?? 0,
+            'documents'         => $documents,
+        ];
     }
 }

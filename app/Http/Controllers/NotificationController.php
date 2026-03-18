@@ -29,7 +29,7 @@ class NotificationController extends Controller
                 'mission_id' => $n->data['mission_id'] ?? null,
                 'read'       => ! is_null($n->read_at),
                 'created_at' => $n->created_at->toISOString(),
-                'ago'        => $n->created_at->diffForHumans(),
+                'ago'        => $n->created_at->locale('fr')->diffForHumans(),
             ]);
 
         return response()->json([
@@ -40,7 +40,6 @@ class NotificationController extends Controller
 
     /**
      * PATCH /notifications/{id}/read
-     * Marque une notification comme lue.
      */
     public function markRead(string $id): JsonResponse
     {
@@ -54,7 +53,6 @@ class NotificationController extends Controller
 
     /**
      * PATCH /notifications/read-all
-     * Marque toutes les notifications comme lues.
      */
     public function markAllRead(): JsonResponse
     {

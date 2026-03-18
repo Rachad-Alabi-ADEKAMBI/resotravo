@@ -2,32 +2,36 @@ import './bootstrap'
 
 import { createApp } from 'vue'
 
-import ExampleComponent           from './components/ExampleComponent.vue'
-import HomeComponent              from './components/front/HomeComponent.vue'
-import ConsultingComponent        from './components/front/ConsultingComponent.vue'
-import MarketComponent            from './components/front/MarketComponent.vue'
-import TalentComponent            from './components/front/TalentComponent.vue'
-import LoginComponent             from './components/front/LoginComponent.vue'
-import RegisterClientComponent    from './components/front/RegisterClientComponent.vue'
-import RegisterContractorComponent from './components/front/RegisterContractorComponent.vue'
-import AdminDashboardComponent      from './components/back/admin/AdminDashboardComponent.vue'
-import ValidationDocumentsComponent from './components/back/admin/ValidationDocumentsComponent.vue'
-import ClientDashboardComponent      from './components/back/client/ClientDashboardComponent.vue'
-import ContractorDashboardComponent  from './components/back/contractor/ContractorDashboardComponent.vue'
+import ExampleComponent               from './components/ExampleComponent.vue'
+import HomeComponent                  from './components/front/HomeComponent.vue'
+import ConsultingComponent            from './components/front/ConsultingComponent.vue'
+import MarketComponent                from './components/front/MarketComponent.vue'
+import TalentComponent                from './components/front/TalentComponent.vue'
+import LoginComponent                 from './components/front/LoginComponent.vue'
+import RegisterClientComponent        from './components/front/RegisterClientComponent.vue'
+import RegisterContractorComponent    from './components/front/RegisterContractorComponent.vue'
+import AdminDashboardComponent        from './components/back/admin/AdminDashboardComponent.vue'
+import AdminMissionComponent          from './components/back/admin/AdminMissionComponent.vue'
+import AdminAccreditationComponent    from './components/back/admin/AdminAccreditationComponent.vue'
+import ValidationDocumentsComponent   from './components/back/admin/ValidationDocumentsComponent.vue'
+import ClientDashboardComponent       from './components/back/client/ClientDashboardComponent.vue'
+import ContractorDashboardComponent   from './components/back/contractor/ContractorDashboardComponent.vue'
 
 const app = createApp({})
 
-app.component('example-component',          ExampleComponent)
-app.component('home-component',             HomeComponent)
-app.component('consulting-component',       ConsultingComponent)
-app.component('market-component',           MarketComponent)
-app.component('talent-component',           TalentComponent)
-app.component('login-component',            LoginComponent)
+app.component('example-component',              ExampleComponent)
+app.component('home-component',                 HomeComponent)
+app.component('consulting-component',           ConsultingComponent)
+app.component('market-component',               MarketComponent)
+app.component('talent-component',               TalentComponent)
+app.component('login-component',                LoginComponent)
 app.component('register-client-component',      RegisterClientComponent)
 app.component('register-contractor-component',  RegisterContractorComponent)
-app.component('admin-dashboard-component',       AdminDashboardComponent)
-app.component('validation-documents-component',  ValidationDocumentsComponent)
-app.component('client-dashboard-component',      ClientDashboardComponent)
-app.component('contractor-dashboard-component',  ContractorDashboardComponent)
+app.component('admin-dashboard-component',      AdminDashboardComponent)
+app.component('admin-mission-component',        AdminMissionComponent)
+app.component('admin-accreditation-component',  AdminAccreditationComponent)
+app.component('validation-documents-component', ValidationDocumentsComponent)
+app.component('client-dashboard-component',     ClientDashboardComponent)
+app.component('contractor-dashboard-component', ContractorDashboardComponent)
 
 app.mount('#resotravo-app')

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Client;
 use App\Models\Contractor;
 use App\Models\Mission;
+use App\Models\MissionProposal;
 use App\Models\User;
 use App\Notifications\AppNotification;
 use Illuminate\Http\JsonResponse;
@@ -46,7 +47,6 @@ class MissionController extends Controller
             'min_distance_m' => $client->min_distance_m ?? 0,
         ]);
 
-        // ── Notifier le client : demande reçue, attribution en cours ──
         $user->notify(new AppNotification(
             event: 'mission.created',
             title: 'Demande en cours de traitement',
@@ -56,7 +56,6 @@ class MissionController extends Controller
             extra: ['mission_id' => $mission->id, 'service' => $mission->service],
         ));
 
-        // ── Notifier tous les admins : nouvelle mission soumise ──
         User::where('role', 'admin')->each(fn(User $admin) =>
             $admin->notify(new AppNotification(
                 event: 'mission.created',
@@ -101,11 +100,19 @@ class MissionController extends Controller
             })
             ->when($user->role === 'contractor', function ($q) use ($user) {
                 $contractorId = Contractor::where('user_id', $user->id)->value('id');
-                $q->where('contractor_id', $contractorId);
+                $q->where(function ($sub) use ($user, $contractorId) {
+                    // Missions directement assignées à ce prestataire
+                    $sub->where('contractor_id', $contractorId)
+                        // OU missions avec une proposal pending/accepted pour ce user
+                        ->orWhereHas('proposals', fn($p) =>
+                            $p->where('contractor_id', $user->id)
+                              ->whereIn('status', ['pending', 'accepted'])
+                        );
+                });
             })
             ->when($status, fn($q) => $q->byStatus($status))
             ->latest()
-            ->paginate(15);
+            ->paginate(50);
 
         return response()->json($query);
     }
@@ -121,8 +128,52 @@ class MissionController extends Controller
             'reported_issue' => 'nullable|string|max:1000',
         ]);
 
-        $this->checkTransitionRights(Auth::user(), $mission, $data['status']);
+        $user = Auth::user();
+        $this->checkTransitionRights($user, $mission, $data['status']);
 
+        // ── Cas spécial : refus via proposal multi-prestataires ──
+        if ($data['status'] === 'proposal_rejected') {
+            $proposal = $mission->proposals()
+                ->where('contractor_id', $user->id)
+                ->where('status', 'pending')
+                ->first();
+
+            if (!$proposal) {
+                return response()->json(['message' => 'Proposition introuvable ou déjà traitée.'], 422);
+            }
+
+            $proposal->reject($data['reported_issue'] ?? null);
+
+            return response()->json([
+                'message' => 'Mission refusée.',
+                'mission' => $this->formatMission($mission->fresh()->load(['client', 'contractor'])),
+            ]);
+        }
+
+        // ── Cas spécial : acceptation via proposal multi-prestataires ──
+        // Si contractor_id est null, c'est une mission proposée via MissionProposal.
+        // On utilise $proposal->accept() qui assigne la mission et invalide les autres.
+        if ($data['status'] === Mission::STATUS_ACCEPTED && is_null($mission->contractor_id)) {
+            $proposal = $mission->proposals()
+                ->where('contractor_id', $user->id)
+                ->where('status', 'pending')
+                ->first();
+
+            if (!$proposal) {
+                return response()->json(['message' => 'Proposition introuvable ou déjà traitée.'], 422);
+            }
+
+            $proposal->accept(); // assigne contractor_id + invalide les autres proposals
+
+            $this->notifyStatusChange($mission->fresh(), null);
+
+            return response()->json([
+                'message' => 'Mission acceptée.',
+                'mission' => $this->formatMission($mission->fresh()->load(['client', 'contractor'])),
+            ]);
+        }
+
+        // ── Cas standard : transition normale ──
         try {
             $mission->transitionTo($data['status']);
         } catch (\DomainException $e) {
@@ -136,7 +187,6 @@ class MissionController extends Controller
             ]);
         }
 
-        // ── Notifications selon le nouveau statut ─────────────────
         $this->notifyStatusChange($mission, $data['reported_issue'] ?? null);
 
         return response()->json([
@@ -149,28 +199,162 @@ class MissionController extends Controller
     // ADMIN
     // ══════════════════════════════════════════════════════════════
 
+    /**
+     * GET /admin/missions/list  →  admin.missions.index  (JSON)
+     */
     public function adminIndex(Request $request): JsonResponse
     {
-        $missions = Mission::with(['client', 'contractor'])
+        $missions = Mission::with(['client', 'contractor', 'proposals'])
             ->when($request->status,    fn($q) => $q->byStatus($request->status))
             ->when($request->service,   fn($q) => $q->where('service', $request->service))
             ->when($request->date_from, fn($q) => $q->whereDate('created_at', '>=', $request->date_from))
             ->when($request->date_to,   fn($q) => $q->whereDate('created_at', '<=', $request->date_to))
             ->latest()
-            ->paginate(20);
+            ->paginate(60);
 
-        return response()->json($missions);
+        return response()->json(
+            $missions->through(fn($m) => $this->formatMissionForAdmin($m))
+        );
+    }
+
+    /**
+     * GET /admin/missions/{mission}  →  admin.missions.show  (JSON)
+     */
+    public function adminShow(Mission $mission): JsonResponse
+    {
+        $mission->load(['client', 'contractor', 'quote', 'proposals.contractor.contractor']);
+
+        return response()->json($this->formatMissionForAdmin($mission));
+    }
+
+    /**
+     * PATCH /admin/missions/{mission}/status  →  admin.missions.status
+     * Body : { status: 'cancelled' | 'pending', reason?: '...' }
+     */
+    public function adminStatus(Request $request, Mission $mission): JsonResponse
+    {
+        $request->validate([
+            'status' => 'required|in:cancelled,pending',
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        if ($request->status === 'cancelled') {
+            $mission->cancelByAdmin($request->reason ?? '');
+
+            // Notifier le client
+            $mission->client?->user?->notify(new AppNotification(
+                event: 'mission.cancelled',
+                title: 'Mission annulée',
+                body:  "Votre mission « {$mission->service} » a été annulée par Resotravo. Motif : " . ($request->reason ?? 'Non précisé'),
+                url:   "/client/missions/{$mission->id}",
+                icon:  'x-circle',
+                extra: ['mission_id' => $mission->id],
+            ));
+        } else {
+            // Réouverture
+            $mission->update([
+                'status'        => Mission::STATUS_PENDING,
+                'contractor_id' => null,
+                'cancel_reason' => null,
+                'cancelled_at'  => null,
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'mission' => $this->formatMissionForAdmin($mission->fresh()),
+        ]);
+    }
+
+    /**
+     * POST /admin/missions/{mission}/propose  →  admin.missions.propose
+     * Body : { contractor_ids: [1, 2, 3] }
+     *
+     * Envoie la mission à plusieurs prestataires simultanément.
+     * Le premier à accepter est assigné, les autres passent en "superseded".
+     */
+    public function adminPropose(Request $request, Mission $mission): JsonResponse
+    {
+        $request->validate([
+            'contractor_ids'   => 'required|array|min:1',
+            'contractor_ids.*' => 'integer|exists:users,id',
+        ]);
+
+        if (!$mission->canReceiveProposals()) {
+            return response()->json([
+                'message' => "Cette mission ne peut plus recevoir de propositions (statut : {$mission->status}).",
+            ], 422);
+        }
+
+        // Éviter les doublons
+        $alreadyProposed = $mission->proposals()
+            ->whereIn('status', ['pending', 'accepted'])
+            ->pluck('contractor_id')
+            ->toArray();
+
+        $newIds = array_values(array_diff($request->contractor_ids, $alreadyProposed));
+
+        if (empty($newIds)) {
+            return response()->json([
+                'message'   => 'Tous ces prestataires ont déjà une proposition en cours.',
+                'proposals' => [],
+            ], 422);
+        }
+
+        $proposals = [];
+
+        foreach ($newIds as $contractorId) {
+            $proposal = $mission->proposals()->create([
+                'contractor_id' => $contractorId,
+                'status'        => 'pending',
+                'proposed_at'   => now(),
+                'expires_at'    => now()->addMinutes(5),
+            ]);
+
+            // Charger le profil pour la réponse JSON
+            $contractorProfile = Contractor::where('user_id', $contractorId)->first();
+
+            // Notifier le prestataire
+            User::find($contractorId)?->notify(new AppNotification(
+                event: 'mission.proposed',
+                title: 'Nouvelle mission proposée',
+                body:  "Une mission « {$mission->service} » à {$mission->address} vous a été proposée. Vous avez 5 min pour accepter.",
+                url:   "/contractor/missions/{$mission->id}",
+                icon:  'bell',
+                extra: ['mission_id' => $mission->id, 'service' => $mission->service],
+            ));
+
+            $proposals[] = [
+                'id'            => $proposal->id,
+                'contractor_id' => $contractorId,
+                'status'        => 'pending',
+                'contractor'    => [
+                    'first_name' => $contractorProfile?->first_name,
+                    'last_name'  => $contractorProfile?->last_name,
+                    'specialty'  => $contractorProfile?->specialty,
+                ],
+            ];
+        }
+
+        // Passer la mission en "assigned" si elle était encore en "pending"
+        if ($mission->status === Mission::STATUS_PENDING) {
+            $mission->update([
+                'status'      => Mission::STATUS_ASSIGNED,
+                'assigned_at' => now(),
+            ]);
+        }
+
+        return response()->json([
+            'success'   => true,
+            'proposals' => $proposals,
+            'mission'   => $this->formatMissionForAdmin($mission->fresh()),
+        ]);
     }
 
     // ══════════════════════════════════════════════════════════════
     // PRIVATE — Notifications
     // ══════════════════════════════════════════════════════════════
 
-    /**
-     * Envoie les notifications après chaque transition de statut.
-     * Règle : on notifie la partie qui n'a PAS déclenché l'action,
-     * plus l'admin pour les événements sensibles.
-     */
     private function notifyStatusChange(Mission $mission, ?string $reportedIssue): void
     {
         $clientUser     = $mission->client?->user;
@@ -183,7 +367,6 @@ class MissionController extends Controller
 
         switch ($mission->status) {
 
-            // Contractor accepte → notifier le client
             case Mission::STATUS_ACCEPTED:
                 $clientUser?->notify(new AppNotification(
                     event: 'mission.accepted',
@@ -193,7 +376,6 @@ class MissionController extends Controller
                 ));
                 break;
 
-            // Contractor en route → notifier le client
             case Mission::STATUS_ON_THE_WAY:
                 $clientUser?->notify(new AppNotification(
                     event: 'mission.on_the_way',
@@ -203,7 +385,6 @@ class MissionController extends Controller
                 ));
                 break;
 
-            // Contractor arrivé → notifier le client
             case Mission::STATUS_IN_PROGRESS:
                 $clientUser?->notify(new AppNotification(
                     event: 'mission.in_progress',
@@ -213,7 +394,6 @@ class MissionController extends Controller
                 ));
                 break;
 
-            // Devis soumis → notifier le client
             case Mission::STATUS_QUOTE_SUBMITTED:
                 $clientUser?->notify(new AppNotification(
                     event: 'quote.submitted',
@@ -223,7 +403,6 @@ class MissionController extends Controller
                 ));
                 break;
 
-            // Client approuve le devis → notifier le contractor
             case Mission::STATUS_ORDER_PLACED:
                 $contractorUser?->notify(new AppNotification(
                     event: 'quote.approved',
@@ -233,7 +412,6 @@ class MissionController extends Controller
                 ));
                 break;
 
-            // Contractor marque travaux terminés → notifier le client
             case Mission::STATUS_AWAITING_CONFIRM:
                 $clientUser?->notify(new AppNotification(
                     event: 'mission.awaiting_confirm',
@@ -243,7 +421,6 @@ class MissionController extends Controller
                 ));
                 break;
 
-            // Client confirme → notifier le contractor
             case Mission::STATUS_COMPLETED:
                 $contractorUser?->notify(new AppNotification(
                     event: 'mission.completed',
@@ -253,7 +430,6 @@ class MissionController extends Controller
                 ));
                 break;
 
-            // Mission clôturée → notifier client + contractor + admin
             case Mission::STATUS_CLOSED:
                 $net        = $mission->total_amount ? round($mission->total_amount * 0.9) : null;
                 $commission = $mission->commission;
@@ -286,7 +462,6 @@ class MissionController extends Controller
                 break;
         }
 
-        // Litige signalé → notifier l'admin
         if ($mission->dispute_open && $reportedIssue) {
             User::where('role', 'admin')->each(fn(User $admin) =>
                 $admin->notify(new AppNotification(
@@ -311,7 +486,7 @@ class MissionController extends Controller
                 if ($mission->location_type === 'business') {
                     $q->whereIn('accreditation', ['business', 'both']);
                 } else {
-                    $q->whereIn('accreditation', ['residential', 'both']);
+                    $q->whereIn('accreditation', ['home', 'both']);
                 }
             })
             ->where(function ($q) use ($mission) {
@@ -330,15 +505,6 @@ class MissionController extends Controller
             ", [$mission->latitude, $mission->longitude, $mission->latitude, $minKm]);
         }
 
-        // Phase 2 : trier par distance puis note
-        // if ($mission->latitude && $mission->longitude) {
-        //     $query->selectRaw("*, (6371 * acos(cos(radians(?)) * cos(radians(latitude))
-        //         * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude))))
-        //         AS distance_km", [$mission->latitude, $mission->longitude, $mission->latitude])
-        //         ->having('distance_km', '<=', \DB::raw('radius_km'))
-        //         ->orderBy('distance_km');
-        // }
-
         $contractor = $query->orderByDesc('average_rating')->first();
 
         if ($contractor) {
@@ -348,7 +514,6 @@ class MissionController extends Controller
                 'assigned_at'   => now(),
             ]);
 
-            // ── Notifier le contractor : mission attribuée ────────
             User::find($contractor->user_id)?->notify(new AppNotification(
                 event: 'mission.assigned',
                 title: 'Nouvelle mission disponible',
@@ -358,7 +523,6 @@ class MissionController extends Controller
                 extra: ['mission_id' => $mission->id, 'service' => $mission->service, 'address' => $mission->address],
             ));
 
-            // ── Notifier le client : prestataire trouvé ──────────
             $mission->client?->user?->notify(new AppNotification(
                 event: 'mission.assigned',
                 title: 'Prestataire trouvé',
@@ -368,7 +532,6 @@ class MissionController extends Controller
                 extra: ['mission_id' => $mission->id],
             ));
         }
-        // Aucun contractor trouvé → mission reste 'pending', pas de notif
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -380,7 +543,13 @@ class MissionController extends Controller
         $clientUserId     = $mission->client?->user_id;
         $contractorUserId = $mission->contractor?->user_id;
 
-        if ($user->id !== $clientUserId && $user->id !== $contractorUserId) {
+        // Autoriser aussi le prestataire qui a une proposal active sur cette mission
+        $hasProposal = $mission->proposals()
+            ->where('contractor_id', $user->id)
+            ->whereIn('status', ['pending', 'accepted'])
+            ->exists();
+
+        if ($user->id !== $clientUserId && $user->id !== $contractorUserId && !$hasProposal) {
             abort(403, 'Unauthorized.');
         }
     }
@@ -405,15 +574,26 @@ class MissionController extends Controller
         $clientUserId     = $mission->client?->user_id;
         $contractorUserId = $mission->contractor?->user_id;
 
+        // Un prestataire avec une proposal pending peut aussi accepter/refuser
+        $hasProposal = $mission->proposals()
+            ->where('contractor_id', $user->id)
+            ->whereIn('status', ['pending', 'accepted'])
+            ->exists();
+
+        $isContractor = ($user->id === $contractorUserId) || $hasProposal;
+
         if (in_array($status, $clientOnly) && $user->id !== $clientUserId) {
             abort(403, 'Seul le client peut faire cette action.');
         }
 
-        if (in_array($status, $contractorOnly) && $user->id !== $contractorUserId) {
+        if (in_array($status, $contractorOnly) && !$isContractor) {
             abort(403, 'Seul le prestataire peut faire cette action.');
         }
     }
 
+    /**
+     * Format pour les vues client/contractor.
+     */
     private function formatMission(Mission $mission): array
     {
         $client     = $mission->client;
@@ -467,6 +647,57 @@ class MissionController extends Controller
                 'total_missions'  => $contractor->total_missions,
             ] : null,
             'quote' => $mission->quote,
+        ];
+    }
+
+    /**
+     * Format enrichi pour les vues admin (AdminMissionComponent).
+     */
+    private function formatMissionForAdmin(Mission $mission): array
+    {
+        $client     = $mission->client;
+        $contractor = $mission->contractor;
+
+        return [
+            'id'            => $mission->id,
+            'status'        => $mission->status,
+            'status_label'  => $mission->status_label,
+            'step'          => $mission->step,
+            'service'       => $mission->service,
+            'address'       => $mission->address,
+            'description'   => $mission->description,
+            'location_type' => $mission->location_type ?? 'residential',
+            'total_amount'  => $mission->total_amount,
+            'commission'    => $mission->commission,
+            'desired_date'  => $mission->availabilities[0] ?? null,
+            'contractor_id' => $mission->contractor_id,
+            'dispute_open'  => $mission->dispute_open,
+            'cancel_reason' => $mission->cancel_reason ?? null,
+            'created_at'    => $mission->created_at,
+            'client' => $client ? [
+                'name'         => trim("{$client->first_name} {$client->last_name}"),
+                'email'        => $client->user?->email,
+                'phone'        => $client->phone,
+                'account_type' => $client->account_type,
+            ] : null,
+            'contractor' => $contractor ? [
+                'first_name'     => $contractor->first_name,
+                'last_name'      => $contractor->last_name,
+                'specialty'      => $contractor->specialty,
+                'phone'          => $contractor->phone,
+                'average_rating' => $contractor->average_rating,
+                'available'      => $contractor->available,
+            ] : null,
+            'proposals' => ($mission->relationLoaded('proposals') ? $mission->proposals : collect())->map(fn($p) => [
+                'id'            => $p->id,
+                'contractor_id' => $p->contractor_id,
+                'status'        => $p->status,
+                'contractor'    => [
+                    'first_name' => $p->contractor?->contractor?->first_name,
+                    'last_name'  => $p->contractor?->contractor?->last_name,
+                    'specialty'  => $p->contractor?->contractor?->specialty,
+                ],
+            ])->toArray(),
         ];
     }
 }

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Mission extends Model
@@ -28,40 +29,43 @@ class Mission extends Model
     const STATUS_AWAITING_CONFIRM = 'awaiting_confirm';
     const STATUS_COMPLETED        = 'completed';
     const STATUS_CLOSED           = 'closed';
+    const STATUS_CANCELLED        = 'cancelled'; // annulation admin ou litige
 
     /**
      * Allowed transitions.
      * Key = current status → Value = allowed next status(es).
      */
     const TRANSITIONS = [
-        self::STATUS_PENDING          => [self::STATUS_ASSIGNED],
-        self::STATUS_ASSIGNED         => [self::STATUS_ACCEPTED],
-        self::STATUS_ACCEPTED         => [self::STATUS_CONTACT_MADE],
-        self::STATUS_CONTACT_MADE     => [self::STATUS_ON_THE_WAY],
-        self::STATUS_ON_THE_WAY       => [self::STATUS_TRACKING],
-        self::STATUS_TRACKING         => [self::STATUS_IN_PROGRESS],
-        self::STATUS_IN_PROGRESS      => [self::STATUS_QUOTE_SUBMITTED],
-        self::STATUS_QUOTE_SUBMITTED  => [self::STATUS_ORDER_PLACED, self::STATUS_QUOTE_SUBMITTED], // revision allowed
-        self::STATUS_ORDER_PLACED     => [self::STATUS_AWAITING_CONFIRM],
-        self::STATUS_AWAITING_CONFIRM => [self::STATUS_COMPLETED],
+        self::STATUS_PENDING          => [self::STATUS_ASSIGNED,         self::STATUS_CANCELLED],
+        self::STATUS_ASSIGNED         => [self::STATUS_ACCEPTED,         self::STATUS_PENDING, self::STATUS_CANCELLED],
+        self::STATUS_ACCEPTED         => [self::STATUS_CONTACT_MADE,     self::STATUS_CANCELLED],
+        self::STATUS_CONTACT_MADE     => [self::STATUS_ON_THE_WAY,       self::STATUS_CANCELLED],
+        self::STATUS_ON_THE_WAY       => [self::STATUS_TRACKING,         self::STATUS_CANCELLED],
+        self::STATUS_TRACKING         => [self::STATUS_IN_PROGRESS,      self::STATUS_CANCELLED],
+        self::STATUS_IN_PROGRESS      => [self::STATUS_QUOTE_SUBMITTED,  self::STATUS_CANCELLED],
+        self::STATUS_QUOTE_SUBMITTED  => [self::STATUS_ORDER_PLACED,     self::STATUS_QUOTE_SUBMITTED], // revision allowed
+        self::STATUS_ORDER_PLACED     => [self::STATUS_AWAITING_CONFIRM, self::STATUS_CANCELLED],
+        self::STATUS_AWAITING_CONFIRM => [self::STATUS_COMPLETED,        self::STATUS_CANCELLED],
         self::STATUS_COMPLETED        => [self::STATUS_CLOSED],
         self::STATUS_CLOSED           => [],
+        self::STATUS_CANCELLED        => [self::STATUS_PENDING],         // réouverture admin possible
     ];
 
     /** Human-readable labels for frontend display */
     const STATUS_LABELS = [
-        self::STATUS_PENDING          => 'Pending',
-        self::STATUS_ASSIGNED         => 'Assigned',
-        self::STATUS_ACCEPTED         => 'Accepted',
-        self::STATUS_CONTACT_MADE     => 'Contact made',
-        self::STATUS_ON_THE_WAY       => 'On the way',
-        self::STATUS_TRACKING         => 'Tracking',
-        self::STATUS_IN_PROGRESS      => 'In progress',
-        self::STATUS_QUOTE_SUBMITTED  => 'Quote submitted',
-        self::STATUS_ORDER_PLACED     => 'Order placed',
-        self::STATUS_AWAITING_CONFIRM => 'Awaiting confirmation',
-        self::STATUS_COMPLETED        => 'Completed',
-        self::STATUS_CLOSED           => 'Closed',
+        self::STATUS_PENDING          => 'En attente',
+        self::STATUS_ASSIGNED         => 'Proposée',
+        self::STATUS_ACCEPTED         => 'Acceptée',
+        self::STATUS_CONTACT_MADE     => 'Contact établi',
+        self::STATUS_ON_THE_WAY       => 'En route',
+        self::STATUS_TRACKING         => 'Suivi en cours',
+        self::STATUS_IN_PROGRESS      => 'Intervention en cours',
+        self::STATUS_QUOTE_SUBMITTED  => 'Devis soumis',
+        self::STATUS_ORDER_PLACED     => 'Commande passée',
+        self::STATUS_AWAITING_CONFIRM => 'Att. confirmation',
+        self::STATUS_COMPLETED        => 'Terminée',
+        self::STATUS_CLOSED           => 'Clôturée',
+        self::STATUS_CANCELLED        => 'Annulée',
     ];
 
     /** Step number (1–12) used by the frontend timeline */
@@ -78,6 +82,7 @@ class Mission extends Model
         self::STATUS_AWAITING_CONFIRM => 10,
         self::STATUS_COMPLETED        => 11,
         self::STATUS_CLOSED           => 12,
+        self::STATUS_CANCELLED        => 0,
     ];
 
     // ══════════════════════════════════════════════════════════════
@@ -85,8 +90,8 @@ class Mission extends Model
     // ══════════════════════════════════════════════════════════════
 
     protected $fillable = [
-        'client_id',        // → clients.id
-        'contractor_id',    // → contractors.id
+        'client_id',
+        'contractor_id',
         'status',
         'service',
         'address',
@@ -107,6 +112,8 @@ class Mission extends Model
         'invoice_path',
         'reported_issue',
         'dispute_open',
+        'cancel_reason',      // motif d'annulation saisi par l'admin
+        'cancelled_at',       // horodatage de l'annulation
     ];
 
     protected $casts = [
@@ -117,6 +124,7 @@ class Mission extends Model
         'arrived_at'     => 'datetime',
         'completed_at'   => 'datetime',
         'paid_at'        => 'datetime',
+        'cancelled_at'   => 'datetime',
         'total_amount'   => 'decimal:2',
         'commission'     => 'decimal:2',
         'latitude'       => 'decimal:7',
@@ -130,7 +138,6 @@ class Mission extends Model
 
     /**
      * The client who created the mission.
-     * FK client_id → clients.id
      */
     public function client(): BelongsTo
     {
@@ -139,7 +146,6 @@ class Mission extends Model
 
     /**
      * The contractor assigned to the mission.
-     * FK contractor_id → contractors.id
      */
     public function contractor(): BelongsTo
     {
@@ -148,11 +154,35 @@ class Mission extends Model
 
     /**
      * The latest quote for this mission.
-     * One mission can have multiple quote versions; we always use the latest.
      */
     public function quote(): HasOne
     {
         return $this->hasOne(MissionQuote::class)->latestOfMany();
+    }
+
+    /**
+     * Toutes les propositions envoyées à des prestataires pour cette mission.
+     * Utilisé par AdminMissionComponent pour la logique multi-proposition.
+     */
+    public function proposals(): HasMany
+    {
+        return $this->hasMany(MissionProposal::class);
+    }
+
+    /**
+     * Propositions encore en attente de réponse.
+     */
+    public function pendingProposals(): HasMany
+    {
+        return $this->hasMany(MissionProposal::class)->where('status', 'pending');
+    }
+
+    /**
+     * Proposition acceptée (il ne peut y en avoir qu'une).
+     */
+    public function acceptedProposal(): HasOne
+    {
+        return $this->hasOne(MissionProposal::class)->where('status', 'accepted');
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -176,12 +206,19 @@ class Mission extends Model
 
     public function scopeActive($query)
     {
-        return $query->whereNotIn('status', [self::STATUS_CLOSED]);
+        return $query->whereNotIn('status', [self::STATUS_CLOSED, self::STATUS_CANCELLED]);
     }
 
     public function scopePending($query)
     {
         return $query->where('status', self::STATUS_PENDING);
+    }
+
+    /** Missions sans prestataire assigné et non terminées — pour l'alerte admin */
+    public function scopeUnassigned($query)
+    {
+        return $query->whereNull('contractor_id')
+            ->whereNotIn('status', [self::STATUS_CLOSED, self::STATUS_CANCELLED, self::STATUS_COMPLETED]);
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -200,7 +237,7 @@ class Mission extends Model
      * Perform the status transition with automatic timestamps.
      * Throws DomainException if the transition is not allowed.
      */
-    public function transitionTo(string $newStatus): self
+    public function transitionTo(string $newStatus, ?string $cancelReason = null): self
     {
         if (! $this->canTransitionTo($newStatus)) {
             throw new \DomainException(
@@ -210,15 +247,26 @@ class Mission extends Model
 
         $this->status = $newStatus;
 
-        // Auto-timestamps on key transitions
         match ($newStatus) {
             self::STATUS_ASSIGNED    => $this->assigned_at  = now(),
             self::STATUS_ACCEPTED    => $this->accepted_at  = now(),
             self::STATUS_IN_PROGRESS => $this->arrived_at   = now(),
             self::STATUS_COMPLETED   => $this->completed_at = now(),
             self::STATUS_CLOSED      => $this->paid_at      = now(),
+            self::STATUS_CANCELLED   => $this->cancelled_at = now(),
             default                  => null,
         };
+
+        if ($newStatus === self::STATUS_CANCELLED && $cancelReason) {
+            $this->cancel_reason = $cancelReason;
+        }
+
+        // Si on remet en pending (réouverture admin) → effacer l'assignation
+        if ($newStatus === self::STATUS_PENDING) {
+            $this->contractor_id = null;
+            $this->cancel_reason = null;
+            $this->cancelled_at  = null;
+        }
 
         $this->save();
 
@@ -226,7 +274,24 @@ class Mission extends Model
     }
 
     /**
+     * Annulation admin avec motif — raccourci de transitionTo.
+     * Invalide aussi toutes les propositions en attente.
+     */
+    public function cancelByAdmin(string $reason): self
+    {
+        $this->transitionTo(self::STATUS_CANCELLED, $reason);
+
+        // Invalider toutes les propositions pending liées à cette mission
+        $this->proposals()
+            ->where('status', 'pending')
+            ->update(['status' => 'superseded', 'responded_at' => now()]);
+
+        return $this;
+    }
+
+    /**
      * Current step number (1–12) for the frontend timeline.
+     * Retourne 0 pour les missions annulées.
      */
     public function getStepAttribute(): int
     {
@@ -234,7 +299,7 @@ class Mission extends Model
     }
 
     /**
-     * Human-readable label for the current status.
+     * Human-readable label for the current status (en français).
      */
     public function getStatusLabelAttribute(): string
     {
@@ -270,5 +335,16 @@ class Mission extends Model
             $this->commission = round($this->total_amount * 0.10, 2);
             $this->save();
         }
+    }
+
+    /**
+     * Vérifie si la mission peut encore recevoir des propositions de prestataires.
+     */
+    public function canReceiveProposals(): bool
+    {
+        return in_array($this->status, [
+            self::STATUS_PENDING,
+            self::STATUS_ASSIGNED,
+        ]);
     }
 }
