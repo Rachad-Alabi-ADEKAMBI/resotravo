@@ -230,6 +230,17 @@
                                             : "—"
                                     }}
                                 </div>
+                                <div
+                                    class="cd-msg-unread"
+                                    v-if="unreadByMission[m.id]"
+                                >
+                                    💬
+                                    <span
+                                        >{{ unreadByMission[m.id] }} non lu{{
+                                            unreadByMission[m.id] > 1 ? "s" : ""
+                                        }}</span
+                                    >
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -308,7 +319,18 @@
                             </button>
                             <button
                                 class="cd-quick-btn"
-                                @click="wip('Messagerie')"
+                                @click="
+                                    chatMissionId =
+                                        missions.find((m) =>
+                                            [
+                                                'accepted',
+                                                'contact_made',
+                                                'on_the_way',
+                                                'tracking',
+                                                'in_progress',
+                                            ].includes(m.status),
+                                        )?.id ?? null
+                                "
                             >
                                 <span>💬</span> Messagerie
                             </button>
@@ -411,10 +433,6 @@
                         </span>
                     </div>
                     <div class="cd-detail-row">
-                        <span>Étape</span>
-                        <strong>{{ activeMission.step }} / 12</strong>
-                    </div>
-                    <div class="cd-detail-row">
                         <span>Prestataire</span>
                         <strong>{{
                             activeMission.contractor
@@ -423,8 +441,10 @@
                         }}</strong>
                     </div>
                     <div class="cd-detail-row" v-if="activeMission.contractor">
-                        <span>Téléphone</span>
-                        <strong>{{ activeMission.contractor.phone }}</strong>
+                        <span>Contact</span>
+                        <strong class="cd-masked-phone"
+                            >🔒 Numéro masqué — utilisez la messagerie</strong
+                        >
                     </div>
                     <div class="cd-detail-row">
                         <span>Adresse</span>
@@ -448,20 +468,6 @@
                         <strong>{{
                             formatDate(activeMission.accepted_at)
                         }}</strong>
-                    </div>
-
-                    <!-- Timeline step progress -->
-                    <div class="cd-step-bar">
-                        <div
-                            class="cd-step-fill"
-                            :style="{
-                                width: (activeMission.step / 12) * 100 + '%',
-                            }"
-                        ></div>
-                    </div>
-                    <div class="cd-step-label">
-                        Étape {{ activeMission.step }} sur 12 —
-                        {{ labelOf(activeMission) }}
                     </div>
 
                     <!-- Action : confirmer fin des travaux (étape 11) -->
@@ -557,8 +563,8 @@
                         Fermer
                     </button>
                     <button
-                        class="cd-btn cd-btn-ghost"
-                        @click="wip('Messagerie mission')"
+                        class="cd-btn cd-btn-orange cd-chat-btn-notif"
+                        @click="chatMissionId = activeMission.id"
                         v-if="
                             [
                                 'accepted',
@@ -566,10 +572,16 @@
                                 'on_the_way',
                                 'tracking',
                                 'in_progress',
+                                'quote_submitted',
+                                'order_placed',
+                                'awaiting_confirm',
                             ].includes(activeMission.status)
                         "
                     >
-                        💬 Contacter
+                        💬 Contacter le prestataire
+                        <span class="cd-chat-badge" v-if="chatUnread > 0">{{
+                            chatUnread
+                        }}</span>
                     </button>
                 </div>
             </div>
@@ -799,6 +811,16 @@
             </div>
         </div>
 
+        <!-- ══════════════ CHAT MODAL ══════════════ -->
+        <mission-chat-modal
+            v-if="chatMissionId"
+            :mission-id="chatMissionId"
+            :current-user-id="user.id ?? 0"
+            :routes="routes"
+            @close="onChatClose"
+            @unread="onChatUnread($event)"
+        />
+
         <!-- WIP MODAL -->
         <div
             class="cd-wip-overlay"
@@ -835,13 +857,21 @@
 </template>
 
 <script>
+import MissionChatModal from "../../MissionChatModal.vue";
+
 export default {
     name: "ClientDashboardComponent",
+    components: { MissionChatModal },
 
     props: {
         user: {
             type: Object,
-            default: () => ({ name: "Client", email: "", role: "client" }),
+            default: () => ({
+                id: 0,
+                name: "Client",
+                email: "",
+                role: "client",
+            }),
         },
         clientProfile: {
             type: Object,
@@ -864,6 +894,11 @@ export default {
                 notifications: "/notifications",
                 notifications_read: "/notifications/{id}/read",
                 notifications_all: "/notifications/read-all",
+                conversations_mission: "/conversations/mission/{id}",
+                conversations_messages: "/conversations/{id}/messages",
+                conversations_send: "/conversations/{id}/messages",
+                conversations_attach: "/conversations/{id}/attachment",
+                conversations_read: "/conversations/{id}/read",
             }),
         },
     },
@@ -880,6 +915,9 @@ export default {
             actionLoading: false,
             missionError: "",
             sidebarOpen: false,
+            chatMissionId: null,
+            chatUnread: 0,
+            unreadByMission: {}, // { missionId: count }
             toasts: [],
             toastId: 0,
 
@@ -1384,6 +1422,28 @@ export default {
         wip(feature) {
             this.wipFeature = feature;
             this.wipVisible = true;
+        },
+
+        onChatClose() {
+            this.chatMissionId = null;
+            this.chatUnread = 0;
+        },
+
+        onChatUnread(count) {
+            this.chatUnread = count;
+            if (this.chatMissionId) {
+                this.$set
+                    ? this.$set(this.unreadByMission, this.chatMissionId, count)
+                    : (this.unreadByMission = {
+                          ...this.unreadByMission,
+                          [this.chatMissionId]: count,
+                      });
+            }
+            if (count === 0 && this.chatMissionId) {
+                const copy = { ...this.unreadByMission };
+                delete copy[this.chatMissionId];
+                this.unreadByMission = copy;
+            }
         },
 
         emitToggleSidebar() {
@@ -2725,5 +2785,41 @@ export default {
     border-radius: 8px;
     padding: 10px 14px;
     line-height: 1.5;
+}
+.cd-masked-phone {
+    font-size: 12px;
+    color: #7c6a5a;
+    font-style: italic;
+}
+.cd-msg-unread {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #f97316;
+    background: #fff7ed;
+    border-radius: 99px;
+    padding: 2px 8px;
+    margin-top: 4px;
+}
+.cd-chat-btn-notif {
+    position: relative;
+}
+.cd-chat-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: #ef4444;
+    color: #fff;
+    border-radius: 99px;
+    font-size: 10px;
+    font-weight: 800;
+    min-width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
 }
 </style>

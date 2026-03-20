@@ -4,8 +4,11 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ContractorController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\MessageController;
 use App\Http\Controllers\MissionController;
+use App\Http\Controllers\MissionQuoteController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\TenderController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Auth;
@@ -19,6 +22,12 @@ Route::get('/',           fn() => view('pages.front.home'))->name('home');
 Route::get('/consulting', fn() => view('pages.front.consulting'))->name('consulting');
 Route::get('/talent',     fn() => view('pages.front.talent'))->name('talent');
 Route::get('/market',     fn() => view('pages.front.market'))->name('market');
+
+// ── Appels d'offres (publics) ────────────────────────────────
+Route::prefix('tenders')->name('tenders.')->group(function () {
+    Route::get('/',       [TenderController::class, 'index']) ->name('index');
+    Route::get('/stats',  [TenderController::class, 'stats']) ->name('stats');
+});
 Route::get('/cgu',        fn() => view('pages.front.cgu'))->name('cgu');
 Route::get('/policy',     fn() => view('pages.front.policy'))->name('policy');
 
@@ -33,6 +42,12 @@ Route::post('/register/contractor/store', [UserController::class, 'storeContract
 // ══════════════════════════════════════════════════════════════════
 
 Route::middleware('auth')->group(function () {
+
+    // ── Appels d'offres — candidature & mes candidatures (tous rôles connectés) ──
+    Route::prefix('tenders')->name('tenders.')->group(function () {
+        Route::post('/{tender}/apply',    [TenderController::class, 'apply'])          ->name('apply');
+        Route::get ('/my-applications',  [TenderController::class, 'myApplications']) ->name('my-applications');
+    });
 
     // ── Redirection dashboard selon le rôle ─────────────────────
     Route::get('/dashboard', function () {
@@ -74,6 +89,20 @@ Route::middleware('auth')->group(function () {
         Route::patch('/{id}/read', [NotificationController::class, 'markRead'])   ->name('read');
     });
 
+    // ── Messagerie (tous rôles) ──────────────────────────────────
+    Route::prefix('conversations')->name('conversations.')->group(function () {
+        Route::get  ('/',                                  [MessageController::class, 'index'])                ->name('index');
+        Route::post ('/mission/{mission}',                 [MessageController::class, 'findOrCreateForMission'])->name('mission');
+        Route::get  ('/{conversation}/messages',           [MessageController::class, 'messages'])             ->name('messages');
+        Route::post ('/{conversation}/messages',           [MessageController::class, 'send'])                 ->name('send');
+        Route::post ('/{conversation}/attachment',         [MessageController::class, 'sendAttachment'])       ->name('attachment');
+        Route::patch('/{conversation}/read',               [MessageController::class, 'read'])                 ->name('read');
+    });
+
+    // Vues messagerie dédiées
+    Route::get('/contractor/messagerie', fn() => view('pages.back.contractor.messaging'))->middleware('role:contractor')->name('contractor.messaging');
+    Route::get('/client/messagerie',     fn() => view('pages.back.client.messaging'))    ->middleware('role:client')    ->name('client.messaging');
+
     // ══════════════════════════════════════════════════════════════
     // ADMIN
     // ══════════════════════════════════════════════════════════════
@@ -90,37 +119,26 @@ Route::middleware('auth')->group(function () {
         Route::get('/stats', [AdminController::class, 'stats'])->name('stats');
 
         // ── Documents ────────────────────────────────────────────
-        // Liste des dossiers prestataires (avec leurs documents groupés)
         Route::get  ('/documents/dossiers',           [DocumentController::class, 'dossiers'])       ->name('documents.dossiers');
-        // Validation / rejet unifié d'un document (PATCH status + reason)
         Route::patch('/documents/{document}/status',  [DocumentController::class, 'updateStatus'])   ->name('documents.status');
-        // Mise à jour statut utilisateur (approved / suspended)
         Route::patch('/users/{user}/status',          [DocumentController::class, 'updateUserStatus'])->name('users.status');
 
         // ── Contractors ──────────────────────────────────────────
-        // Liste complète de tous les prestataires
         Route::get('/contractors',                              [ContractorController::class, 'adminIndex'])          ->name('contractors.index');
-        // Liste des prestataires en attente de validation (AdminDashboardComponent tab "pending")
         Route::get('/contractors/pending',                      [ContractorController::class, 'adminPending'])        ->name('contractors.pending');
-        // Liste des prestataires disponibles pour une mission (AdminMissionComponent)
-        // Params attendus : service, location_type, mission_id
         Route::get('/contractors/available',                    [ContractorController::class, 'adminAvailable'])      ->name('contractors.available');
-        // Mise à jour du statut compte (approved / suspended / rejected)
         Route::patch('/contractors/{contractor}/status',        [ContractorController::class, 'updateStatut'])        ->name('contractors.status');
-        // Mise à jour accréditation (none / residential / business / both)
         Route::patch('/contractors/{contractor}/accreditation', [ContractorController::class, 'updateAccreditation']) ->name('contractors.accreditation');
 
         // ── Missions ─────────────────────────────────────────────
-        // API JSON — liste paginée (fetch par AdminMissionComponent + AdminDashboardComponent)
         Route::get  ('/missions/list',               [MissionController::class, 'adminIndex'])   ->name('missions.index');
-        // Détail d'une mission (JSON)
         Route::get  ('/missions/{mission}',          [MissionController::class, 'adminShow'])    ->name('missions.show');
-        // Annulation / réouverture par l'admin
         Route::patch('/missions/{mission}/status',   [MissionController::class, 'adminStatus'])  ->name('missions.status');
-        // ── PROPOSITION MULTI-PRESTATAIRES ──────────────────────
-        // Body : { contractor_ids: [1, 2, 3] }
-        // Le premier à accepter est assigné ; les autres → superseded.
         Route::post ('/missions/{mission}/propose',  [MissionController::class, 'adminPropose']) ->name('missions.propose');
+
+        // ── Appels d'offres ──────────────────────────────────────
+        Route::get  ('/tenders',                     [TenderController::class, 'adminIndex'])        ->name('tenders.index');
+        Route::patch('/tenders/{tender}/status',     [TenderController::class, 'adminUpdateStatus']) ->name('tenders.status');
     });
 
     // ══════════════════════════════════════════════════════════════
@@ -131,11 +149,19 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/dashboard', [ClientController::class, 'index'])->name('dashboard');
 
-        // Missions
+        Route::get('/missions/page', function () {
+            $user   = Auth::user();
+            $client = \App\Models\Client::where('user_id', $user->id)->first();
+            return view('pages.back.client.missions', compact('user', 'client'));
+        })->name('missions.page');
+
         Route::get  ('/missions',                  [MissionController::class, 'index'])       ->name('missions.index');
         Route::post ('/missions',                  [MissionController::class, 'store'])       ->name('missions.store');
         Route::get  ('/missions/{mission}',        [MissionController::class, 'show'])        ->name('missions.show');
         Route::patch('/missions/{mission}/status', [MissionController::class, 'updateStatus'])->name('missions.status');
+
+        // ── Appels d'offres — publication (client uniquement) ────
+        Route::post('/tenders', [TenderController::class, 'store'])->name('tenders.store');
     });
 
     // ══════════════════════════════════════════════════════════════
@@ -152,10 +178,19 @@ Route::middleware('auth')->group(function () {
         Route::patch('/disponibilite', [ContractorController::class, 'updateDisponibilite'])->name('disponibilite');
         Route::patch('/position',      [ContractorController::class, 'updatePosition'])     ->name('position');
 
-        // Missions
-        Route::get  ('/missions',                  [MissionController::class, 'index'])       ->name('missions.index');
-        Route::get  ('/missions/{mission}',        [MissionController::class, 'show'])        ->name('missions.show');
-        Route::patch('/missions/{mission}/status', [MissionController::class, 'updateStatus'])->name('missions.status');
+        // Page missions dédiée (ContractorMissionComponent)
+        Route::get('/missions/page', function () {
+            $user = Auth::user()->load('contractor');
+            return view('pages.back.contractor.missions', ['user' => $user]);
+        })->name('missions.page');
+
+        // Missions API
+        Route::get  ('/missions',                  [MissionController::class, 'index'])             ->name('missions.index');
+        Route::get  ('/missions/{mission}',        [MissionController::class, 'show'])              ->name('missions.show');
+        Route::patch('/missions/{mission}/status', [MissionController::class, 'updateStatus'])      ->name('missions.status');
+
+        // ── Devis ────────────────────────────────────────────────
+        Route::post('/missions/{mission}/quote',   [MissionQuoteController::class, 'upsert'])       ->name('missions.quote.store');
     });
 
     // ══════════════════════════════════════════════════════════════

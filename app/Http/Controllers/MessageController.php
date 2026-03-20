@@ -38,17 +38,23 @@ class MessageController extends Controller
     {
         $user = Auth::user();
 
-        // Vérifier que l'utilisateur est client ou prestataire de la mission
         $clientUserId     = $mission->client?->user_id;
         $contractorUserId = $mission->contractor?->user_id;
 
-        if ($user->id !== $clientUserId && $user->id !== $contractorUserId && $user->role !== 'admin') {
+        // Autoriser aussi le prestataire qui a une proposal acceptée
+        $hasProposal = $mission->proposals()
+            ->where('contractor_id', $user->id)
+            ->whereIn('status', ['pending', 'accepted'])
+            ->exists();
+
+        if ($user->id !== $clientUserId && $user->id !== $contractorUserId
+            && !$hasProposal && $user->role !== 'admin') {
             return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
         $conversation = Conversation::forMission($mission);
 
-        // S'assurer que l'utilisateur est bien participant (cas prestataire ajouté après)
+        // S'assurer que l'utilisateur est bien participant
         if (!$conversation->participants()->where('user_id', $user->id)->exists()) {
             $role = match ($user->role) {
                 'contractor' => 'contractor',
@@ -58,21 +64,18 @@ class MessageController extends Controller
             $conversation->participants()->attach($user->id, ['role' => $role]);
         }
 
-        // Charger les messages récents
+        // Charger les messages triés ASC (chronologique)
         $messages = $conversation->messages()
             ->with('sender')
-            ->latest()
-            ->take(50)
-            ->get()
-            ->reverse()
-            ->values();
+            ->orderBy('id', 'asc')
+            ->get();
 
         // Marquer comme lus
         $this->markRead($conversation, $user->id);
 
         return response()->json([
-            'conversation' => $this->formatConversation($conversation, $user->id),
-            'messages'     => $messages->map->toArray(),
+            'conversation' => $this->formatConversation($conversation->fresh(['participants', 'mission']), $user->id),
+            'messages'     => $messages->map->toArray()->values(),
         ]);
     }
 

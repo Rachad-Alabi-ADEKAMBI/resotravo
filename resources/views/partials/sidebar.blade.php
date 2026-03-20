@@ -130,7 +130,9 @@
             <a class="ab-nav-item {{ $active === 'dashboard' ? 'active' : '' }}" href="{{ route('client.dashboard') }}">
                 <span class="ab-nav-icon">🏠</span><span>Tableau de bord</span>
             </a>
-            <button class="ab-nav-item" onclick="wip('Mes missions')"><span class="ab-nav-icon">📋</span><span>Mes missions</span></button>
+            <a class="ab-nav-item {{ $active === 'missions' ? 'active' : '' }}" href="{{ route('client.missions.page') }}">
+                <span class="ab-nav-icon">📋</span><span>Mes missions</span>
+            </a>
             <button class="ab-nav-item" onclick="wip('Prestataires')"><span class="ab-nav-icon">👷</span><span>Prestataires</span></button>
         </div>
         <div class="ab-nav-section">
@@ -140,7 +142,9 @@
         </div>
         <div class="ab-nav-section">
             <div class="ab-section-lbl">Compte</div>
-            <button class="ab-nav-item" onclick="wip('Messagerie')"><span class="ab-nav-icon">💬</span><span>Messagerie</span></button>
+            <a class="ab-nav-item {{ $active === 'messagerie' ? 'active' : '' }}" href="{{ route('client.messaging') }}">
+                <span class="ab-nav-icon">💬</span><span>Messagerie</span>
+            </a>
             <button class="ab-nav-item" onclick="wip('Mon profil')"><span class="ab-nav-icon">👤</span><span>Mon profil</span></button>
         </div>
         @endif
@@ -152,9 +156,9 @@
             <a class="ab-nav-item {{ $active === 'dashboard' ? 'active' : '' }}" href="{{ route('contractor.dashboard') }}">
                 <span class="ab-nav-icon">🏠</span><span>Tableau de bord</span>
             </a>
-            <button class="ab-nav-item {{ $active === 'missions' ? 'active' : '' }}" onclick="wip('Mes missions')">
+            <a class="ab-nav-item {{ $active === 'missions' ? 'active' : '' }}" href="{{ route('contractor.missions.page') }}">
                 <span class="ab-nav-icon">📋</span><span>Mes missions</span>
-            </button>
+            </a>
             <button class="ab-nav-item {{ $active === 'disponibilite' ? 'active' : '' }}" onclick="wip('Disponibilité')">
                 <span class="ab-nav-icon">📅</span><span>Disponibilité</span>
             </button>
@@ -197,7 +201,9 @@
 
         <div class="ab-nav-section">
             <div class="ab-section-lbl">Compte</div>
-            <button class="ab-nav-item" onclick="wip('Messagerie')"><span class="ab-nav-icon">💬</span><span>Messagerie</span></button>
+            <a class="ab-nav-item {{ $active === 'messagerie' ? 'active' : '' }}" href="{{ route('contractor.messaging') }}">
+                <span class="ab-nav-icon">💬</span><span>Messagerie</span>
+            </a>
             <button class="ab-nav-item" onclick="wip('Mon profil')"><span class="ab-nav-icon">👤</span><span>Mon profil</span></button>
             <button class="ab-nav-item" onclick="wip('Mes avis')"><span class="ab-nav-icon">⭐</span><span>Mes avis</span></button>
         </div>

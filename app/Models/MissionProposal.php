@@ -67,10 +67,15 @@ class MissionProposal extends Model
             'responded_at' => now(),
         ]);
 
+        // contractor_id dans MissionProposal est un user_id (table users)
+        // mission->contractor_id doit être l'id de la table contractors
+        $contractorRecord = \App\Models\Contractor::where('user_id', $this->contractor_id)->first();
+
         // Assigner la mission à ce prestataire
         $this->mission->update([
-            'contractor_id' => $this->contractor_id,
+            'contractor_id' => $contractorRecord?->id ?? $this->contractor_id,
             'status'        => 'accepted',
+            'accepted_at'   => now(),
         ]);
 
         // Annuler toutes les autres propositions pending sur cette mission

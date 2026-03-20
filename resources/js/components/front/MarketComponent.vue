@@ -348,20 +348,40 @@
                         habituel : 24h.
                     </div>
 
+                    <!-- Erreur -->
+                    <div class="mk-form-error" v-if="formError">
+                        ⚠️ {{ formError }}
+                    </div>
+
+                    <!-- Non connecté -->
+                    <div class="mk-form-error mk-form-warn" v-if="isGuest">
+                        🔒 Vous devez être connecté en tant que client pour
+                        publier un appel d'offres.
+                        <a
+                            :href="routes.login"
+                            style="
+                                color: var(--or);
+                                font-weight: 700;
+                                margin-left: 6px;
+                            "
+                            >Se connecter →</a
+                        >
+                    </div>
+
                     <div class="mk-form-actions">
                         <button class="btn btn-outline" @click="resetForm">
                             Annuler
                         </button>
                         <button
                             class="btn btn-primary btn-lg"
-                            :disabled="!formValid"
+                            :disabled="!formValid || submitting || isGuest"
                             @click="submitForm"
                         >
-                            {{
-                                formSubmitted
-                                    ? "✅ Soumis — En attente de validation"
-                                    : "Soumettre l'appel d'offres →"
-                            }}
+                            <span v-if="submitting">⏳ Envoi en cours…</span>
+                            <span v-else-if="formSubmitted"
+                                >✅ Soumis — En attente de validation</span
+                            >
+                            <span v-else>Soumettre l'appel d'offres →</span>
                         </button>
                     </div>
                 </div>
@@ -543,9 +563,19 @@ export default {
         routes: {
             type: Object,
             default: () => ({
-                register: "/register",
+                register: "/register/client",
                 login: "/login",
+                tenders_index: "/tenders",
+                tenders_stats: "/tenders/stats",
+                tenders_store: "/client/tenders",
+                tenders_apply: "/tenders/{id}/apply",
+                my_applications: "/tenders/my-applications",
             }),
+        },
+        // Utilisateur connecté (null si visiteur)
+        auth: {
+            type: Object,
+            default: () => null,
         },
     },
 
@@ -563,12 +593,18 @@ export default {
             formSubmitted: false,
             candidatureSubmitted: false,
 
-            stats: {
-                active: "24",
-                domains: "12",
-                companies: "38",
-                talents: "120+",
-            },
+            // API data
+            appelsOffres: [],
+            myCandidatures: [],
+            aoLoading: false,
+            aoError: null,
+            candsLoading: false,
+            submitting: false,
+            formError: "",
+            applyError: "",
+            applyLoading: false,
+
+            stats: { active: "…", domains: "…", companies: "…", talents: "…" },
 
             domains: [
                 "Électricité",
@@ -660,168 +696,48 @@ export default {
                     desc: "Consultez et échangez via la messagerie intégrée.",
                 },
             ],
-
-            appelsOffres: [
-                {
-                    id: 1,
-                    domainIcon: "⚡",
-                    domain: "Électricité",
-                    title: "Rénovation électrique complète — Immeuble R+4 Cotonou",
-                    desc: "Mise aux normes complète de l'installation électrique d'un immeuble de 4 étages, remplacement du tableau général, câblage neuf.",
-                    location: "Cotonou",
-                    duration: "3 semaines",
-                    budget: "650 000 FCFA",
-                    deadline: "25 mars 2026",
-                    company: "SOTRAC Immobilier",
-                    candidatures: 7,
-                    urgency: "urgent",
-                    urgencyLabel: "🔴 Urgent",
-                    tags: ["Urgent"],
-                    profileType: "prestataire",
-                },
-                {
-                    id: 2,
-                    domainIcon: "🏗️",
-                    domain: "Génie Civil",
-                    title: "Construction d'un entrepôt 500m² — Zone industrielle Calavi",
-                    desc: "Construction d'un entrepôt de stockage de 500m², dalle béton, charpente métallique, toiture, portails coulissants.",
-                    location: "Abomey-Calavi",
-                    duration: "2 mois",
-                    budget: "4 500 000 FCFA",
-                    deadline: "1 avril 2026",
-                    company: "LogisBénin SARL",
-                    candidatures: 12,
-                    urgency: "normal",
-                    urgencyLabel: "🟢 Ouvert",
-                    tags: ["Talent requis"],
-                    profileType: "talent",
-                },
-                {
-                    id: 3,
-                    domainIcon: "❄️",
-                    domain: "Climatisation",
-                    title: "Installation climatisation — Bureaux open space 200m²",
-                    desc: "Fourniture et installation d'un système de climatisation centralisé pour un plateau de bureaux de 200m² avec 30 postes de travail.",
-                    location: "Cotonou",
-                    duration: "1 semaine",
-                    budget: "380 000 FCFA",
-                    deadline: "20 mars 2026",
-                    company: "Groupe ATLAS BJ",
-                    candidatures: 4,
-                    urgency: "new",
-                    urgencyLabel: "🔵 Nouveau",
-                    tags: ["Nouveau"],
-                    profileType: "prestataire",
-                },
-                {
-                    id: 4,
-                    domainIcon: "🖥️",
-                    domain: "Informatique",
-                    title: "Développement application mobile — Gestion de stock",
-                    desc: "Conception et développement d'une application mobile Android/iOS pour la gestion de stock en temps réel, avec module de reporting.",
-                    location: "Cotonou",
-                    duration: "6 semaines",
-                    budget: "1 200 000 FCFA",
-                    deadline: "10 avril 2026",
-                    company: "Commerce Express BJ",
-                    candidatures: 9,
-                    urgency: "normal",
-                    urgencyLabel: "🟢 Ouvert",
-                    tags: ["Talent requis", "Télétravail possible"],
-                    profileType: "talent",
-                },
-                {
-                    id: 5,
-                    domainIcon: "🧹",
-                    domain: "Nettoyage industriel",
-                    title: "Nettoyage industriel mensuel — Usine agroalimentaire",
-                    desc: "Prestation mensuelle de nettoyage industriel profond d'une usine agroalimentaire (halls de production, zones de stockage, vestiaires).",
-                    location: "Parakou",
-                    duration: "1 jour / mois",
-                    budget: "95 000 FCFA/mois",
-                    deadline: "31 mars 2026",
-                    company: "AgroNord SA",
-                    candidatures: 3,
-                    urgency: "normal",
-                    urgencyLabel: "🟢 Ouvert",
-                    tags: [],
-                    profileType: "prestataire",
-                },
-                {
-                    id: 6,
-                    domainIcon: "🎨",
-                    domain: "Peinture",
-                    title: "Peinture intérieure & extérieure — Résidence 12 appartements",
-                    desc: "Travaux de peinture complète (apprêt + 2 couches) pour 12 appartements neufs + façades extérieures. Peinture fournie par le client.",
-                    location: "Porto-Novo",
-                    duration: "10 jours",
-                    budget: "280 000 FCFA",
-                    deadline: "28 mars 2026",
-                    company: "Résidence Les Palmiers",
-                    candidatures: 6,
-                    urgency: "urgent",
-                    urgencyLabel: "🔴 Urgent",
-                    tags: ["Urgent"],
-                    profileType: "prestataire",
-                },
-            ],
-
-            myCandidatures: [
-                {
-                    domainIcon: "⚡",
-                    title: "Rénovation électrique — Immeuble R+4",
-                    company: "SOTRAC Immobilier",
-                    location: "Cotonou",
-                    date: "14 mars 2026",
-                    status: "En cours d'examen",
-                    statusIcon: "🔄",
-                    statusClass: "pending",
-                },
-                {
-                    domainIcon: "🎨",
-                    title: "Peinture intérieure 12 appartements",
-                    company: "Résidence Les Palmiers",
-                    location: "Porto-Novo",
-                    date: "10 mars 2026",
-                    status: "Sélectionné",
-                    statusIcon: "✅",
-                    statusClass: "selected",
-                },
-            ],
         };
     },
 
     computed: {
+        isClient() {
+            return this.auth?.role === "client";
+        },
+        isGuest() {
+            return !this.auth;
+        },
         filteredAOs() {
-            let list = this.appelsOffres;
-            if (this.searchQuery)
+            let list = [...this.appelsOffres];
+            if (this.searchQuery) {
+                const q = this.searchQuery.toLowerCase();
                 list = list.filter(
                     (a) =>
-                        a.title
-                            .toLowerCase()
-                            .includes(this.searchQuery.toLowerCase()) ||
-                        a.desc
-                            .toLowerCase()
-                            .includes(this.searchQuery.toLowerCase()),
+                        a.title.toLowerCase().includes(q) ||
+                        a.description.toLowerCase().includes(q),
                 );
+            }
             if (this.filterDomain)
                 list = list.filter((a) => a.domain === this.filterDomain);
             if (this.filterLocation)
                 list = list.filter((a) => a.location === this.filterLocation);
             if (this.filterTag)
-                list = list.filter((a) => a.tags.includes(this.filterTag));
+                list = list.filter((a) =>
+                    (a.tags ?? []).includes(this.filterTag),
+                );
             if (this.filterBudget === "low")
                 list = list.filter(
-                    (a) => parseInt(a.budget.replace(/\D/g, "")) < 100000,
+                    (a) =>
+                        parseInt((a.budget ?? "0").replace(/\D/g, "")) < 100000,
                 );
             if (this.filterBudget === "mid")
                 list = list.filter((a) => {
-                    const v = parseInt(a.budget.replace(/\D/g, ""));
+                    const v = parseInt((a.budget ?? "0").replace(/\D/g, ""));
                     return v >= 100000 && v <= 500000;
                 });
             if (this.filterBudget === "high")
                 list = list.filter(
-                    (a) => parseInt(a.budget.replace(/\D/g, "")) > 500000,
+                    (a) =>
+                        parseInt((a.budget ?? "0").replace(/\D/g, "")) > 500000,
                 );
             if (this.sortBy === "candidatures")
                 list = [...list].sort(
@@ -829,7 +745,6 @@ export default {
                 );
             return list;
         },
-
         formValid() {
             return (
                 this.form.title &&
@@ -841,50 +756,230 @@ export default {
                 this.form.description
             );
         },
+        alreadyApplied() {
+            if (!this.selectedAO) return false;
+            return this.myCandidatures.some(
+                (c) => c.tender_id === this.selectedAO.id,
+            );
+        },
+    },
+
+    watch: {
+        // Charger les candidatures quand l'onglet est ouvert
+        activeTab(val) {
+            if (val === "myCandidatures" && this.myCandidatures.length === 0) {
+                this.fetchMyCandidatures();
+            }
+            this.$nextTick(() => this.reObserveReveal());
+        },
+        sortBy() {
+            this.fetchAOs();
+        },
     },
 
     mounted() {
-        this.$nextTick(() => {
-            this.reObserveReveal();
-        });
+        this.fetchStats();
+        this.fetchAOs();
+        this.$nextTick(() => this.reObserveReveal());
     },
 
     methods: {
+        // ── API calls ─────────────────────────────────────────────
+
+        async fetchStats() {
+            try {
+                const res = await fetch(this.routes.tenders_stats, {
+                    headers: { Accept: "application/json" },
+                });
+                const data = await res.json();
+                this.stats = {
+                    active: data.active ?? "0",
+                    domains: data.domains ?? "0",
+                    companies: data.companies ?? "0",
+                    talents: data.talents ?? "0",
+                };
+            } catch {
+                /* silencieux */
+            }
+        },
+
+        async fetchAOs() {
+            this.aoLoading = true;
+            this.aoError = null;
+            try {
+                const params = new URLSearchParams();
+                if (this.filterDomain) params.set("domain", this.filterDomain);
+                if (this.filterLocation)
+                    params.set("location", this.filterLocation);
+                if (this.searchQuery) params.set("search", this.searchQuery);
+                if (this.filterBudget) params.set("budget", this.filterBudget);
+                if (this.sortBy === "candidatures")
+                    params.set("sort", "candidatures");
+
+                const url =
+                    this.routes.tenders_index +
+                    (params.toString() ? "?" + params : "");
+                const res = await fetch(url, {
+                    headers: { Accept: "application/json" },
+                });
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                this.appelsOffres = Array.isArray(data)
+                    ? data
+                    : (data.data ?? []);
+            } catch {
+                this.aoError = "Impossible de charger les appels d'offres.";
+            } finally {
+                this.aoLoading = false;
+            }
+        },
+
+        async fetchMyCandidatures() {
+            if (this.isGuest) return;
+            this.candsLoading = true;
+            try {
+                const res = await fetch(this.routes.my_applications, {
+                    headers: { Accept: "application/json" },
+                });
+                const data = await res.json();
+                this.myCandidatures = Array.isArray(data) ? data : [];
+            } catch {
+                /* silencieux */
+            } finally {
+                this.candsLoading = false;
+            }
+        },
+
+        // ── AO interactions ───────────────────────────────────────
+
         openAO(ao) {
             this.selectedAO = ao;
             this.showModal = true;
             this.candidatureSubmitted = false;
+            this.applyError = "";
             this.candidature = { motivation: "", tarif: "", disponibilite: "" };
         },
 
         postuler(ao) {
-            this.selectedAO = ao;
-            this.showModal = true;
-            this.candidatureSubmitted = false;
-            this.candidature = { motivation: "", tarif: "", disponibilite: "" };
+            if (this.isGuest) {
+                window.location.href = this.routes.login;
+                return;
+            }
+            this.openAO(ao);
         },
 
-        submitCandidature() {
+        async submitCandidature() {
             if (!this.candidature.motivation.trim()) return;
-            this.candidatureSubmitted = true;
-            this.myCandidatures.unshift({
-                domainIcon: this.selectedAO.domainIcon,
-                title: this.selectedAO.title,
-                company: this.selectedAO.company,
-                location: this.selectedAO.location,
-                date: new Date().toLocaleDateString("fr-FR"),
-                status: "En cours d'examen",
-                statusIcon: "🔄",
-                statusClass: "pending",
-            });
-            setTimeout(() => {
-                this.showModal = false;
-            }, 2000);
+            if (this.isGuest) {
+                window.location.href = this.routes.login;
+                return;
+            }
+
+            this.applyLoading = true;
+            this.applyError = "";
+            try {
+                const csrf = document.querySelector(
+                    'meta[name="csrf-token"]',
+                )?.content;
+                const url = this.routes.tenders_apply.replace(
+                    "{id}",
+                    this.selectedAO.id,
+                );
+                const res = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": csrf,
+                        Accept: "application/json",
+                    },
+                    body: JSON.stringify(this.candidature),
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    this.applyError =
+                        data.message ?? "Une erreur est survenue.";
+                    return;
+                }
+                this.candidatureSubmitted = true;
+
+                // Ajouter à mes candidatures localement
+                this.myCandidatures.unshift(data.application);
+
+                // Incrémenter le compteur local
+                const idx = this.appelsOffres.findIndex(
+                    (a) => a.id === this.selectedAO.id,
+                );
+                if (idx !== -1) this.appelsOffres[idx].candidatures++;
+
+                setTimeout(() => {
+                    this.showModal = false;
+                }, 2000);
+            } catch {
+                this.applyError = "Erreur réseau. Veuillez réessayer.";
+            } finally {
+                this.applyLoading = false;
+            }
         },
 
-        submitForm() {
+        async submitForm() {
+            console.log("[submitForm]", {
+                formValid: this.formValid,
+                isGuest: this.isGuest,
+                isClient: this.isClient,
+                auth: this.auth,
+                form: this.form,
+                route: this.routes.tenders_store,
+            });
+
             if (!this.formValid) return;
-            this.formSubmitted = true;
+            if (this.isGuest) {
+                window.location.href = this.routes.login;
+                return;
+            }
+            if (!this.isClient) {
+                this.formError =
+                    "Seuls les clients peuvent publier un appel d'offres.";
+                return;
+            }
+
+            this.submitting = true;
+            this.formError = "";
+            try {
+                const csrf = document.querySelector(
+                    'meta[name="csrf-token"]',
+                )?.content;
+                const res = await fetch(this.routes.tenders_store, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": csrf,
+                        Accept: "application/json",
+                    },
+                    body: JSON.stringify({
+                        title: this.form.title,
+                        domain: this.form.domain,
+                        location: this.form.location,
+                        duration: this.form.duration,
+                        budget: this.form.budget,
+                        deadline: this.form.deadline,
+                        profile_type: this.form.profileType,
+                        description: this.form.description,
+                        requirements: this.form.requirements,
+                    }),
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    this.formError = data.errors
+                        ? Object.values(data.errors).flat()[0]
+                        : (data.message ?? "Erreur.");
+                    return;
+                }
+                this.formSubmitted = true;
+            } catch {
+                this.formError = "Erreur réseau. Veuillez réessayer.";
+            } finally {
+                this.submitting = false;
+            }
         },
 
         resetForm() {
@@ -900,6 +995,7 @@ export default {
                 requirements: "",
             };
             this.formSubmitted = false;
+            this.formError = "";
         },
 
         reObserveReveal() {
@@ -925,7 +1021,6 @@ export default {
     },
 };
 </script>
-
 <style scoped>
 /* ── HERO MARCHÉ ── */
 .mk-hero {
@@ -1405,6 +1500,21 @@ export default {
     display: flex;
     gap: 10px;
     justify-content: flex-end;
+}
+.mk-form-error {
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    border-radius: 10px;
+    padding: 11px 14px;
+    font-size: 13px;
+    color: #dc2626;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+.mk-form-warn {
+    background: #fff7ed;
+    border-color: #fed7aa;
+    color: #92400e;
 }
 
 /* ── TIPS ── */

@@ -36,16 +36,16 @@ class Mission extends Model
      * Key = current status → Value = allowed next status(es).
      */
     const TRANSITIONS = [
-        self::STATUS_PENDING          => [self::STATUS_ASSIGNED,         self::STATUS_CANCELLED],
-        self::STATUS_ASSIGNED         => [self::STATUS_ACCEPTED,         self::STATUS_PENDING, self::STATUS_CANCELLED],
-        self::STATUS_ACCEPTED         => [self::STATUS_CONTACT_MADE,     self::STATUS_CANCELLED],
-        self::STATUS_CONTACT_MADE     => [self::STATUS_ON_THE_WAY,       self::STATUS_CANCELLED],
-        self::STATUS_ON_THE_WAY       => [self::STATUS_TRACKING,         self::STATUS_CANCELLED],
-        self::STATUS_TRACKING         => [self::STATUS_IN_PROGRESS,      self::STATUS_CANCELLED],
-        self::STATUS_IN_PROGRESS      => [self::STATUS_QUOTE_SUBMITTED,  self::STATUS_CANCELLED],
+        self::STATUS_PENDING          => [self::STATUS_ASSIGNED,                                    self::STATUS_CANCELLED],
+        self::STATUS_ASSIGNED         => [self::STATUS_ACCEPTED,         self::STATUS_PENDING,      self::STATUS_CANCELLED],
+        self::STATUS_ACCEPTED         => [self::STATUS_CONTACT_MADE,     self::STATUS_ON_THE_WAY,   self::STATUS_CANCELLED],
+        self::STATUS_CONTACT_MADE     => [self::STATUS_ON_THE_WAY,                                  self::STATUS_CANCELLED],
+        self::STATUS_ON_THE_WAY       => [self::STATUS_TRACKING,         self::STATUS_IN_PROGRESS,  self::STATUS_CANCELLED],
+        self::STATUS_TRACKING         => [self::STATUS_IN_PROGRESS,                                 self::STATUS_CANCELLED],
+        self::STATUS_IN_PROGRESS      => [self::STATUS_QUOTE_SUBMITTED,                             self::STATUS_CANCELLED],
         self::STATUS_QUOTE_SUBMITTED  => [self::STATUS_ORDER_PLACED,     self::STATUS_QUOTE_SUBMITTED], // revision allowed
-        self::STATUS_ORDER_PLACED     => [self::STATUS_AWAITING_CONFIRM, self::STATUS_CANCELLED],
-        self::STATUS_AWAITING_CONFIRM => [self::STATUS_COMPLETED,        self::STATUS_CANCELLED],
+        self::STATUS_ORDER_PLACED     => [self::STATUS_AWAITING_CONFIRM,                            self::STATUS_CANCELLED],
+        self::STATUS_AWAITING_CONFIRM => [self::STATUS_COMPLETED,                                   self::STATUS_CANCELLED],
         self::STATUS_COMPLETED        => [self::STATUS_CLOSED],
         self::STATUS_CLOSED           => [],
         self::STATUS_CANCELLED        => [self::STATUS_PENDING],         // réouverture admin possible
@@ -112,9 +112,12 @@ class Mission extends Model
         'invoice_path',
         'reported_issue',
         'dispute_open',
-        'cancel_reason',      // motif d'annulation saisi par l'admin
-        'cancelled_at',       // horodatage de l'annulation
+        'cancel_reason',
+        'cancelled_at',
     ];
+
+    // Accessors automatiquement inclus dans toArray() / JSON
+    protected $appends = ['step', 'status_label'];
 
     protected $casts = [
         'availabilities' => 'array',

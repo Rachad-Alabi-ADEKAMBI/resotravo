@@ -64,26 +64,30 @@
                 <template v-else>
                     <!-- Groupe par date -->
                     <template
-                        v-for="(group, date) in groupedMessages"
-                        :key="date"
+                        v-for="group in groupedMessages"
+                        :key="group.date"
                     >
                         <div class="chat-date-sep">
-                            <span>{{ date }}</span>
+                            <span>{{ group.date }}</span>
                         </div>
                         <div
-                            class="chat-bubble-wrap"
-                            v-for="m in group"
+                            class="chat-row"
+                            v-for="m in group.msgs"
                             :key="m.id"
-                            :class="{ mine: m.sender_id === currentUserId }"
+                            :class="{
+                                'chat-row-mine': m.sender_id === currentUserId,
+                                'chat-row-system': m.type === 'system',
+                            }"
                         >
                             <div
                                 class="chat-bubble"
                                 :class="{
-                                    mine: m.sender_id === currentUserId,
-                                    system: m.type === 'system',
+                                    'chat-bubble-mine':
+                                        m.sender_id === currentUserId,
+                                    'chat-bubble-system': m.type === 'system',
                                 }"
                             >
-                                <!-- Nom expéditeur (pour les messages reçus) -->
+                                <!-- Nom expéditeur (messages reçus) -->
                                 <div
                                     class="chat-sender-name"
                                     v-if="
@@ -93,12 +97,10 @@
                                 >
                                     {{ m.sender_name }}
                                 </div>
-
                                 <!-- Texte -->
                                 <div class="chat-body" v-if="m.body">
                                     {{ m.body }}
                                 </div>
-
                                 <!-- Image -->
                                 <div
                                     class="chat-attachment-img"
@@ -112,7 +114,6 @@
                                         @click="openImage(m.attachment_url)"
                                     />
                                 </div>
-
                                 <!-- Fichier -->
                                 <a
                                     class="chat-attachment-file"
@@ -125,23 +126,29 @@
                                     <span class="chat-file-name">{{
                                         m.attachment_name
                                     }}</span>
-                                    <span class="chat-file-dl"
-                                        >Télécharger</span
-                                    >
+                                    <span class="chat-file-dl">↓</span>
                                 </a>
-
-                                <!-- Heure -->
-                                <div class="chat-time">
-                                    {{ formatTime(m.created_at) }}
+                                <!-- Heure + statut -->
+                                <div class="chat-meta">
+                                    <span class="chat-time">{{
+                                        formatTime(m.created_at)
+                                    }}</span>
+                                    <span
+                                        class="chat-tick chat-tick-sent"
+                                        v-if="
+                                            m.sender_id === currentUserId &&
+                                            m.id < lastMessageId
+                                        "
+                                        >✓✓</span
+                                    >
+                                    <span
+                                        class="chat-tick"
+                                        v-else-if="
+                                            m.sender_id === currentUserId
+                                        "
+                                        >✓</span
+                                    >
                                 </div>
-                            </div>
-
-                            <!-- Lu/non lu (uniquement mes messages) -->
-                            <div
-                                class="chat-read-status"
-                                v-if="m.sender_id === currentUserId"
-                            >
-                                {{ isReadByOther(m) ? "✓✓" : "✓" }}
                             </div>
                         </div>
                     </template>
@@ -166,9 +173,10 @@
 
             <!-- ── BARRE DE SAISIE ── -->
             <div class="chat-input-bar">
-                <label
+                <div
                     class="chat-attach-btn"
                     title="Joindre une photo ou un fichier"
+                    @click="$refs.fileInput.click()"
                 >
                     <svg
                         viewBox="0 0 24 24"
@@ -182,14 +190,14 @@
                             d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"
                         />
                     </svg>
-                    <input
-                        type="file"
-                        style="display: none"
-                        accept="image/*,.pdf,.doc,.docx"
-                        @change="onFileSelect"
-                        ref="fileInput"
-                    />
-                </label>
+                </div>
+                <input
+                    type="file"
+                    style="display: none"
+                    accept="image/*,.pdf,.doc,.docx"
+                    @change="onFileSelect"
+                    ref="fileInput"
+                />
 
                 <textarea
                     class="chat-input"
@@ -242,7 +250,7 @@ export default {
         // conversations_read    : '/conversations/{id}/read'
     },
 
-    emits: ["close"],
+    emits: ["close", "unread"],
 
     data() {
         return {
@@ -257,6 +265,7 @@ export default {
             pollInterval: null,
             lastMessageId: 0,
             otherReadAt: null,
+            unreadFromOther: 0,
         };
     },
 
@@ -274,20 +283,30 @@ export default {
         },
 
         groupedMessages() {
-            const groups = {};
+            // Retourne un tableau [{date, msgs}] trié — objet {} ne garantit pas l'ordre
+            const map = new Map();
             for (const m of this.messages) {
-                const d = new Date(m.created_at);
-                const key = this.formatDateLabel(d);
-                if (!groups[key]) groups[key] = [];
-                groups[key].push(m);
+                const key = this.formatDateLabel(new Date(m.created_at));
+                if (!map.has(key)) map.set(key, []);
+                map.get(key).push(m);
             }
-            return groups;
+            return Array.from(map.entries()).map(([date, msgs]) => ({
+                date,
+                msgs,
+            }));
         },
     },
 
     methods: {
         // ── Init ─────────────────────────────────────────────────
         async init() {
+            console.log(
+                "[Chat] init — missionId:",
+                this.missionId,
+                "| currentUserId:",
+                this.currentUserId,
+            );
+            console.log("[Chat] routes:", this.routes);
             this.loading = true;
             try {
                 const csrf = document.querySelector(
@@ -306,22 +325,33 @@ export default {
                     },
                     body: JSON.stringify({}),
                 });
-                if (!res.ok) throw new Error();
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    console.error("[Chat] init HTTP", res.status, ":", err);
+                    throw new Error("HTTP " + res.status);
+                }
                 const data = await res.json();
                 this.conversation = data.conversation;
-                this.messages = data.messages ?? [];
-                this.lastMessageId = this.messages.at(-1)?.id ?? 0;
-                await this.scrollBottom();
-            } catch {
-                // silencieux
+                // Trier ASC par id pour garantir l'ordre chronologique
+                const msgs = (data.messages ?? [])
+                    .slice()
+                    .sort((a, b) => a.id - b.id);
+                this.messages = msgs;
+                this.lastMessageId = msgs.at(-1)?.id ?? 0;
+                await this.$nextTick();
+                await this.scrollBottom(true);
+            } catch (e) {
+                console.error("[Chat] init error:", e);
             } finally {
                 this.loading = false;
+                // Scroll après que loading=false laisse Vue rendre les messages
+                setTimeout(() => this.scrollBottom(), 100);
             }
         },
 
         // ── Polling ───────────────────────────────────────────────
         async poll() {
-            if (!this.conversation) return;
+            if (!this.conversation || this.sending) return; // ne pas polluer pendant un envoi
             try {
                 const url =
                     this.routes.conversations_messages.replace(
@@ -334,9 +364,24 @@ export default {
                 if (!res.ok) return;
                 const data = await res.json();
                 if (data.messages?.length > 0) {
-                    this.messages.push(...data.messages);
-                    this.lastMessageId = data.messages.at(-1).id;
-                    await this.scrollBottom();
+                    // Dédupliquer — évite le doublon si le message arrive pendant l'envoi
+                    const existingIds = new Set(this.messages.map((m) => m.id));
+                    const newMsgs = data.messages.filter(
+                        (m) => !existingIds.has(m.id),
+                    );
+                    if (newMsgs.length > 0) {
+                        const fromOther = newMsgs.filter(
+                            (m) => m.sender_id !== this.currentUserId,
+                        );
+                        this.messages.push(...newMsgs);
+                        this.lastMessageId = newMsgs.at(-1).id;
+                        await this.scrollBottom();
+                        // Notification title si fenêtre non active
+                        if (fromOther.length > 0 && document.hidden) {
+                            this.unreadFromOther += fromOther.length;
+                            this.$emit("unread", this.unreadFromOther);
+                        }
+                    }
                 }
             } catch {
                 /* silencieux */
@@ -345,6 +390,14 @@ export default {
 
         // ── Envoi texte ───────────────────────────────────────────
         async send() {
+            console.log(
+                "[Chat] send — draft:",
+                this.draft,
+                "| conversation:",
+                this.conversation?.id,
+                "| pendingFile:",
+                !!this.pendingFile,
+            );
             if (this.pendingFile) {
                 await this.sendAttachment();
                 return;
@@ -362,6 +415,7 @@ export default {
                     "{id}",
                     this.conversation.id,
                 );
+                console.log("[Chat] POST", url, "| body:", body);
                 const res = await fetch(url, {
                     method: "POST",
                     headers: {
@@ -371,15 +425,18 @@ export default {
                     },
                     body: JSON.stringify({ body }),
                 });
+                const data = await res.json();
+                console.log("[Chat] send response HTTP", res.status, ":", data);
                 if (!res.ok) {
+                    console.error("[Chat] send error:", data);
                     this.draft = body;
                     return;
                 }
-                const data = await res.json();
                 this.messages.push(data.message);
                 this.lastMessageId = data.message.id;
                 await this.scrollBottom();
-            } catch {
+            } catch (e) {
+                console.error("[Chat] send JS error:", e);
                 this.draft = body;
             } finally {
                 this.sending = false;
@@ -440,13 +497,13 @@ export default {
                     },
                     body: formData,
                 });
-                if (!res.ok) throw new Error();
-                const data = await res.json();
-                this.messages.push(data.message);
-                this.lastMessageId = data.message.id;
-                await this.scrollBottom();
-            } catch {
-                // silencieux
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    console.error("[Chat] init HTTP", res.status, ":", err);
+                    throw new Error("HTTP " + res.status);
+                }
+            } catch (e) {
+                console.error("[Chat] attachment error:", e);
             } finally {
                 this.sending = false;
             }
@@ -462,10 +519,19 @@ export default {
             this.lightboxUrl = url;
         },
 
-        async scrollBottom() {
+        async scrollBottom(instant = false) {
+            // Attendre que Vue ait fini de rendre le DOM
             await this.$nextTick();
-            const el = this.$refs.messagesEl;
-            if (el) el.scrollTop = el.scrollHeight;
+            const tryScroll = (attempts = 5) => {
+                const el = this.$refs.messagesEl;
+                if (!el) return;
+                el.scrollTop = el.scrollHeight + 9999;
+                // Réessayer plusieurs fois pour couvrir les images/lazy renders
+                if (attempts > 0) {
+                    setTimeout(() => tryScroll(attempts - 1), 40);
+                }
+            };
+            tryScroll();
         },
 
         autoResize() {
@@ -514,10 +580,16 @@ export default {
         await this.init();
         this.pollInterval = setInterval(() => this.poll(), 3000);
         this.$nextTick(() => this.$refs.inputEl?.focus());
+        this._onFocus = () => {
+            this.unreadFromOther = 0;
+            this.$emit("unread", 0);
+        };
+        window.addEventListener("focus", this._onFocus);
     },
 
     beforeUnmount() {
         clearInterval(this.pollInterval);
+        window.removeEventListener("focus", this._onFocus);
     },
 };
 </script>
@@ -716,42 +788,42 @@ export default {
 }
 
 /* Bulles */
-.chat-bubble-wrap {
+.chat-row {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    margin-bottom: 4px;
+    justify-content: flex-start;
+    margin-bottom: 6px;
+    width: 100%;
 }
-.chat-bubble-wrap.mine {
-    align-items: flex-end;
+.chat-row-mine {
+    justify-content: flex-end;
+}
+.chat-row-system {
+    justify-content: center;
 }
 
 .chat-bubble {
-    max-width: 78%;
-    padding: 10px 13px;
-    border-radius: 14px;
+    max-width: 72%;
+    padding: 9px 12px;
+    border-radius: 16px 16px 16px 4px;
     background: #fff;
     color: #1c1412;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-    border-bottom-left-radius: 4px;
     font-size: 13.5px;
     line-height: 1.5;
     word-break: break-word;
 }
-.chat-bubble.mine {
+.chat-bubble-mine {
     background: linear-gradient(135deg, #f97316, #ea580c);
     color: #fff;
-    border-bottom-right-radius: 4px;
-    border-bottom-left-radius: 14px;
+    border-radius: 16px 16px 4px 16px;
 }
-.chat-bubble.system {
+.chat-bubble-system {
     background: #fef3c7;
     color: #92400e;
     font-size: 12px;
     border-radius: 8px;
     max-width: 90%;
     text-align: center;
-    align-self: center;
 }
 .chat-sender-name {
     font-size: 11px;
@@ -759,17 +831,31 @@ export default {
     color: #f97316;
     margin-bottom: 3px;
 }
-.chat-bubble.mine .chat-sender-name {
+.chat-bubble-mine .chat-sender-name {
     color: rgba(255, 255, 255, 0.8);
 }
 .chat-body {
     white-space: pre-wrap;
 }
+.chat-meta {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    margin-top: 3px;
+}
 .chat-time {
-    font-size: 10.5px;
-    opacity: 0.65;
-    margin-top: 4px;
-    text-align: right;
+    font-size: 10px;
+    opacity: 0.6;
+}
+.chat-tick {
+    font-size: 10px;
+    opacity: 0.6;
+}
+.chat-tick-sent {
+    opacity: 1;
+    color: rgba(255, 255, 255, 0.95);
+    font-weight: 700;
 }
 
 /* Pièce jointe */
@@ -814,11 +900,6 @@ export default {
     font-size: 11px;
     opacity: 0.7;
     white-space: nowrap;
-}
-.chat-read-status {
-    font-size: 11px;
-    color: #f97316;
-    margin-top: 2px;
 }
 
 /* ── PREVIEW PIÈCE JOINTE ── */

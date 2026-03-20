@@ -6,6 +6,7 @@
 
     <contractor-dashboard-component
         :user="{{ json_encode([
+            'id'     => $user->id,
             'name'   => $user->name,
             'email'  => $user->email,
             'role'   => $user->role,
@@ -44,6 +45,11 @@
             'documents_upload'   => route('documents.upload'),
             'documents_index'    => route('documents.index'),
             'profil'             => route('contractor.profil.show'),
+            'conversations_mission'  => url('/conversations/mission/{id}'),
+            'conversations_messages' => url('/conversations/{id}/messages'),
+            'conversations_send'     => url('/conversations/{id}/messages'),
+            'conversations_attach'   => url('/conversations/{id}/attachment'),
+            'conversations_read'     => url('/conversations/{id}/read'),
         ]) }}"
     ></contractor-dashboard-component>
 

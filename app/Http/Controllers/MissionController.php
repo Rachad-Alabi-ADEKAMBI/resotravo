@@ -93,7 +93,7 @@ class MissionController extends Controller
         $user   = Auth::user();
         $status = $request->query('status');
 
-        $query = Mission::with(['client', 'contractor'])
+        $query = Mission::with(['client', 'contractor', 'quote.items'])
             ->when($user->role === 'client', function ($q) use ($user) {
                 $clientId = Client::where('user_id', $user->id)->value('id');
                 $q->where('client_id', $clientId);
@@ -146,17 +146,28 @@ class MissionController extends Controller
 
             return response()->json([
                 'message' => 'Mission refusée.',
-                'mission' => $this->formatMission($mission->fresh()->load(['client', 'contractor'])),
+                'mission' => $this->formatMission($mission->fresh()->load(['client', 'contractor', 'quote.items'])),
             ]);
         }
 
-        // ── Cas spécial : acceptation via proposal multi-prestataires ──
-        // Si contractor_id est null, c'est une mission proposée via MissionProposal.
-        // On utilise $proposal->accept() qui assigne la mission et invalide les autres.
+        // ── Cas spécial : acceptation ──
+        // Deux scénarios possibles :
+        // A) Mission assignée directement (assignContractor) → contractor_id renseigné, pas de proposal
+        // B) Mission proposée via adminPropose → contractor_id null, proposal en pending ou expired
         if ($data['status'] === Mission::STATUS_ACCEPTED && is_null($mission->contractor_id)) {
+
+            // DEBUG TEMPORAIRE — à supprimer après diagnostic
+            \Log::debug('ACCEPT DEBUG', [
+                'user_id'          => $user->id,
+                'mission_id'       => $mission->id,
+                'mission_status'   => $mission->status,
+                'contractor_id'    => $mission->contractor_id,
+                'proposals'        => $mission->proposals()->get(['id','contractor_id','status','expires_at'])->toArray(),
+            ]);
+
             $proposal = $mission->proposals()
                 ->where('contractor_id', $user->id)
-                ->where('status', 'pending')
+                ->where('status', 'pending') // les proposals expirées restent en 'pending' (expires_at est dépassé mais status inchangé)
                 ->first();
 
             if (!$proposal) {
@@ -169,11 +180,44 @@ class MissionController extends Controller
 
             return response()->json([
                 'message' => 'Mission acceptée.',
-                'mission' => $this->formatMission($mission->fresh()->load(['client', 'contractor'])),
+                'mission' => $this->formatMission($mission->fresh()->load(['client', 'contractor', 'quote.items'])),
+            ]);
+        }
+
+        // ── Cas spécial : refus de devis par le client ──
+        if ($data['status'] === Mission::STATUS_QUOTE_SUBMITTED && !empty($data['reported_issue'])) {
+            if (!$mission->quote) {
+                return response()->json(['message' => 'Aucun devis trouvé pour cette mission.'], 422);
+            }
+
+            $mission->quote->update([
+                'status'           => \App\Models\MissionQuote::STATUS_REJECTED,
+                'rejection_reason' => $data['reported_issue'],
+            ]);
+
+            $mission->update([
+                'reported_issue' => $data['reported_issue'],
+                'dispute_open'   => false,
+            ]);
+
+            // Notifier le prestataire
+            $mission->contractor?->user?->notify(new AppNotification(
+                event: 'quote.rejected',
+                title: 'Devis refusé',
+                body:  "Le client a refusé votre devis pour « {$mission->service} ». Motif : {$data['reported_issue']}",
+                url:   "/contractor/missions/{$mission->id}",
+                icon:  'x-circle',
+                extra: ['mission_id' => $mission->id],
+            ));
+
+            return response()->json([
+                'message' => 'Devis refusé.',
+                'mission' => $this->formatMission($mission->fresh()->load(['client', 'contractor', 'quote.items'])),
             ]);
         }
 
         // ── Cas standard : transition normale ──
+        standard_transition:
         try {
             $mission->transitionTo($data['status']);
         } catch (\DomainException $e) {
@@ -191,7 +235,7 @@ class MissionController extends Controller
 
         return response()->json([
             'message' => 'Status updated.',
-            'mission' => $this->formatMission($mission->fresh()),
+            'mission' => $this->formatMission($mission->fresh()->load(['client', 'contractor', 'quote.items'])),
         ]);
     }
 
@@ -367,11 +411,22 @@ class MissionController extends Controller
 
         switch ($mission->status) {
 
+            // Prestataire proposé → notifier le prestataire
+            case Mission::STATUS_ASSIGNED:
+                $contractorUser?->notify(new AppNotification(
+                    event: 'mission.assigned',
+                    title: '📬 Nouvelle mission proposée',
+                    body:  "Une mission « {$service} » à {$mission->address} vous a été proposée. Vous avez 5 min pour accepter.",
+                    url:   $contractorUrl, icon: 'bell', extra: $extra,
+                ));
+                break;
+
+            // Prestataire accepte → notifier le client
             case Mission::STATUS_ACCEPTED:
                 $clientUser?->notify(new AppNotification(
                     event: 'mission.accepted',
-                    title: 'Prestataire en route',
-                    body:  "Votre mission « {$service} » a été acceptée. Le prestataire va bientôt vous contacter.",
+                    title: '✅ Prestataire trouvé',
+                    body:  "Votre mission « {$service} » a été acceptée. Le prestataire va vous contacter via la messagerie.",
                     url:   $missionUrl, icon: 'check', extra: $extra,
                 ));
                 break;
@@ -459,6 +514,22 @@ class MissionController extends Controller
                         extra: array_merge($extra, ['commission' => $commission]),
                     ))
                 );
+                break;
+
+            // Mission annulée → notifier les deux parties
+            case Mission::STATUS_CANCELLED:
+                $clientUser?->notify(new AppNotification(
+                    event: 'mission.cancelled',
+                    title: '❌ Mission annulée',
+                    body:  "Votre mission « {$service} » a été annulée." . ($reportedIssue ? " Motif : {$reportedIssue}" : ''),
+                    url:   $missionUrl, icon: 'x-circle', extra: $extra,
+                ));
+                $contractorUser?->notify(new AppNotification(
+                    event: 'mission.cancelled',
+                    title: '❌ Mission annulée',
+                    body:  "La mission « {$service} » a été annulée.",
+                    url:   $contractorUrl, icon: 'x-circle', extra: $extra,
+                ));
                 break;
         }
 
@@ -567,8 +638,8 @@ class MissionController extends Controller
             Mission::STATUS_ON_THE_WAY,
             Mission::STATUS_TRACKING,
             Mission::STATUS_IN_PROGRESS,
-            Mission::STATUS_QUOTE_SUBMITTED,
             Mission::STATUS_AWAITING_CONFIRM,
+            // STATUS_QUOTE_SUBMITTED retiré : le client peut aussi l'envoyer pour refuser le devis
         ];
 
         $clientUserId     = $mission->client?->user_id;
@@ -646,7 +717,25 @@ class MissionController extends Controller
                 'reviews_count'   => $contractor->reviews_count,
                 'total_missions'  => $contractor->total_missions,
             ] : null,
-            'quote' => $mission->quote,
+            'quote' => $mission->quote ? [
+                'id'              => $mission->quote->id,
+                'status'          => $mission->quote->status,
+                'diagnosis'       => $mission->quote->diagnosis,
+                'amount_excl_tax' => $mission->quote->amount_excl_tax,
+                'amount_incl_tax' => $mission->quote->amount_incl_tax,
+                'version'         => $mission->quote->version,
+                'rejection_reason'=> $mission->quote->rejection_reason,
+                'items'           => $mission->quote->relationLoaded('items')
+                    ? $mission->quote->items->map(fn($i) => [
+                        'id'          => $i->id,
+                        'type'        => $i->type,
+                        'description' => $i->description,
+                        'quantity'    => $i->quantity,
+                        'unit_price'  => $i->unit_price,
+                        'line_total'  => (float)$i->quantity * (float)$i->unit_price,
+                    ])->toArray()
+                    : [],
+            ] : null,
         ];
     }
 

@@ -13,6 +13,9 @@ import RegisterContractorComponent    from './components/front/RegisterContracto
 import AdminDashboardComponent        from './components/back/admin/AdminDashboardComponent.vue'
 import AdminMissionComponent          from './components/back/admin/AdminMissionComponent.vue'
 import AdminAccreditationComponent    from './components/back/admin/AdminAccreditationComponent.vue'
+import MissionChatModal               from './components/MissionChatModal.vue'
+import ContractorMissionComponent     from './components/back/contractor/ContractorMissionComponent.vue'
+import ClientMissionComponent         from './components/back/client/ClientMissionComponent.vue'
 import ValidationDocumentsComponent   from './components/back/admin/ValidationDocumentsComponent.vue'
 import ClientDashboardComponent       from './components/back/client/ClientDashboardComponent.vue'
 import ContractorDashboardComponent   from './components/back/contractor/ContractorDashboardComponent.vue'
@@ -30,6 +33,9 @@ app.component('register-contractor-component',  RegisterContractorComponent)
 app.component('admin-dashboard-component',      AdminDashboardComponent)
 app.component('admin-mission-component',        AdminMissionComponent)
 app.component('admin-accreditation-component',  AdminAccreditationComponent)
+app.component('mission-chat-modal',              MissionChatModal)
+app.component('contractor-mission-component',    ContractorMissionComponent)
+app.component('client-mission-component',        ClientMissionComponent)
 app.component('validation-documents-component', ValidationDocumentsComponent)
 app.component('client-dashboard-component',     ClientDashboardComponent)
 app.component('contractor-dashboard-component', ContractorDashboardComponent)

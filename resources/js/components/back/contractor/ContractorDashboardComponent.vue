@@ -129,7 +129,9 @@
                 <div class="ctr-banner-icon">📂</div>
                 <div>
                     <div class="ctr-banner-title">
-                        {{ docProgress.total - docProgress.approved }}
+                        {{
+                            docProgress.total - docProgress.approved
+                        }}
                         document(s) manquant(s) ou refusé(s)
                     </div>
                     <div class="ctr-banner-sub">
@@ -284,6 +286,17 @@
                                             : "—"
                                     }}
                                 </div>
+                                <div
+                                    class="ctr-msg-unread"
+                                    v-if="unreadByMission[m.id]"
+                                >
+                                    💬
+                                    <span
+                                        >{{ unreadByMission[m.id] }} non lu{{
+                                            unreadByMission[m.id] > 1 ? "s" : ""
+                                        }}</span
+                                    >
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -334,7 +347,9 @@
                                     v-if="contractorProfile.average_rating > 0"
                                 >
                                     ⭐ {{ contractorProfile.average_rating }} /
-                                    5 ({{ contractorProfile.reviews_count }}
+                                    5 ({{
+                                        contractorProfile.reviews_count
+                                    }}
                                     avis)
                                 </div>
                             </div>
@@ -497,7 +512,9 @@
                                 complete: docProgress.percentage === 100,
                             }"
                         >
-                            {{ docProgress.approved }}/{{ docProgress.total }}
+                            {{ docProgress.approved }}/{{
+                                docProgress.total
+                            }}
                             validés
                         </span>
                         <span
@@ -830,8 +847,8 @@
                         Fermer
                     </button>
                     <button
-                        class="ctr-btn ctr-btn-ghost"
-                        @click="wip('Messagerie')"
+                        class="ctr-btn ctr-btn-orange"
+                        @click="chatMissionId = activeMission.id"
                         v-if="
                             [
                                 'accepted',
@@ -840,6 +857,7 @@
                                 'tracking',
                                 'in_progress',
                                 'order_placed',
+                                'awaiting_confirm',
                             ].includes(activeMission.status)
                         "
                     >
@@ -1066,6 +1084,16 @@
             </div>
         </div>
 
+        <!-- ══════════════ CHAT MODAL ══════════════ -->
+        <mission-chat-modal
+            v-if="chatMissionId"
+            :mission-id="chatMissionId"
+            :current-user-id="user.id ?? 0"
+            :routes="routes"
+            @close="onChatClose"
+            @unread="onChatUnread($event)"
+        />
+
         <!-- WIP MODAL -->
         <div
             class="ctr-wip-overlay"
@@ -1156,6 +1184,11 @@ export default {
                 documents_upload: "/documents/upload",
                 documents_index: "/documents",
                 profil: "/contractor/profil",
+                conversations_mission: "/conversations/mission/{id}",
+                conversations_messages: "/conversations/{id}/messages",
+                conversations_send: "/conversations/{id}/messages",
+                conversations_attach: "/conversations/{id}/attachment",
+                conversations_read: "/conversations/{id}/read",
             }),
         },
     },
@@ -1167,6 +1200,9 @@ export default {
             wipVisible: false,
             wipFeature: "",
             sidebarOpen: false,
+            chatMissionId: null,
+            chatUnread: 0,
+            unreadByMission: {}, // { missionId: count }  // ID mission dont le chat est ouvert
             toasts: [],
             toastId: 0,
             actionLoading: false,
@@ -1888,6 +1924,28 @@ export default {
         wip(feature) {
             this.wipFeature = feature;
             this.wipVisible = true;
+        },
+
+        onChatClose() {
+            this.chatMissionId = null;
+            this.chatUnread = 0;
+        },
+
+        onChatUnread(count) {
+            this.chatUnread = count;
+            if (this.chatMissionId) {
+                this.$set
+                    ? this.$set(this.unreadByMission, this.chatMissionId, count)
+                    : (this.unreadByMission = {
+                          ...this.unreadByMission,
+                          [this.chatMissionId]: count,
+                      });
+            }
+            if (count === 0 && this.chatMissionId) {
+                const copy = { ...this.unreadByMission };
+                delete copy[this.chatMissionId];
+                this.unreadByMission = copy;
+            }
         },
 
         emitToggleSidebar() {
@@ -3342,6 +3400,25 @@ export default {
 }
 
 /* SPINNER */
+.ctr-chat-btn-notif {
+    position: relative;
+}
+.ctr-chat-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: #ef4444;
+    color: #fff;
+    border-radius: 99px;
+    font-size: 10px;
+    font-weight: 800;
+    min-width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+}
 .ctr-spinner {
     width: 16px;
     height: 16px;
