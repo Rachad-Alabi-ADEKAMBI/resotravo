@@ -15,7 +15,16 @@
                 </div>
                 <h1 class="au1">
                     Trouvez le prestataire<br />
-                    <span class="hl">qualifié &amp; certifié</span><br />
+                    <span
+                        class="hl"
+                        style="
+                            text-decoration: none !important;
+                            border-bottom: none !important;
+                            box-shadow: none !important;
+                            background-image: none !important;
+                        "
+                        >qualifié &amp; certifié</span
+                    ><br />
                     qu'il vous faut
                 </h1>
                 <p class="hero-desc au2">
@@ -59,9 +68,15 @@
             <div class="hero-visual">
                 <img
                     class="hero-img"
-                    src="https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=800&q=80"
+                    :src="heroImage"
                     alt="Artisan professionnel au travail"
                     loading="eager"
+                    style="
+                        object-fit: cover;
+                        object-position: center center;
+                        transform: scale(0.75);
+                        transform-origin: center center;
+                    "
                 />
                 <div class="hcard hcard1">
                     <div class="hc-tag">🔧 Intervention en cours</div>
@@ -219,7 +234,7 @@
         <div class="split">
             <img
                 class="split-img reveal-left"
-                src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=80"
+                :src="image2"
                 alt="Électricien certifié Bénin"
                 loading="lazy"
             />
@@ -328,7 +343,7 @@
             </div>
             <img
                 class="split-img reveal-right"
-                src="https://images.unsplash.com/photo-1687095956266-b724b1034f1f?q=80&w=930&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?w=800&q=40"
+                :src="image3"
                 alt="Paiement mobile sécurisé"
                 style="width: 95%; height: 95%"
                 loading="lazy"
@@ -492,10 +507,21 @@ export default {
                 registerContractor: "/register/contractor",
             }),
         },
+        // Services injectés depuis la BDD via Blade (table services)
+        // Chaque objet : { name, icon, desc }
+        initialServices: {
+            type: Array,
+            default: () => [],
+        },
     },
 
     data() {
         return {
+            /* ── Images (servies depuis public/images/) ── */
+            heroImage: "/images/image1.png",
+            image2: "/images/image2.png",
+            image3: "/images/image3.png",
+
             /* ── UI ── */
             searchService: "",
             searchLocation: "",
@@ -503,101 +529,24 @@ export default {
             toastMsg: "",
             openFaq: null,
 
-            /* ── Tags rapides ── */
-            quickTags: [
-                { icon: "🚿", name: "Plomberie" },
-                { icon: "⚡", name: "Électricité" },
-                { icon: "❄️", name: "Climatisation" },
-                { icon: "🪚", name: "Menuiserie" },
-                { icon: "🧹", name: "Nettoyage" },
-                { icon: "🔩", name: "Mécanique" },
-                { icon: "🖌️", name: "Peinture" },
-                { icon: "🧱", name: "Maçonnerie" },
-            ],
+            /* ── Services (chargés depuis la BDD via prop) ── */
+            services: this.initialServices,
 
-            /* ── Services ── */
-            services: [
-                {
-                    icon: "🚿",
-                    name: "Plomberie",
-                    desc: "Fuites, canalisations, robinetterie, sanitaires.",
-                },
-                {
-                    icon: "⚡",
-                    name: "Électricité",
-                    desc: "Installations, pannes, tableaux électriques.",
-                },
-                {
-                    icon: "🪚",
-                    name: "Menuiserie",
-                    desc: "Portes, fenêtres, meubles sur-mesure, parquet.",
-                },
-                {
-                    icon: "⚙️",
-                    name: "Ferronnerie",
-                    desc: "Portails, grilles de sécurité, escaliers métalliques.",
-                },
-                {
-                    icon: "❄️",
-                    name: "Climatisation",
-                    desc: "Installation, réparation, maintenance clim & froid.",
-                },
-                {
-                    icon: "🔩",
-                    name: "Mécanique Auto",
-                    desc: "Entretien, réparations, diagnostic véhicules.",
-                },
-                {
-                    icon: "🏗️",
-                    name: "Maintenance",
-                    desc: "Petits travaux, réparations diverses à domicile.",
-                },
-                {
-                    icon: "🧹",
-                    name: "Nettoyage",
-                    desc: "Entretien ménager, nettoyage professionnel.",
-                },
-                {
-                    icon: "🛞",
-                    name: "Vulcanisation",
-                    desc: "Pneus, chambres à air, équilibrage, jantes.",
-                },
-                {
-                    icon: "🖌️",
-                    name: "Peinture",
-                    desc: "Peinture intérieure, extérieure, décoration murale.",
-                },
-                {
-                    icon: "🪟",
-                    name: "Vitrerie",
-                    desc: "Pose et remplacement de vitres et miroirs.",
-                },
-                {
-                    icon: "🧱",
-                    name: "Maçonnerie",
-                    desc: "Construction, rénovation, carrelage, béton.",
-                },
-                {
-                    icon: "🔐",
-                    name: "Serrurerie",
-                    desc: "Remplacement de serrures, blindage, coffres-forts.",
-                },
-                {
-                    icon: "🌿",
-                    name: "Jardinage",
-                    desc: "Taille, tonte, aménagement paysager, entretien.",
-                },
-                {
-                    icon: "🏊",
-                    name: "Piscine",
-                    desc: "Installation, entretien et traitement de piscines.",
-                },
-                {
-                    icon: "📡",
-                    name: "Antenne & TV",
-                    desc: "Installation d'antennes, paraboles, câblage TV.",
-                },
-            ],
+            /* ── Tags rapides (5 premiers services de la BDD, sinon fallback) ── */
+            quickTags: this.initialServices.length
+                ? this.initialServices
+                      .slice(0, 8)
+                      .map((s) => ({ icon: s.icon, name: s.name }))
+                : [
+                      { icon: "🚿", name: "Plomberie" },
+                      { icon: "⚡", name: "Électricité" },
+                      { icon: "❄️", name: "Climatisation" },
+                      { icon: "🪚", name: "Menuiserie" },
+                      { icon: "🧹", name: "Nettoyage" },
+                      { icon: "🔩", name: "Mécanique" },
+                      { icon: "🖌️", name: "Peinture" },
+                      { icon: "🧱", name: "Maçonnerie" },
+                  ],
 
             /* ── Étapes ── */
             steps: [
@@ -877,3 +826,34 @@ export default {
     },
 };
 </script>
+
+<style>
+/* ── Supprimer le trait décoratif sous "qualifié & certifié" ── */
+.hl {
+    text-decoration: none !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+    background-image: none !important;
+    -webkit-text-decoration: none !important;
+}
+
+/* ── Dézoomer l'image hero — les personnages trop grands ── */
+.hero-img {
+    object-fit: cover !important;
+    object-position: center center !important;
+    transform: scale(0.72) !important;
+    transform-origin: center center !important;
+}
+
+/* ── Suppression du trait sous "qualifié & certifié" ── */
+.hl {
+    text-decoration: none !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+    background-image: none !important;
+}
+.hl::after,
+.hl::before {
+    display: none !important;
+}
+</style>

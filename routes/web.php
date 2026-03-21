@@ -11,6 +11,9 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TalentController;
 use App\Http\Controllers\TenderController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\ConsultingController;
+use App\Http\Controllers\DisputeController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -19,8 +22,35 @@ use Illuminate\Support\Facades\Route;
 // PAGES PUBLIQUES (front)
 // ══════════════════════════════════════════════════════════════════
 
-Route::get('/',           fn() => view('pages.front.home'))->name('home');
-Route::get('/consulting', fn() => view('pages.front.consulting'))->name('consulting');
+Route::get('/', function () {
+    $services = \App\Models\Service::where('status', 'active')
+        ->where('is_visible', true)
+        ->orderBy('sort_order')
+        ->get(['id', 'name', 'icon', 'description'])
+        ->map(fn($s) => [
+            'name' => $s->name,
+            'icon' => $s->icon ?: '🔧',
+            'desc' => $s->description,
+        ]);
+
+    return view('pages.front.home', compact('services'));
+})->name('home');
+Route::get('/consulting', function () {
+    $user = Auth::user();
+    return view('pages.front.consulting', [
+        'auth'   => $user ? ['id' => $user->id, 'name' => $user->name, 'role' => $user->role] : null,
+        'routes' => [
+            'register'         => route('register.client'),
+            'login'            => route('login'),
+            'tickets_store'    => route('consulting.tickets.store'),
+            'tickets_index'    => route('consulting.tickets.index'),
+            'tickets_messages' => url('/consulting/tickets/{ticket}/messages'),
+            'tickets_send'     => url('/consulting/tickets/{ticket}/send'),
+            'tickets_human'    => url('/consulting/tickets/{ticket}/request-human'),
+        ],
+    ]);
+})->name('consulting');
+
 Route::get('/talent', function () {
     return view('pages.front.talent', [
         'routes' => [
@@ -37,6 +67,7 @@ Route::prefix('talent')->name('talents.')->group(function () {
     Route::get ('/list',  [TalentController::class, 'index']) ->name('list');
     Route::post('/apply', [TalentController::class, 'store']) ->name('apply');
 });
+
 Route::get('/market', function () {
     $user = Auth::user();
     return view('pages.front.market', [
@@ -56,11 +87,15 @@ Route::get('/market', function () {
 
 // ── Appels d'offres (publics) ────────────────────────────────
 Route::prefix('tenders')->name('tenders.')->group(function () {
-    Route::get('/',       [TenderController::class, 'index']) ->name('index');
-    Route::get('/stats',  [TenderController::class, 'stats']) ->name('stats');
+    Route::get('/',      [TenderController::class, 'index']) ->name('index');
+    Route::get('/stats', [TenderController::class, 'stats']) ->name('stats');
 });
-Route::get('/cgu',        fn() => view('pages.front.cgu'))->name('cgu');
-Route::get('/policy',     fn() => view('pages.front.policy'))->name('policy');
+
+Route::get('/cgu',    fn() => view('pages.front.cgu'))   ->name('cgu');
+Route::get('/policy', fn() => view('pages.front.policy'))->name('policy');
+
+// ── Services (public — page d'accueil) ───────────────────────────
+Route::get('/services/public', [ServiceController::class, 'publicIndex'])->name('services.public');
 
 // ── Inscription ──────────────────────────────────────────────────
 Route::get ('/register/client',           fn() => view('pages.front.registerClient'))     ->name('register.client');
@@ -74,9 +109,53 @@ Route::post('/register/contractor/store', [UserController::class, 'storeContract
 
 Route::middleware('auth')->group(function () {
 
+    // ── Photo de profil de l'utilisateur connecté ──────────────────
+    Route::get('/profile/photo', function () {
+        $user     = Auth::user();
+        $type     = $user->role === 'client' ? 'photo_profil' : 'photo';
+        $document = \App\Models\Document::where('user_id', $user->id)
+            ->where('type', $type)
+            ->where('status', 'approved')
+            ->latest()
+            ->first();
+
+        if (!$document || !\Illuminate\Support\Facades\Storage::disk($document->disk)->exists($document->path)) {
+            abort(404);
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk($document->disk)->response($document->path);
+    })->name('profile.photo');
+
+    // ── Photo de profil par user_id (URL unique par utilisateur) ───
+    // Corrige le bug : chaque utilisateur a sa propre URL, plus de confusion de cache
+    Route::get('/profile/photo/{userId}', function ($userId) {
+        $targetUser = \App\Models\User::findOrFail($userId);
+        $type       = $targetUser->role === 'client' ? 'photo_profil' : 'photo';
+        $document   = \App\Models\Document::where('user_id', $targetUser->id)
+            ->where('type', $type)
+            ->where('status', 'approved')
+            ->latest()
+            ->first();
+
+        if (!$document || !\Illuminate\Support\Facades\Storage::disk($document->disk)->exists($document->path)) {
+            abort(404);
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk($document->disk)->response($document->path);
+    })->name('profile.photo.user');
+
+    // ── Allo Conseils — tickets utilisateur ──────────────────────
+    Route::prefix('consulting/tickets')->name('consulting.tickets.')->group(function () {
+        Route::get   ('/',                       [ConsultingController::class, 'userIndex'])        ->name('index');
+        Route::post  ('/',                       [ConsultingController::class, 'userStore'])        ->name('store');
+        Route::get   ('/{ticket}/messages',      [ConsultingController::class, 'userMessages'])     ->name('messages');
+        Route::post  ('/{ticket}/send',          [ConsultingController::class, 'userSend'])         ->name('send');
+        Route::patch ('/{ticket}/request-human', [ConsultingController::class, 'userRequestHuman']) ->name('request-human');
+    });
+
     // ── Appels d'offres — candidature & mes candidatures (tous rôles connectés) ──
     Route::prefix('tenders')->name('tenders.')->group(function () {
-        Route::post('/{tender}/apply',    [TenderController::class, 'apply'])          ->name('apply');
+        Route::post('/{tender}/apply',   [TenderController::class, 'apply'])          ->name('apply');
         Route::get ('/my-applications',  [TenderController::class, 'myApplications']) ->name('my-applications');
     });
 
@@ -99,9 +178,11 @@ Route::middleware('auth')->group(function () {
     })->name('dashboard');
 
     // ── Profil Breeze ────────────────────────────────────────────
-    Route::get   ('/profile', [ProfileController::class, 'edit'])   ->name('profile.edit');
-    Route::patch ('/profile', [ProfileController::class, 'update']) ->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get   ('/profile',          [ProfileController::class, 'edit'])   ->name('profile.edit');
+    Route::patch ('/profile',          [ProfileController::class, 'update']) ->name('profile.update');
+    Route::delete('/profile',          [ProfileController::class, 'destroy'])->name('profile.destroy');
+    // Mise à jour du mot de passe (Breeze) — utilisée par ParametersComponent
+    Route::patch ('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
 
     // ── Documents (tous rôles) ───────────────────────────────────
     Route::prefix('documents')->name('documents.')->group(function () {
@@ -122,12 +203,12 @@ Route::middleware('auth')->group(function () {
 
     // ── Messagerie (tous rôles) ──────────────────────────────────
     Route::prefix('conversations')->name('conversations.')->group(function () {
-        Route::get  ('/',                                  [MessageController::class, 'index'])                ->name('index');
-        Route::post ('/mission/{mission}',                 [MessageController::class, 'findOrCreateForMission'])->name('mission');
-        Route::get  ('/{conversation}/messages',           [MessageController::class, 'messages'])             ->name('messages');
-        Route::post ('/{conversation}/messages',           [MessageController::class, 'send'])                 ->name('send');
-        Route::post ('/{conversation}/attachment',         [MessageController::class, 'sendAttachment'])       ->name('attachment');
-        Route::patch('/{conversation}/read',               [MessageController::class, 'read'])                 ->name('read');
+        Route::get  ('/',                          [MessageController::class, 'index'])                 ->name('index');
+        Route::post ('/mission/{mission}',         [MessageController::class, 'findOrCreateForMission'])->name('mission');
+        Route::get  ('/{conversation}/messages',   [MessageController::class, 'messages'])              ->name('messages');
+        Route::post ('/{conversation}/messages',   [MessageController::class, 'send'])                  ->name('send');
+        Route::post ('/{conversation}/attachment', [MessageController::class, 'sendAttachment'])        ->name('attachment');
+        Route::patch('/{conversation}/read',       [MessageController::class, 'read'])                  ->name('read');
     });
 
     // Vues messagerie dédiées
@@ -140,32 +221,75 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
 
-        // ── Vues ────────────────────────────────────────────────
-        Route::get('/dashboard',      [AdminController::class, 'dashboard'])     ->name('dashboard');
-        Route::get('/missions',       [AdminController::class, 'missions'])      ->name('missions');
-        Route::get('/accreditation',  [AdminController::class, 'accreditation']) ->name('accreditation');
-        Route::get('/validation',     fn() => view('pages.back.admin.validation_documents'))->name('validation');
+        // ── Dashboard ────────────────────────────────────────────
+        Route::get('/dashboard', function () {
+            $user = Auth::user();
+            return view('pages.back.admin.dashboard', [
+                'active' => 'dashboard',
+                'user'   => $user,
+                'routes' => [
+                    // Données
+                    'missions_index'     => route('admin.missions.index'),
+                    'contractors_index'  => route('admin.contractors.index'),
+                    'clients_index'      => route('admin.clients.index'),
+                    'talents_index'      => route('admin.talents.index'),
+                    'disputes_index'     => route('admin.disputes.index'),
+                    'tickets_index'      => route('admin.consulting.index'),
+                    'tenders_index'      => route('admin.tenders.index'),
+                    'validation_index'   => route('admin.documents.dossiers'),
+                    // Navigation
+                    'missions_page'      => route('admin.missions'),
+                    'contractors_page'   => route('admin.contractors.page'),
+                    'clients_page'       => route('admin.clients.page'),
+                    'talents_page'       => route('admin.talents.page'),
+                    'disputes_page'      => route('admin.disputes.page'),
+                    'consulting_page'    => route('admin.consulting.page'),
+                    'tenders_page'       => route('admin.tenders.page'),
+                    'services_page'      => route('admin.services.page'),
+                    'validation_page'    => route('admin.validation'),
+                    'accreditation_page' => route('admin.accreditation'),
+                    // Notifications
+                    'notifications'      => route('notifications.index'),
+                    'notifications_all'  => route('notifications.read-all'),
+                ],
+            ]);
+        })->name('dashboard');
 
-        // ── Stats (AdminDashboardComponent) ─────────────────────
-        Route::get('/stats', [AdminController::class, 'stats'])->name('stats');
+        // ── Paramètres admin ─────────────────────────────────────
+        Route::get('/parameters', function () {
+            $user = Auth::user();
+            return view('pages.back.admin.parameters', [
+                'active' => 'parameters',
+                'user'   => $user,
+                'routes' => [
+                    'update_password'   => route('profile.password'),
+                    'notifications'     => route('notifications.index'),
+                    'notifications_all' => route('notifications.read-all'),
+                ],
+            ]);
+        })->name('parameters');
 
-        // ── Documents ────────────────────────────────────────────
-        Route::get  ('/documents/dossiers',           [DocumentController::class, 'dossiers'])       ->name('documents.dossiers');
-        Route::patch('/documents/{document}/status',  [DocumentController::class, 'updateStatus'])   ->name('documents.status');
-        Route::patch('/users/{user}/status',          [DocumentController::class, 'updateUserStatus'])->name('users.status');
+        // ── Vues ─────────────────────────────────────────────────
+        Route::get('/missions',      [AdminController::class, 'missions'])      ->name('missions');
+        Route::get('/accreditation', [AdminController::class, 'accreditation']) ->name('accreditation');
+        Route::get('/validation',    fn() => view('pages.back.admin.validation_documents'))->name('validation');
+
+        Route::get  ('/documents/dossiers',          [DocumentController::class, 'dossiers'])        ->name('documents.dossiers');
+        Route::patch('/documents/{document}/status', [DocumentController::class, 'updateStatus'])    ->name('documents.status');
+        Route::patch('/users/{user}/status',         [DocumentController::class, 'updateUserStatus'])->name('users.status');
 
         // ── Contractors ──────────────────────────────────────────
-        Route::get('/contractors',                              [ContractorController::class, 'adminIndex'])          ->name('contractors.index');
-        Route::get('/contractors/pending',                      [ContractorController::class, 'adminPending'])        ->name('contractors.pending');
-        Route::get('/contractors/available',                    [ContractorController::class, 'adminAvailable'])      ->name('contractors.available');
-        Route::patch('/contractors/{contractor}/status',        [ContractorController::class, 'updateStatut'])        ->name('contractors.status');
-        Route::patch('/contractors/{contractor}/accreditation', [ContractorController::class, 'updateAccreditation']) ->name('contractors.accreditation');
+        Route::get   ('/contractors',                              [ContractorController::class, 'adminIndex'])          ->name('contractors.index');
+        Route::get   ('/contractors/pending',                      [ContractorController::class, 'adminPending'])        ->name('contractors.pending');
+        Route::get   ('/contractors/available',                    [ContractorController::class, 'adminAvailable'])      ->name('contractors.available');
+        Route::patch ('/contractors/{contractor}/status',          [ContractorController::class, 'updateStatut'])        ->name('contractors.status');
+        Route::patch ('/contractors/{contractor}/accreditation',   [ContractorController::class, 'updateAccreditation']) ->name('contractors.accreditation');
 
         // ── Missions ─────────────────────────────────────────────
-        Route::get  ('/missions/list',               [MissionController::class, 'adminIndex'])   ->name('missions.index');
-        Route::get  ('/missions/{mission}',          [MissionController::class, 'adminShow'])    ->name('missions.show');
-        Route::patch('/missions/{mission}/status',   [MissionController::class, 'adminStatus'])  ->name('missions.status');
-        Route::post ('/missions/{mission}/propose',  [MissionController::class, 'adminPropose']) ->name('missions.propose');
+        Route::get  ('/missions/list',              [MissionController::class, 'adminIndex'])   ->name('missions.index');
+        Route::get  ('/missions/{mission}',         [MissionController::class, 'adminShow'])    ->name('missions.show');
+        Route::patch('/missions/{mission}/status',  [MissionController::class, 'adminStatus'])  ->name('missions.status');
+        Route::post ('/missions/{mission}/propose', [MissionController::class, 'adminPropose']) ->name('missions.propose');
 
         // ── Talents ──────────────────────────────────────────────
         Route::get('/talents/page', function () {
@@ -191,13 +315,13 @@ Route::middleware('auth')->group(function () {
                 'active' => 'contractors',
                 'auth'   => ['id' => $user->id, 'role' => $user->role, 'name' => $user->name],
                 'routes' => [
-                    'contractors_index'       => route('admin.contractors.index'),
-                    'contractors_status'      => url('/admin/contractors/{contractor}/status'),
+                    'contractors_index'         => route('admin.contractors.index'),
+                    'contractors_status'        => url('/admin/contractors/{contractor}/status'),
                     'contractors_accreditation' => url('/admin/contractors/{contractor}/accreditation'),
-                    'missions_pending'        => route('admin.missions.index') . '?status=pending',
-                    'missions_propose'        => url('/admin/missions/{mission}/propose'),
-                    'notifications_index'     => route('notifications.index'),
-                    'notifications_read_all'  => route('notifications.read-all'),
+                    'missions_pending'          => route('admin.missions.index') . '?status=pending',
+                    'missions_propose'          => url('/admin/missions/{mission}/propose'),
+                    'notifications_index'       => route('notifications.index'),
+                    'notifications_read_all'    => route('notifications.read-all'),
                 ],
             ]);
         })->name('contractors.page');
@@ -216,6 +340,7 @@ Route::middleware('auth')->group(function () {
                 ],
             ]);
         })->name('clients.page');
+
         Route::get('/clients', function () {
             $clients = \App\Models\User::where('role', 'client')
                 ->with(['client'])
@@ -253,11 +378,14 @@ Route::middleware('auth')->group(function () {
                 });
             return response()->json($clients);
         })->name('clients.index');
+
         Route::patch('/users/{user}/status', function (\Illuminate\Http\Request $request, \App\Models\User $user) {
             $request->validate(['status' => 'required|in:active,suspended']);
             $user->update(['status' => $request->status]);
             return response()->json(['success' => true, 'status' => $request->status]);
         })->name('users.status');
+
+        // ── Appels d'offres (page admin) ─────────────────────────
         Route::get('/tenders/page', function () {
             $user = Auth::user();
             return view('pages.back.admin.market', [
@@ -275,8 +403,76 @@ Route::middleware('auth')->group(function () {
                 ],
             ]);
         })->name('tenders.page');
-        Route::get  ('/tenders',                     [TenderController::class, 'adminIndex'])        ->name('tenders.index');
-        Route::patch('/tenders/{tender}/status',     [TenderController::class, 'adminUpdateStatus']) ->name('tenders.status');
+        Route::get  ('/tenders',                 [TenderController::class, 'adminIndex'])        ->name('tenders.index');
+        Route::patch('/tenders/{tender}/status', [TenderController::class, 'adminUpdateStatus']) ->name('tenders.status');
+
+        // ── Services (catalogue) ──────────────────────────────────
+        Route::get('/services/page', function () {
+            $user = Auth::user();
+            return view('pages.back.admin.services', [
+                'active' => 'services',
+                'user'   => $user,
+                'routes' => [
+                    'services_index'     => route('admin.services.index'),
+                    'services_store'     => route('admin.services.store'),
+                    'services_update'    => url('/admin/services/{service}'),
+                    'services_status'    => url('/admin/services/{service}/status'),
+                    'notifications'      => route('notifications.index'),
+                    'notifications_read' => url('/notifications/{id}/read'),
+                    'notifications_all'  => route('notifications.read-all'),
+                ],
+            ]);
+        })->name('services.page');
+        Route::get   ('/services',                  [ServiceController::class, 'adminIndex'])   ->name('services.index');
+        Route::post  ('/services',                  [ServiceController::class, 'store'])        ->name('services.store');
+        Route::put   ('/services/{service}',        [ServiceController::class, 'update'])       ->name('services.update');
+        Route::patch ('/services/{service}/status', [ServiceController::class, 'updateStatus']) ->name('services.status');
+        Route::delete('/services/{service}',        [ServiceController::class, 'destroy'])      ->name('services.destroy');
+
+        // ── Allo Conseils ─────────────────────────────────────────
+        Route::get('/consulting/page', function () {
+            $user = Auth::user();
+            return view('pages.back.admin.consulting', [
+                'active' => 'consulting',
+                'user'   => $user,
+            ]);
+        })->name('consulting.page');
+        Route::get  ('/consulting',                       [ConsultingController::class, 'adminIndex'])        ->name('consulting.index');
+        Route::get  ('/consulting/{ticket}/messages',     [ConsultingController::class, 'adminMessages'])     ->name('consulting.messages');
+        Route::post ('/consulting/{ticket}/reply',        [ConsultingController::class, 'adminReply'])        ->name('consulting.reply');
+        Route::patch('/consulting/{ticket}/status',       [ConsultingController::class, 'adminUpdateStatus']) ->name('consulting.status');
+        Route::patch('/consulting/{ticket}/assign',       [ConsultingController::class, 'adminAssign'])       ->name('consulting.assign');
+        Route::patch('/consulting/{ticket}/note',         [ConsultingController::class, 'adminNote'])         ->name('consulting.note');
+
+        // ── Litiges ───────────────────────────────────────────────
+        Route::get('/disputes/page', function () {
+            $user = Auth::user();
+            return view('pages.back.admin.disputes', [
+                'active' => 'disputes',
+                'user'   => $user,
+                'routes' => [
+                    'disputes_index'      => route('admin.disputes.index'),
+                    'disputes_show'       => url('/admin/disputes/{dispute}'),
+                    'disputes_store'      => route('admin.disputes.store'),
+                    'disputes_message'    => url('/admin/disputes/{dispute}/message'),
+                    'disputes_attachment' => url('/admin/disputes/{dispute}/attachment'),
+                    'disputes_verdict'    => url('/admin/disputes/{dispute}/verdict'),
+                    'disputes_close'      => url('/admin/disputes/{dispute}/close'),
+                    'disputes_missions'   => route('admin.disputes.missions'),
+                    'notifications'       => route('notifications.index'),
+                    'notifications_all'   => route('notifications.read-all'),
+                ],
+            ]);
+        })->name('disputes.page');
+        // IMPORTANT : routes statiques AVANT les routes avec {dispute}
+        Route::get  ('/disputes',                      [DisputeController::class, 'adminIndex'])            ->name('disputes.index');
+        Route::post ('/disputes',                      [DisputeController::class, 'adminStore'])            ->name('disputes.store');
+        Route::get  ('/disputes/missions',             [DisputeController::class, 'adminMissions'])         ->name('disputes.missions');
+        Route::get  ('/disputes/{dispute}',            [DisputeController::class, 'adminShow'])             ->name('disputes.show');
+        Route::post ('/disputes/{dispute}/message',    [DisputeController::class, 'adminSendMessage'])      ->name('disputes.message');
+        Route::post ('/disputes/{dispute}/attachment', [DisputeController::class, 'adminUploadAttachment']) ->name('disputes.attachment');
+        Route::post ('/disputes/{dispute}/verdict',    [DisputeController::class, 'adminVerdict'])          ->name('disputes.verdict');
+        Route::post ('/disputes/{dispute}/close',      [DisputeController::class, 'adminClose'])            ->name('disputes.close');
     });
 
     // ══════════════════════════════════════════════════════════════
@@ -285,8 +481,56 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('role:client')->prefix('client')->name('client.')->group(function () {
 
-        Route::get('/dashboard', [ClientController::class, 'index'])->name('dashboard');
+        // ── Dashboard ────────────────────────────────────────────
+        Route::get('/dashboard', function () {
+            $user        = Auth::user();
+            $docProgress = $user->documentProgress();
+            return view('pages.back.client.dashboard', [
+                'active'          => 'dashboard',
+                'user'            => $user,
+                'docProgressData' => $docProgress,
+                'routes'          => [
+                    'missions_index'    => route('client.missions.index'),
+                    'missions_page'     => route('client.missions.page'),
+                    'missions_status'   => url('/client/missions/{mission}/status'),
+                    'documents_index'   => route('documents.index'),
+                    'dossier_page'      => route('client.dossier'),
+                    'notifications'     => route('notifications.index'),
+                    'notifications_all' => route('notifications.read-all'),
+                ],
+            ]);
+        })->name('dashboard');
 
+        // ── Dossier ───────────────────────────────────────────────
+        Route::get('/dossier', function () {
+            $user = Auth::user();
+            return view('pages.back.client.dossier', [
+                'active' => 'dossier',
+                'user'   => $user,
+                'routes' => [
+                    'documents_index'   => route('documents.index'),
+                    'documents_upload'  => route('documents.upload'),
+                    'notifications'     => route('notifications.index'),
+                    'notifications_all' => route('notifications.read-all'),
+                ],
+            ]);
+        })->name('dossier');
+
+        // ── Paramètres client ─────────────────────────────────────
+        Route::get('/parameters', function () {
+            $user = Auth::user();
+            return view('pages.back.client.parameters', [
+                'active' => 'parameters',
+                'user'   => $user,
+                'routes' => [
+                    'update_password'   => route('profile.password'),
+                    'notifications'     => route('notifications.index'),
+                    'notifications_all' => route('notifications.read-all'),
+                ],
+            ]);
+        })->name('parameters');
+
+        // ── Missions ──────────────────────────────────────────────
         Route::get('/missions/page', function () {
             $user   = Auth::user();
             $client = \App\Models\Client::where('user_id', $user->id)->first();
@@ -309,7 +553,99 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('role:contractor')->prefix('contractor')->name('contractor.')->group(function () {
 
-        Route::get  ('/dashboard',     [ContractorController::class, 'dashboardIndex'])     ->name('dashboard');
+        // ── Dashboard ────────────────────────────────────────────
+        Route::get('/dashboard', [ContractorController::class, 'dashboardIndex'])->name('dashboard');
+
+        // ── Dossier ───────────────────────────────────────────────
+        Route::get('/dossier', function () {
+            $user        = Auth::user();
+            $docProgress = $user->documentProgress();
+            return view('pages.back.contractor.dossier', [
+                'active' => 'dossier',
+                'user'   => $user,
+                'routes' => [
+                    'documents_index'   => route('documents.index'),
+                    'documents_upload'  => route('documents.upload'),
+                    'notifications'     => route('notifications.index'),
+                    'notifications_all' => route('notifications.read-all'),
+                ],
+            ]);
+        })->name('dossier');
+
+        // ── Revenus ───────────────────────────────────────────────
+        Route::get('/revenus', function () {
+            $user = Auth::user();
+            return view('pages.back.contractor.revenus', [
+                'active' => 'revenus',
+                'user'   => $user,
+                'routes' => [
+                    'revenus_index'     => route('contractor.revenus.index'),
+                    'notifications'     => route('notifications.index'),
+                    'notifications_all' => route('notifications.read-all'),
+                ],
+            ]);
+        })->name('revenus');
+
+        // ── API revenus (données JSON pour le composant) ──────────
+        Route::get('/revenus/data', function (\Illuminate\Http\Request $request) {
+            $user        = Auth::user();
+            $contractor  = $user->contractor;
+            $period      = $request->get('period', 'month');
+
+            $dateFrom = match($period) {
+                'week'    => now()->startOfWeek(),
+                'month'   => now()->startOfMonth(),
+                'quarter' => now()->startOfQuarter(),
+                'year'    => now()->startOfYear(),
+                default   => now()->startOfMonth(),
+            };
+
+            $missions = \App\Models\Mission::where('contractor_id', $contractor?->id)
+                ->whereIn('status', ['completed', 'closed'])
+                ->where('updated_at', '>=', $dateFrom)
+                ->with('client.user')
+                ->latest()
+                ->get()
+                ->map(fn($m) => [
+                    'id'           => $m->id,
+                    'service'      => $m->service,
+                    'client_name'  => $m->client?->user?->name ?? '—',
+                    'total_amount' => $m->total_amount,
+                    'status'       => $m->status,
+                    'completed_at' => $m->updated_at,
+                    'created_at'   => $m->created_at,
+                ]);
+
+            $total     = $missions->sum('total_amount');
+            $count     = $missions->count();
+            $enAttente = \App\Models\Mission::where('contractor_id', $contractor?->id)
+                ->where('status', 'active')
+                ->sum('total_amount');
+
+            return response()->json([
+                'missions'            => $missions,
+                'total_revenus'       => $total,
+                'missions_terminees'  => $count,
+                'revenu_moyen'        => $count > 0 ? round($total / $count) : 0,
+                'en_attente'          => $enAttente,
+            ]);
+        })->name('revenus.index');
+
+        // ── Paramètres contractor ─────────────────────────────────
+        Route::get('/parameters', function () {
+            $user = Auth::user();
+            return view('pages.back.contractor.parameters', [
+                'active' => 'parameters',
+                'user'   => $user,
+                'routes' => [
+                    'update_password'   => route('profile.password'),
+                    'notifications'     => route('notifications.index'),
+                    'notifications_all' => route('notifications.read-all'),
+                ],
+            ]);
+        })->name('parameters');
+
+        // ── Profil ────────────────────────────────────────────────
         Route::get  ('/profil',        [ContractorController::class, 'show'])               ->name('profil.show');
         Route::post ('/profil',        [ContractorController::class, 'store'])              ->name('profil.store');
         Route::put  ('/profil',        [ContractorController::class, 'update'])             ->name('profil.update');
@@ -317,19 +653,18 @@ Route::middleware('auth')->group(function () {
         Route::patch('/disponibilite', [ContractorController::class, 'updateDisponibilite'])->name('disponibilite');
         Route::patch('/position',      [ContractorController::class, 'updatePosition'])     ->name('position');
 
-        // Page missions dédiée (ContractorMissionComponent)
+        // ── Missions ──────────────────────────────────────────────
         Route::get('/missions/page', function () {
             $user = Auth::user()->load('contractor');
             return view('pages.back.contractor.missions', ['user' => $user]);
         })->name('missions.page');
 
-        // Missions API
-        Route::get  ('/missions',                  [MissionController::class, 'index'])             ->name('missions.index');
-        Route::get  ('/missions/{mission}',        [MissionController::class, 'show'])              ->name('missions.show');
-        Route::patch('/missions/{mission}/status', [MissionController::class, 'updateStatus'])      ->name('missions.status');
+        Route::get  ('/missions',                  [MissionController::class, 'index'])        ->name('missions.index');
+        Route::get  ('/missions/{mission}',        [MissionController::class, 'show'])         ->name('missions.show');
+        Route::patch('/missions/{mission}/status', [MissionController::class, 'updateStatus']) ->name('missions.status');
 
-        // ── Devis ────────────────────────────────────────────────
-        Route::post('/missions/{mission}/quote',   [MissionQuoteController::class, 'upsert'])       ->name('missions.quote.store');
+        // ── Devis ─────────────────────────────────────────────────
+        Route::post('/missions/{mission}/quote', [MissionQuoteController::class, 'upsert'])->name('missions.quote.store');
     });
 
     // ══════════════════════════════════════════════════════════════
@@ -342,4 +677,4 @@ Route::middleware('auth')->group(function () {
 
 });
 
-require __DIR__ . '/auth.php';  
+require __DIR__ . '/auth.php';

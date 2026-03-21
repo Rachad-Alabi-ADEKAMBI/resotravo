@@ -112,9 +112,25 @@ class DocumentController extends Controller
             'reject_reason' => null,
         ]);
 
-        // Certify user if all required documents are approved
+        // Certifier automatiquement si tous les documents requis sont approuvés
+        // Pour les clients : 2 documents (cni + photo_profil) → approved dès que les 2 sont validés
+        // Pour les contractors : 5 documents → approved dès que les 5 sont validés
+        // Les clients n'ont pas besoin d'un badge "certifié", juste le statut approved
         if ($document->user->isCertified()) {
             $document->user->update(['status' => 'approved']);
+
+            // Notifier l'utilisateur
+            $role = $document->user->role;
+            $message = $role === 'client'
+                ? 'Votre identité a été vérifiée. Vous pouvez maintenant utiliser toutes les fonctionnalités.'
+                : 'Félicitations ! Votre profil est certifié. Vous pouvez maintenant accepter des missions.';
+
+            $document->user->notify(new \App\Notifications\AppNotification(
+                event: 'document.approved',
+                title: $role === 'client' ? '✅ Identité vérifiée' : '🏅 Profil certifié',
+                body:  $message,
+                url:   $role === 'client' ? '/client/dashboard' : '/contractor/dashboard',
+            ));
         }
 
         return response()->json([
@@ -193,7 +209,7 @@ class DocumentController extends Controller
         abort_unless(Auth::user()->role === 'admin', 403);
 
         $users = \App\Models\User::with(['documents', 'contractor', 'client'])
-            ->whereIn('role', ['contractor', 'client', 'talent'])
+            ->whereIn('role', ['contractor', 'client'])
             ->orderByDesc('created_at')
             ->get()
             ->map(function ($user) {

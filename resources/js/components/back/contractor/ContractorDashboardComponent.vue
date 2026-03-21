@@ -129,9 +129,7 @@
                 <div class="ctr-banner-icon">📂</div>
                 <div>
                     <div class="ctr-banner-title">
-                        {{
-                            docProgress.total - docProgress.approved
-                        }}
+                        {{ docProgress.total - docProgress.approved }}
                         document(s) manquant(s) ou refusé(s)
                     </div>
                     <div class="ctr-banner-sub">
@@ -347,9 +345,7 @@
                                     v-if="contractorProfile.average_rating > 0"
                                 >
                                     ⭐ {{ contractorProfile.average_rating }} /
-                                    5 ({{
-                                        contractorProfile.reviews_count
-                                    }}
+                                    5 ({{ contractorProfile.reviews_count }}
                                     avis)
                                 </div>
                             </div>
@@ -512,9 +508,7 @@
                                 complete: docProgress.percentage === 100,
                             }"
                         >
-                            {{ docProgress.approved }}/{{
-                                docProgress.total
-                            }}
+                            {{ docProgress.approved }}/{{ docProgress.total }}
                             validés
                         </span>
                         <span
@@ -2007,7 +2001,7 @@ export default {
             },
             {
                 type: "casier",
-                label: "Casier judiciaire vierge",
+                label: "Casier judiciaire",
                 icon: "⚖️",
                 status: "missing",
                 uploading: false,

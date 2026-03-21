@@ -1,6 +1,6 @@
 <template>
     <div class="consulting-page">
-        <!-- HERO -->
+        <!-- ═══════════ HERO ═══════════ -->
         <section class="ac-hero">
             <div class="ac-hero-glow"></div>
             <div class="ac-hero-glow2"></div>
@@ -8,7 +8,7 @@
             <div class="ac-hero-inner">
                 <div class="ac-badge au">
                     <span class="bdot"></span>
-                    Gratuit pour tous les inscrits - Disponible 24h/24
+                    Gratuit pour tous les inscrits · Disponible 24h/24
                 </div>
                 <h1 class="au1">
                     Allo Conseils<br />
@@ -16,14 +16,13 @@
                     Resotravo
                 </h1>
                 <p class="ac-hero-desc au2">
-                    Posez vos questions et obtenez une orientation immediate par
-                    notre agent IA.<br />
+                    Posez vos questions et obtenez une orientation immédiate.<br />
                     En cas de besoin, un agent humain Resotravo prend le relais.
                 </p>
                 <div class="ac-hero-steps au3">
                     <div class="ac-step-pill">
                         <span class="ac-step-num">1</span>
-                        <span>Agent IA repond (3 premiers messages)</span>
+                        <span>Agent IA répond (3 premiers messages)</span>
                     </div>
                     <div class="ac-step-arrow">&rarr;</div>
                     <div class="ac-step-pill">
@@ -33,71 +32,134 @@
                     <div class="ac-step-arrow">&rarr;</div>
                     <div class="ac-step-pill">
                         <span class="ac-step-num">3</span>
-                        <span>Historique conserve dans votre espace</span>
+                        <span>Historique conservé dans votre espace</span>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- CHAT -->
-        <section class="ac-chat-section">
+        <!-- ═══════════ CHAT ═══════════ -->
+        <section class="ac-chat-section" id="chat">
             <div class="ac-chat-layout">
-                <!-- Sidebar -->
+                <!-- ── Sidebar gauche ── -->
                 <div class="ac-sidebar">
                     <div class="ac-sidebar-header">
                         <h3>Mes conversations</h3>
-                        <button
-                            class="ac-new-btn"
-                            @click="startNewConversation"
-                        >
-                            + Nouvelle
+                        <button class="ac-new-btn" @click="startNewTicket">
+                            + Nouveau
                         </button>
                     </div>
-                    <div class="ac-conv-list">
+
+                    <!-- Loader tickets -->
+                    <div class="ac-conv-loading" v-if="ticketsLoading">
+                        <div class="ac-conv-skel" v-for="n in 3" :key="n"></div>
+                    </div>
+
+                    <!-- Non connecté -->
+                    <div class="ac-conv-guest" v-else-if="!isAuthenticated">
+                        <div class="ac-conv-guest-icon">🔒</div>
+                        <p>Connectez-vous pour consulter vos conversations.</p>
+                        <a
+                            class="ac-new-btn"
+                            :href="routes.login"
+                            style="
+                                display: inline-block;
+                                text-align: center;
+                                text-decoration: none;
+                                margin-top: 8px;
+                            "
+                            >Se connecter</a
+                        >
+                    </div>
+
+                    <!-- Liste tickets -->
+                    <div class="ac-conv-list" v-else>
                         <div
                             class="ac-conv-item"
-                            v-for="(conv, i) in conversations"
-                            :key="i"
-                            :class="{ active: activeConv === i }"
-                            @click="activeConv = i"
+                            v-for="ticket in tickets"
+                            :key="ticket.id"
+                            :class="{
+                                active: activeTicket?.id === ticket.id,
+                                unread: ticket.unread_count > 0,
+                            }"
+                            @click="openTicket(ticket)"
                         >
-                            <div class="ac-conv-icon">{{ conv.icon }}</div>
+                            <div class="ac-conv-icon">
+                                {{ categoryIcon(ticket.category) }}
+                            </div>
                             <div class="ac-conv-info">
                                 <div class="ac-conv-title">
-                                    {{ conv.title }}
+                                    {{
+                                        ticket.subject ||
+                                        "Nouvelle conversation"
+                                    }}
                                 </div>
                                 <div class="ac-conv-preview">
-                                    {{ conv.preview }}
+                                    {{ ticket.last_message || "Aucun message" }}
                                 </div>
                             </div>
-                            <div class="ac-conv-badge" v-if="conv.unread">
-                                {{ conv.unread }}
+                            <div class="ac-conv-meta">
+                                <span
+                                    class="ac-conv-badge"
+                                    v-if="ticket.unread_count > 0"
+                                    >{{ ticket.unread_count }}</span
+                                >
+                                <span
+                                    class="ac-conv-status"
+                                    :class="'status-' + ticket.status"
+                                    >{{ ticket.status_label }}</span
+                                >
                             </div>
                         </div>
+
+                        <div class="ac-conv-empty" v-if="tickets.length === 0">
+                            <p>
+                                Aucune conversation.<br />Commencez ci-dessous !
+                            </p>
+                        </div>
                     </div>
-                    <div class="ac-agent-card reveal">
-                        <div class="ac-agent-avatar">&#x1F916;</div>
+
+                    <!-- Agent card -->
+                    <div class="ac-agent-card">
+                        <div
+                            class="ac-agent-avatar"
+                            :class="{ human: activeTicket?.human_assigned }"
+                        >
+                            {{ activeTicket?.human_assigned ? "👨‍💼" : "🤖" }}
+                        </div>
                         <div>
-                            <div class="ac-agent-name">Agent IA Resotravo</div>
+                            <div class="ac-agent-name">
+                                {{
+                                    activeTicket?.human_assigned
+                                        ? "Agent Resotravo"
+                                        : "Agent IA Resotravo"
+                                }}
+                            </div>
                             <div class="ac-agent-status">
-                                <span class="ac-online-dot"></span> En ligne
+                                <span
+                                    class="ac-online-dot"
+                                    :class="{
+                                        human: activeTicket?.human_assigned,
+                                    }"
+                                ></span>
+                                En ligne
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Chat principal -->
+                <!-- ── Chat principal ── -->
                 <div class="ac-chat-main">
+                    <!-- En-tête -->
                     <div class="ac-chat-header">
                         <div class="ac-chat-header-left">
                             <div class="ac-chat-avatar">
-                                <span v-if="isHumanAgent">&#x1F464;</span>
-                                <span v-else>&#x1F916;</span>
+                                {{ activeTicket?.human_assigned ? "👨‍💼" : "🤖" }}
                             </div>
                             <div>
                                 <div class="ac-chat-name">
                                     {{
-                                        isHumanAgent
+                                        activeTicket?.human_assigned
                                             ? "Agent Resotravo"
                                             : "Agent IA Resotravo"
                                     }}
@@ -105,15 +167,21 @@
                                 <div class="ac-chat-mode">
                                     <span
                                         class="ac-online-dot"
-                                        :class="{ human: isHumanAgent }"
+                                        :class="{
+                                            human: activeTicket?.human_assigned,
+                                        }"
                                     ></span>
-                                    <span v-if="isHumanAgent"
-                                        >Agent humain - Historique
+                                    <span v-if="activeTicket?.human_assigned"
+                                        >Agent humain · Historique
                                         transmis</span
                                     >
+                                    <span v-else-if="activeTicket"
+                                        >Message
+                                        {{ activeTicket.ia_message_count }}/3 ·
+                                        IA automatique</span
+                                    >
                                     <span v-else
-                                        >Message {{ messageCount }}/3 - IA
-                                        automatique</span
+                                        >Démarrez une conversation</span
                                     >
                                 </div>
                             </div>
@@ -121,129 +189,290 @@
                         <div class="ac-chat-header-right">
                             <button
                                 class="ac-transfer-btn"
-                                v-if="!isHumanAgent"
+                                v-if="
+                                    activeTicket &&
+                                    !activeTicket.human_assigned &&
+                                    !activeTicket.human_requested
+                                "
                                 @click="requestHuman"
+                                :disabled="transferLoading"
                             >
-                                Parler a un humain
+                                <span v-if="transferLoading">...</span>
+                                <span v-else>Parler à un humain</span>
                             </button>
-                            <div class="ac-human-badge" v-else>
-                                Agent humain connecte
+                            <div
+                                class="ac-human-badge"
+                                v-else-if="
+                                    activeTicket?.human_requested &&
+                                    !activeTicket?.human_assigned
+                                "
+                            >
+                                ⏳ En attente d'un agent
                             </div>
+                            <div
+                                class="ac-human-badge ac-human-badge-active"
+                                v-else-if="activeTicket?.human_assigned"
+                            >
+                                ✅ Agent connecté
+                            </div>
+                            <span
+                                class="ac-ticket-status"
+                                v-if="activeTicket"
+                                :class="'status-' + activeTicket.status"
+                            >
+                                {{ activeTicket.status_label }}
+                            </span>
                         </div>
                     </div>
 
+                    <!-- Zone messages -->
                     <div class="ac-messages" ref="messagesContainer">
-                        <!-- Bienvenue -->
-                        <div class="ac-msg ac-msg-bot">
-                            <div class="ac-msg-avatar">&#x1F916;</div>
-                            <div class="ac-msg-bubble">
-                                <p>
-                                    Bonjour ! Je suis l'assistant Resotravo.
-                                    Comment puis-je vous aider ?
-                                </p>
-                                <div class="ac-suggestions">
-                                    <button
-                                        class="ac-suggestion"
-                                        v-for="s in suggestions"
-                                        :key="s"
-                                        @click="sendSuggestion(s)"
-                                    >
-                                        {{ s }}
-                                    </button>
-                                </div>
+                        <!-- Écran d'accueil (pas de ticket actif) -->
+                        <div class="ac-welcome" v-if="!activeTicket">
+                            <div class="ac-welcome-icon">💬</div>
+                            <h3>
+                                Bonjour{{ userName ? ", " + userName : "" }} !
+                            </h3>
+                            <p>
+                                Je suis l'assistant Resotravo. Comment puis-je
+                                vous aider ?
+                            </p>
+                            <div class="ac-suggestions">
+                                <button
+                                    class="ac-suggestion"
+                                    v-for="s in suggestions"
+                                    :key="s"
+                                    @click="startWithSuggestion(s)"
+                                >
+                                    {{ s }}
+                                </button>
                             </div>
                         </div>
 
-                        <!-- Messages -->
-                        <template v-for="(msg, i) in messages" :key="i">
+                        <!-- Messages du ticket actif -->
+                        <template v-else>
+                            <!-- Message de bienvenue si vide -->
                             <div
-                                class="ac-msg ac-msg-user"
-                                v-if="msg.from === 'user'"
+                                class="ac-msg ac-msg-bot"
+                                v-if="
+                                    activeMessages.length === 0 &&
+                                    !messagesLoading
+                                "
                             >
-                                <div class="ac-msg-bubble ac-msg-bubble-user">
-                                    {{ msg.text }}
-                                </div>
-                                <div class="ac-msg-avatar ac-msg-avatar-user">
-                                    &#x1F464;
+                                <div class="ac-msg-avatar">🤖</div>
+                                <div class="ac-msg-bubble">
+                                    <p>
+                                        Bonjour ! Je suis l'assistant Resotravo.
+                                        Comment puis-je vous aider ?
+                                    </p>
+                                    <div class="ac-suggestions">
+                                        <button
+                                            class="ac-suggestion"
+                                            v-for="s in suggestions"
+                                            :key="s"
+                                            @click="sendSuggestion(s)"
+                                        >
+                                            {{ s }}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="ac-msg ac-msg-bot" v-else>
-                                <div class="ac-msg-avatar">&#x1F916;</div>
+
+                            <!-- Loader messages -->
+                            <div
+                                class="ac-msg-loading-wrap"
+                                v-if="messagesLoading"
+                            >
                                 <div
-                                    class="ac-msg-bubble"
-                                    :class="{
-                                        'ac-msg-bubble-human': msg.isHuman,
-                                    }"
+                                    class="ac-msg-skel"
+                                    v-for="n in 3"
+                                    :key="n"
+                                ></div>
+                            </div>
+
+                            <!-- Messages réels -->
+                            <template v-else>
+                                <div
+                                    v-for="msg in activeMessages"
+                                    :key="msg.id"
+                                    class="ac-msg"
+                                    :class="
+                                        msg.sender_type === 'user'
+                                            ? 'ac-msg-user'
+                                            : 'ac-msg-bot'
+                                    "
                                 >
-                                    <div
-                                        class="ac-msg-sender"
-                                        v-if="msg.isHuman"
+                                    <!-- Bot / Agent -->
+                                    <template v-if="msg.sender_type !== 'user'">
+                                        <div class="ac-msg-avatar">
+                                            {{
+                                                msg.sender_type === "ia"
+                                                    ? "🤖"
+                                                    : "👨‍💼"
+                                            }}
+                                        </div>
+                                        <div
+                                            class="ac-msg-bubble"
+                                            :class="{
+                                                'ac-msg-bubble-human':
+                                                    msg.sender_type === 'agent',
+                                            }"
+                                        >
+                                            <div
+                                                class="ac-msg-sender"
+                                                v-if="
+                                                    msg.sender_type === 'agent'
+                                                "
+                                            >
+                                                {{
+                                                    msg.sender_name ||
+                                                    "Agent Resotravo"
+                                                }}
+                                            </div>
+                                            {{ msg.body }}
+                                            <div class="ac-msg-time">
+                                                {{ msg.ago }}
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <!-- User -->
+                                    <template v-else>
+                                        <div
+                                            class="ac-msg-bubble ac-msg-bubble-user"
+                                        >
+                                            {{ msg.body }}
+                                            <div class="ac-msg-time">
+                                                {{ msg.ago }}
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="ac-msg-avatar ac-msg-avatar-user"
+                                        >
+                                            👤
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+
+                            <!-- Typing indicator -->
+                            <div class="ac-msg ac-msg-bot" v-if="isTyping">
+                                <div class="ac-msg-avatar">🤖</div>
+                                <div class="ac-msg-bubble ac-typing">
+                                    <span></span><span></span><span></span>
+                                </div>
+                            </div>
+
+                            <!-- Notice transfert -->
+                            <div
+                                class="ac-transfer-notice"
+                                v-if="showTransferNotice"
+                            >
+                                <div class="ac-transfer-inner">
+                                    <span
+                                        >⏳ Transfert vers un agent
+                                        humain...</span
                                     >
-                                        Agent Resotravo
-                                    </div>
-                                    {{ msg.text }}
+                                    <span>Tout l'historique est transmis.</span>
                                 </div>
                             </div>
                         </template>
-
-                        <!-- Typing -->
-                        <div class="ac-msg ac-msg-bot" v-if="isTyping">
-                            <div class="ac-msg-avatar">&#x1F916;</div>
-                            <div class="ac-msg-bubble ac-typing">
-                                <span></span><span></span><span></span>
-                            </div>
-                        </div>
-
-                        <!-- Transfert notice -->
-                        <div
-                            class="ac-transfer-notice"
-                            v-if="showTransferNotice"
-                        >
-                            <div class="ac-transfer-inner">
-                                <span>Transfert vers un agent humain...</span>
-                                <span>Tout l'historique est transmis.</span>
-                            </div>
-                        </div>
                     </div>
 
+                    <!-- Barre de saisie -->
                     <div class="ac-input-bar">
-                        <div class="ac-input-wrap">
-                            <input
-                                class="ac-input"
-                                type="text"
-                                v-model="userInput"
-                                @keyup.enter="sendMessage"
-                                placeholder="Posez votre question..."
-                                :disabled="isTyping"
-                            />
-                            <button
-                                class="ac-send-btn"
-                                @click="sendMessage"
-                                :disabled="!userInput.trim() || isTyping"
+                        <!-- Non connecté -->
+                        <div class="ac-guest-prompt" v-if="!isAuthenticated">
+                            <p>
+                                <a :href="routes.login">Connectez-vous</a> ou
+                                <a :href="routes.register">créez un compte</a>
+                                pour enregistrer vos conversations.
+                            </p>
+                        </div>
+
+                        <!-- Ticket résolu -->
+                        <div
+                            class="ac-resolved-bar"
+                            v-else-if="
+                                activeTicket &&
+                                ['resolved', 'closed'].includes(
+                                    activeTicket.status,
+                                )
+                            "
+                        >
+                            <span
+                                >🔒 Ce ticket est
+                                {{
+                                    activeTicket.status === "resolved"
+                                        ? "résolu"
+                                        : "fermé"
+                                }}.</span
                             >
-                                <span v-if="!isTyping">&rarr;</span>
-                                <span v-else>...</span>
+                            <button class="ac-new-btn" @click="startNewTicket">
+                                Nouvelle conversation
                             </button>
                         </div>
-                        <div class="ac-input-hint">
-                            <span v-if="!isHumanAgent"
-                                >{{ 3 - messageCount }} message(s) avant
-                                transfert automatique</span
-                            >
-                            <span v-else
-                                >Vous etes en ligne avec un agent
-                                Resotravo</span
-                            >
-                        </div>
+
+                        <!-- Saisie normale -->
+                        <template v-else>
+                            <div class="ac-input-wrap">
+                                <input
+                                    class="ac-input"
+                                    type="text"
+                                    v-model="userInput"
+                                    @keyup.enter="sendMessage"
+                                    placeholder="Posez votre question..."
+                                    :disabled="isTyping || sendLoading"
+                                    ref="inputField"
+                                />
+                                <button
+                                    class="ac-send-btn"
+                                    @click="sendMessage"
+                                    :disabled="
+                                        !userInput.trim() ||
+                                        isTyping ||
+                                        sendLoading
+                                    "
+                                >
+                                    <span v-if="!sendLoading && !isTyping"
+                                        >&rarr;</span
+                                    >
+                                    <span v-else>...</span>
+                                </button>
+                            </div>
+                            <div class="ac-input-hint">
+                                <span
+                                    v-if="
+                                        activeTicket &&
+                                        !activeTicket.human_assigned
+                                    "
+                                >
+                                    {{
+                                        Math.max(
+                                            0,
+                                            3 -
+                                                (activeTicket.ia_message_count ||
+                                                    0),
+                                        )
+                                    }}
+                                    message(s) avant transfert automatique
+                                </span>
+                                <span v-else-if="activeTicket?.human_assigned">
+                                    Vous êtes en ligne avec un agent Resotravo
+                                </span>
+                                <span v-else
+                                    >Appuyez sur Entrée pour envoyer</span
+                                >
+                            </div>
+                        </template>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- COMMENT CA MARCHE -->
+        <!-- ═══════════ COMMENT ÇA MARCHE ═══════════ -->
         <section class="sec sec-cr" id="comment-conseils">
-            <div class="sec-tag reveal">Comment ca marche</div>
-            <div class="sec-title reveal reveal-d1">Un conseil en 3 etapes</div>
+            <div class="sec-tag reveal">Comment ça marche</div>
+            <div class="sec-title reveal reveal-d1">Un conseil en 3 étapes</div>
             <div class="sec-sub reveal reveal-d2">
                 Simple, rapide et gratuit pour tous les utilisateurs inscrits.
             </div>
@@ -262,14 +491,14 @@
             </div>
         </section>
 
-        <!-- CAS D'USAGE -->
+        <!-- ═══════════ CAS D'USAGE ═══════════ -->
         <section class="sec">
             <div class="sec-tag reveal">Exemples de questions</div>
             <div class="sec-title reveal reveal-d1">
-                Allo Conseils repond a tout
+                Allo Conseils répond à tout
             </div>
             <div class="sec-sub reveal reveal-d2">
-                Orientation, choix du bon prestataire, aide a la redaction d'un
+                Orientation, choix du bon prestataire, aide à la rédaction d'un
                 appel d'offres...
             </div>
             <div class="ac-usecases-grid">
@@ -278,7 +507,7 @@
                     v-for="(uc, i) in useCases"
                     :key="i"
                     :class="'reveal-d' + ((i % 4) + 1)"
-                    @click="sendSuggestion(uc.question)"
+                    @click="startWithSuggestion(uc.question)"
                 >
                     <div class="ac-usecase-icon">{{ uc.icon }}</div>
                     <div class="ac-usecase-q">{{ uc.question }}</div>
@@ -290,23 +519,28 @@
             </div>
         </section>
 
-        <!-- CTA -->
+        <!-- ═══════════ CTA ═══════════ -->
         <div class="cta-final">
             <div class="cta-inner reveal">
                 <h2>Besoin d'un conseil ?</h2>
                 <p>
-                    Allo Conseils est gratuit et accessible a tout moment depuis
+                    Allo Conseils est gratuit et accessible à tout moment depuis
                     votre espace personnel.
                 </p>
                 <div class="cta-btns">
                     <a class="btn btn-dark btn-lg" :href="routes.register"
-                        >Creer un compte gratuit &rarr;</a
+                        >Créer un compte gratuit &rarr;</a
                     >
                     <a class="btn btn-ghost btn-lg" :href="routes.login"
                         >Se connecter</a
                     >
                 </div>
             </div>
+        </div>
+
+        <!-- Toast -->
+        <div class="ac-toast" :class="{ visible: toastVisible }">
+            {{ toastMsg }}
         </div>
     </div>
 </template>
@@ -321,104 +555,113 @@ export default {
             default: () => ({
                 register: "/register",
                 login: "/login",
+                tickets_store: "/consulting/tickets",
+                tickets_index: "/consulting/tickets",
+                tickets_messages: "/consulting/tickets/{ticket}/messages",
+                tickets_send: "/consulting/tickets/{ticket}/send",
+                tickets_human: "/consulting/tickets/{ticket}/request-human",
             }),
+        },
+        auth: {
+            type: Object,
+            default: null,
         },
     },
 
     data() {
         return {
-            userInput: "",
-            messages: [],
-            isTyping: false,
-            isHumanAgent: false,
-            messageCount: 0,
-            showTransferNotice: false,
-            activeConv: 0,
+            // État auth
+            isAuthenticated: !!this.auth,
+            userName: this.auth?.name ?? null,
 
-            conversations: [
-                {
-                    icon: "🔧",
-                    title: "Probleme plomberie",
-                    preview: "Quel prestataire pour...",
-                    unread: 0,
-                },
-                {
-                    icon: "⚡",
-                    title: "Question electricite",
-                    preview: "Mon disjoncteur saute...",
-                    unread: 2,
-                },
-                {
-                    icon: "📋",
-                    title: "Appel d'offres",
-                    preview: "Comment rediger mon AO...",
-                    unread: 0,
-                },
-            ],
+            // Tickets
+            tickets: [],
+            ticketsLoading: false,
+            activeTicket: null,
+
+            // Messages du ticket actif
+            activeMessages: [],
+            messagesLoading: false,
+
+            // Saisie
+            userInput: "",
+            sendLoading: false,
+            isTyping: false,
+
+            // Transfert agent humain
+            transferLoading: false,
+            showTransferNotice: false,
+
+            // Polling
+            pollInterval: null,
+
+            // Toast
+            toastVisible: false,
+            toastMsg: "",
 
             suggestions: [
-                "Quel prestataire pour reparer mon disjoncteur ?",
+                "Quel prestataire pour réparer mon disjoncteur ?",
                 "Comment fonctionne le paiement MTN MoMo ?",
                 "Je veux publier un appel d'offres",
-                "Quel est le delai pour trouver un artisan ?",
+                "Quel est le délai pour trouver un artisan ?",
             ],
 
             howSteps: [
                 {
                     icon: "💬",
                     title: "Posez votre question",
-                    desc: "Decrivez votre besoin. L'agent IA comprend et repond immediatement.",
+                    desc: "Décrivez votre besoin. L'agent IA comprend et répond immédiatement.",
                 },
                 {
                     icon: "🤖",
-                    title: "Reponse instantanee",
+                    title: "Réponse instantanée",
                     desc: "L'IA traite vos 3 premiers messages et vous oriente vers le bon service.",
                 },
                 {
                     icon: "🧑",
                     title: "Transfert agent humain",
-                    desc: "Apres 3 messages ou sur demande, un agent Resotravo prend le relais.",
+                    desc: "Après 3 messages ou sur demande, un agent Resotravo prend le relais.",
                 },
             ],
 
             useCases: [
                 {
                     icon: "🔧",
-                    question: "Quel prestataire pour reparer mon disjoncteur ?",
+                    question: "Quel prestataire pour réparer mon disjoncteur ?",
                     tag: "Orientation",
                 },
                 {
                     icon: "📋",
                     question:
-                        "Comment rediger un appel d'offres pour mon entreprise ?",
+                        "Comment rédiger un appel d'offres pour mon entreprise ?",
                     tag: "Appels d'offres",
                 },
                 {
                     icon: "👷",
                     question:
-                        "Comment devenir prestataire certifie sur Resotravo ?",
+                        "Comment devenir prestataire certifié sur Resotravo ?",
                     tag: "Inscription",
                 },
                 {
                     icon: "💸",
                     question:
-                        "Comment fonctionne le paiement apres les travaux ?",
+                        "Comment fonctionne le paiement après les travaux ?",
                     tag: "Paiement",
                 },
                 {
                     icon: "📍",
-                    question: "Puis-je choisir moi-meme mon artisan ?",
-                    tag: "Geolocalisation",
+                    question: "Puis-je choisir moi-même mon artisan ?",
+                    tag: "Géolocalisation",
                 },
                 {
                     icon: "🛡️",
-                    question: "C'est quoi l'accreditation ENTREPRISE ?",
-                    tag: "Accreditation",
+                    question: "C'est quoi l'accréditation ENTREPRISE ?",
+                    tag: "Accréditation",
                 },
                 {
                     icon: "⭐",
                     question:
-                        "Comment noter un prestataire apres une intervention ?",
+                        "Comment noter un prestataire après une intervention ?",
                     tag: "Notation",
                 },
                 {
@@ -427,97 +670,316 @@ export default {
                     tag: "Services",
                 },
             ],
-
-            iaResponses: {
-                default:
-                    "Je comprends votre demande. Laissez-moi vous orienter vers la meilleure solution sur Resotravo.",
-                plomb: "Pour un probleme de plomberie, creez une demande : un plombier certifie sera assigne en moins de 5 minutes dans votre zone.",
-                elec: "Pour un probleme electrique, nos electriciens accredites sont disponibles. Creez une demande et le plus proche sera notifie.",
-                paiement:
-                    "Le paiement MTN MoMo est declenche uniquement apres votre confirmation de fin des travaux. Vous etes 100% protege.",
-                offre: "Pour publier un appel d'offres, allez dans la section Appels d'offres. La publication sera validee par l'admin avant mise en ligne.",
-                presta: "Pour devenir prestataire, inscrivez-vous et uploadez vos 6 documents requis. Votre dossier sera verifie sous 48h.",
-            },
         };
     },
 
     mounted() {
-        this.$nextTick(() => {
-            this.reObserveReveal();
-        });
+        this.$nextTick(() => this.reObserveReveal());
+        if (this.isAuthenticated) this.fetchTickets();
+    },
+
+    beforeUnmount() {
+        clearInterval(this.pollInterval);
     },
 
     methods: {
-        sendMessage() {
-            const text = this.userInput.trim();
-            if (!text) return;
-            this.messages.push({ from: "user", text });
-            this.userInput = "";
-            this.messageCount++;
+        // ── Tickets ────────────────────────────────────────────────
+
+        async fetchTickets() {
+            this.ticketsLoading = true;
+            try {
+                const res = await fetch(this.routes.tickets_index, {
+                    headers: { Accept: "application/json" },
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                this.tickets = data.data ?? data;
+            } catch {
+            } finally {
+                this.ticketsLoading = false;
+            }
+        },
+
+        async openTicket(ticket) {
+            this.activeTicket = ticket;
+            this.messagesLoading = true;
+            this.activeMessages = [];
+            clearInterval(this.pollInterval);
             this.scrollToBottom();
-            this.isTyping = true;
-            setTimeout(() => {
-                this.isTyping = false;
-                if (this.messageCount >= 3 && !this.isHumanAgent) {
-                    this.triggerHumanTransfer();
-                } else {
-                    const reply = this.getIAReply(text);
-                    this.messages.push({
-                        from: "bot",
-                        text: reply,
-                        isHuman: this.isHumanAgent,
-                    });
-                    this.scrollToBottom();
+
+            try {
+                const url = this.routes.tickets_messages.replace(
+                    "{ticket}",
+                    ticket.id,
+                );
+                const res = await fetch(url, {
+                    headers: { Accept: "application/json" },
+                });
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                this.activeMessages = data.messages ?? [];
+                this.activeTicket = data.ticket ?? ticket;
+                // Mettre à jour dans la liste
+                const idx = this.tickets.findIndex((t) => t.id === ticket.id);
+                if (idx !== -1) this.tickets.splice(idx, 1, this.activeTicket);
+            } catch {
+                this.showToast("Impossible de charger les messages.");
+            } finally {
+                this.messagesLoading = false;
+                this.$nextTick(() => this.scrollToBottom());
+            }
+
+            // Polling toutes les 10s pour les réponses agent
+            this.pollInterval = setInterval(() => this.pollMessages(), 10000);
+        },
+
+        async pollMessages() {
+            if (!this.activeTicket) return;
+            try {
+                const url = this.routes.tickets_messages.replace(
+                    "{ticket}",
+                    this.activeTicket.id,
+                );
+                const res = await fetch(url, {
+                    headers: { Accept: "application/json" },
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (data.messages?.length !== this.activeMessages.length) {
+                    this.activeMessages = data.messages;
+                    this.activeTicket = data.ticket ?? this.activeTicket;
+                    this.$nextTick(() => this.scrollToBottom());
                 }
-            }, 1400);
+            } catch {}
+        },
+
+        // ── Nouveau ticket ─────────────────────────────────────────
+
+        startNewTicket() {
+            this.activeTicket = null;
+            this.activeMessages = [];
+            clearInterval(this.pollInterval);
+            this.$nextTick(() => this.$refs.inputField?.focus());
+        },
+
+        startWithSuggestion(text) {
+            this.startNewTicket();
+            this.userInput = text;
+            this.$nextTick(() => {
+                document
+                    .getElementById("chat")
+                    ?.scrollIntoView({ behavior: "smooth" });
+                setTimeout(() => this.sendMessage(), 300);
+            });
         },
 
         sendSuggestion(text) {
             this.userInput = text;
             this.sendMessage();
-            const el = document.querySelector(".ac-chat-section");
-            if (el) el.scrollIntoView({ behavior: "smooth" });
         },
 
-        getIAReply(text) {
+        // ── Envoyer message ────────────────────────────────────────
+
+        async sendMessage() {
+            const text = this.userInput.trim();
+            if (!text || this.sendLoading || this.isTyping) return;
+            this.userInput = "";
+            this.sendLoading = true;
+            this.isTyping = true;
+
+            const csrf = document
+                .querySelector('meta[name="csrf-token"]')
+                ?.getAttribute("content");
+
+            try {
+                // Créer le ticket si pas de ticket actif
+                if (!this.activeTicket) {
+                    if (!this.isAuthenticated) {
+                        // Mode invité : simulation locale uniquement
+                        this.handleGuestMessage(text);
+                        return;
+                    }
+                    const res = await fetch(this.routes.tickets_store, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Accept: "application/json",
+                            ...(csrf ? { "X-CSRF-TOKEN": csrf } : {}),
+                        },
+                        body: JSON.stringify({
+                            subject: text.slice(0, 80),
+                            first_message: text,
+                        }),
+                    });
+                    if (!res.ok) throw new Error();
+                    const data = await res.json();
+                    this.activeTicket = data.ticket;
+                    this.tickets.unshift(data.ticket);
+                    this.activeMessages = data.messages ?? [];
+                    this.isTyping = false;
+                    this.sendLoading = false;
+                    this.$nextTick(() => this.scrollToBottom());
+                    // Polling
+                    clearInterval(this.pollInterval);
+                    this.pollInterval = setInterval(
+                        () => this.pollMessages(),
+                        10000,
+                    );
+                    return;
+                }
+
+                // Envoyer message sur ticket existant
+                const url = this.routes.tickets_send.replace(
+                    "{ticket}",
+                    this.activeTicket.id,
+                );
+                const res = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Accept: "application/json",
+                        ...(csrf ? { "X-CSRF-TOKEN": csrf } : {}),
+                    },
+                    body: JSON.stringify({ body: text }),
+                });
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+
+                // Ajouter le message utilisateur
+                this.activeMessages.push(data.user_message);
+
+                // Mettre à jour le ticket (compteur IA, statut…)
+                if (data.ticket) {
+                    this.activeTicket = data.ticket;
+                    const idx = this.tickets.findIndex(
+                        (t) => t.id === data.ticket.id,
+                    );
+                    if (idx !== -1) this.tickets.splice(idx, 1, data.ticket);
+                }
+
+                // Réponse IA incluse dans la réponse API
+                if (data.ia_message) {
+                    setTimeout(() => {
+                        this.activeMessages.push(data.ia_message);
+                        this.isTyping = false;
+                        this.$nextTick(() => this.scrollToBottom());
+                        // Vérifier si transfert automatique
+                        if (data.ticket?.status === "pending_human") {
+                            this.showTransferBanner();
+                        }
+                    }, 1200);
+                } else {
+                    this.isTyping = false;
+                }
+
+                this.$nextTick(() => this.scrollToBottom());
+            } catch {
+                this.showToast("Erreur lors de l'envoi. Réessayez.");
+                this.isTyping = false;
+                this.userInput = text; // remettre le texte
+            } finally {
+                this.sendLoading = false;
+            }
+        },
+
+        // Mode invité : simulation locale
+        handleGuestMessage(text) {
+            this.activeTicket = {
+                id: null,
+                ia_message_count: 1,
+                human_assigned: false,
+                human_requested: false,
+                status: "open",
+                status_label: "Nouveau",
+            };
+            this.activeMessages.push({
+                id: Date.now(),
+                sender_type: "user",
+                body: text,
+                ago: "À l'instant",
+            });
+            setTimeout(() => {
+                this.activeMessages.push({
+                    id: Date.now() + 1,
+                    sender_type: "ia",
+                    body: this.getLocalIAReply(text),
+                    ago: "À l'instant",
+                });
+                this.isTyping = false;
+                this.sendLoading = false;
+                this.$nextTick(() => this.scrollToBottom());
+            }, 1400);
+        },
+
+        getLocalIAReply(text) {
             const t = text.toLowerCase();
-            if (t.includes("plomb")) return this.iaResponses.plomb;
-            if (t.includes("electr") || t.includes("disjonct"))
-                return this.iaResponses.elec;
+            if (t.includes("plomb"))
+                return "Pour un problème de plomberie, créez une demande : un plombier certifié sera assigné en moins de 5 minutes dans votre zone.";
+            if (t.includes("electr") || t.includes("disj"))
+                return "Pour un problème électrique, nos électriciens accrédités sont disponibles. Créez une demande et le plus proche sera notifié.";
             if (t.includes("paiement") || t.includes("momo"))
-                return this.iaResponses.paiement;
+                return "Le paiement MTN MoMo est déclenché uniquement après votre confirmation de fin des travaux. Vous êtes 100% protégé.";
             if (t.includes("appel") || t.includes("offre"))
-                return this.iaResponses.offre;
+                return "Pour publier un appel d'offres, rendez-vous dans la section Appels d'offres. La publication sera validée par l'admin avant mise en ligne.";
             if (t.includes("prestataire") || t.includes("inscrire"))
-                return this.iaResponses.presta;
-            return this.iaResponses.default;
+                return "Pour devenir prestataire, inscrivez-vous et uploadez vos 6 documents requis. Votre dossier sera vérifié sous 48h.";
+            return "Je comprends votre demande. Connectez-vous pour accéder à notre service complet et être mis en relation avec un agent si nécessaire.";
         },
 
-        requestHuman() {
-            this.triggerHumanTransfer();
+        // ── Demander un agent humain ───────────────────────────────
+
+        async requestHuman() {
+            if (!this.activeTicket?.id) return;
+            this.transferLoading = true;
+            const csrf = document
+                .querySelector('meta[name="csrf-token"]')
+                ?.getAttribute("content");
+            try {
+                const url = this.routes.tickets_human.replace(
+                    "{ticket}",
+                    this.activeTicket.id,
+                );
+                const res = await fetch(url, {
+                    method: "PATCH",
+                    headers: {
+                        Accept: "application/json",
+                        ...(csrf ? { "X-CSRF-TOKEN": csrf } : {}),
+                    },
+                });
+                if (!res.ok) throw new Error();
+                this.activeTicket.human_requested = true;
+                this.activeTicket.status = "pending_human";
+                this.activeTicket.status_label = "En attente agent";
+                this.showTransferBanner();
+            } catch {
+                this.showToast("Erreur lors de la demande.");
+            } finally {
+                this.transferLoading = false;
+            }
         },
 
-        triggerHumanTransfer() {
+        showTransferBanner() {
             this.showTransferNotice = true;
             this.scrollToBottom();
             setTimeout(() => {
-                this.isHumanAgent = true;
                 this.showTransferNotice = false;
-                this.messages.push({
-                    from: "bot",
-                    isHuman: true,
-                    text: "Bonjour ! Je suis Sarah, agent Resotravo. J'ai bien recu l'historique. Comment puis-je vous aider ?",
-                });
-                this.scrollToBottom();
-            }, 2000);
+            }, 4000);
         },
 
-        startNewConversation() {
-            this.messages = [];
-            this.messageCount = 0;
-            this.isHumanAgent = false;
-            this.showTransferNotice = false;
-            this.userInput = "";
+        // ── Helpers ────────────────────────────────────────────────
+
+        categoryIcon(cat) {
+            const map = {
+                Orientation: "🔧",
+                Paiement: "💸",
+                Inscription: "👷",
+                "Appels d'offres": "📋",
+                Géolocalisation: "📍",
+                Accréditation: "🛡️",
+                Notation: "⭐",
+                Services: "🌿",
+            };
+            return map[cat] ?? "💬";
         },
 
         scrollToBottom() {
@@ -525,6 +987,14 @@ export default {
                 const el = this.$refs.messagesContainer;
                 if (el) el.scrollTop = el.scrollHeight;
             });
+        },
+
+        showToast(msg) {
+            this.toastMsg = msg;
+            this.toastVisible = true;
+            setTimeout(() => {
+                this.toastVisible = false;
+            }, 3500);
         },
 
         reObserveReveal() {
@@ -552,6 +1022,23 @@ export default {
 </script>
 
 <style scoped>
+/* ═══ VARIABLES & BASE ═══ */
+.consulting-page {
+    --or: #f97316;
+    --or2: #ea580c;
+    --or3: #fff7ed;
+    --am: #fbbf24;
+    --dk: #1c1412;
+    --dk2: #110d0b;
+    --gr: #7c6a5a;
+    --grm: #8a7d78;
+    --grl: #e8ddd4;
+    --wh: #ffffff;
+    --cr: #faf7f4;
+    font-family: "Poppins", sans-serif;
+}
+
+/* ═══ HERO ═══ */
 .ac-hero {
     background: var(--dk2);
     color: #fff;
@@ -602,7 +1089,6 @@ export default {
     z-index: 2;
     max-width: 760px;
 }
-
 .ac-badge {
     display: inline-flex;
     align-items: center;
@@ -633,13 +1119,15 @@ export default {
         opacity: 0.2;
     }
 }
-
 .ac-hero h1 {
     font-size: clamp(30px, 6vw, 54px);
     font-weight: 800;
     line-height: 1.15;
     margin-bottom: 14px;
     letter-spacing: -0.5px;
+}
+.hl {
+    color: var(--or);
 }
 .ac-hero-desc {
     font-size: 16px;
@@ -689,6 +1177,7 @@ export default {
     }
 }
 
+/* ═══ CHAT SECTION ═══ */
 .ac-chat-section {
     padding: 44px 4%;
     background: var(--cr);
@@ -699,7 +1188,7 @@ export default {
     gap: 20px;
     max-width: 1100px;
     margin: 0 auto;
-    height: 600px;
+    height: 620px;
 }
 @media (max-width: 768px) {
     .ac-chat-layout {
@@ -711,6 +1200,7 @@ export default {
     }
 }
 
+/* ── Sidebar ── */
 .ac-sidebar {
     background: var(--wh);
     border-radius: 16px;
@@ -723,11 +1213,12 @@ export default {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 14px;
+    padding: 14px;
     border-bottom: 1px solid var(--grl);
+    flex-shrink: 0;
 }
 .ac-sidebar-header h3 {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
     color: var(--dk);
 }
@@ -736,7 +1227,7 @@ export default {
     color: #fff;
     border: none;
     border-radius: 7px;
-    padding: 5px 10px;
+    padding: 5px 11px;
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
@@ -746,65 +1237,151 @@ export default {
 .ac-new-btn:hover {
     background: var(--or2);
 }
+
 .ac-conv-list {
     flex: 1;
     overflow-y: auto;
-    padding: 8px;
 }
+.ac-conv-loading {
+    padding: 10px;
+}
+.ac-conv-skel {
+    height: 60px;
+    border-radius: 8px;
+    background: linear-gradient(90deg, #f0e9e4 25%, #e8ddd4 50%, #f0e9e4 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    margin-bottom: 6px;
+}
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+.ac-conv-guest {
+    padding: 20px 14px;
+    text-align: center;
+    color: var(--gr);
+    font-size: 13px;
+    line-height: 1.6;
+}
+.ac-conv-guest-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+}
+.ac-conv-empty {
+    padding: 20px 14px;
+    text-align: center;
+    color: var(--gr);
+    font-size: 12.5px;
+    line-height: 1.6;
+}
+
 .ac-conv-item {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 10px;
-    padding: 10px;
-    border-radius: 10px;
+    padding: 11px 14px;
     cursor: pointer;
-    transition: background 0.18s;
-    margin-bottom: 4px;
+    border-bottom: 1px solid var(--grl);
+    transition: background 0.15s;
 }
-.ac-conv-item:hover,
-.ac-conv-item.active {
-    background: var(--cr);
+.ac-conv-item:hover {
+    background: var(--or3);
 }
 .ac-conv-item.active {
     background: var(--or3);
+    border-left: 3px solid var(--or);
+}
+.ac-conv-item.unread {
+    background: #fff8f0;
 }
 .ac-conv-icon {
     font-size: 20px;
     flex-shrink: 0;
+    margin-top: 2px;
+}
+.ac-conv-info {
+    flex: 1;
+    min-width: 0;
 }
 .ac-conv-title {
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 12.5px;
+    font-weight: 700;
     color: var(--dk);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .ac-conv-preview {
     font-size: 11.5px;
     color: var(--gr);
-    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 2px;
+}
+.ac-conv-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+    flex-shrink: 0;
 }
 .ac-conv-badge {
-    margin-left: auto;
     background: var(--or);
     color: #fff;
     border-radius: 99px;
-    padding: 2px 7px;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
-    flex-shrink: 0;
+    padding: 1px 6px;
 }
+.ac-conv-status {
+    font-size: 9.5px;
+    font-weight: 600;
+    border-radius: 99px;
+    padding: 1px 6px;
+}
+.status-open {
+    background: #fef9c3;
+    color: #713f12;
+}
+.status-pending_human {
+    background: #fee2e2;
+    color: #991b1b;
+}
+.status-in_progress {
+    background: #dbeafe;
+    color: #1e40af;
+}
+.status-resolved,
+.status-closed {
+    background: #dcfce7;
+    color: #166534;
+}
+.status-ai_handled {
+    background: var(--grl);
+    color: var(--gr);
+}
+
 .ac-agent-card {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 14px;
+    padding: 12px 14px;
     border-top: 1px solid var(--grl);
-    background: var(--cr);
+    flex-shrink: 0;
 }
 .ac-agent-avatar {
-    font-size: 28px;
+    font-size: 26px;
+    line-height: 1;
 }
 .ac-agent-name {
-    font-size: 13px;
+    font-size: 12.5px;
     font-weight: 700;
     color: var(--dk);
 }
@@ -812,7 +1389,7 @@ export default {
     display: flex;
     align-items: center;
     gap: 5px;
-    font-size: 11.5px;
+    font-size: 11px;
     color: var(--gr);
     margin-top: 2px;
 }
@@ -822,21 +1399,32 @@ export default {
     border-radius: 50%;
     background: #22c55e;
     flex-shrink: 0;
-    animation: pulse-dot 2s infinite;
+    animation: pulse-green 2s infinite;
 }
 .ac-online-dot.human {
-    background: #3b82f6;
+    background: var(--or);
+    animation: pulse-orange 2s infinite;
 }
-@keyframes pulse-dot {
+@keyframes pulse-green {
     0%,
     100% {
-        opacity: 1;
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
     }
     50% {
-        opacity: 0.4;
+        box-shadow: 0 0 0 4px rgba(34, 197, 94, 0);
+    }
+}
+@keyframes pulse-orange {
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 4px rgba(249, 115, 22, 0);
     }
 }
 
+/* ── Chat main ── */
 .ac-chat-main {
     background: var(--wh);
     border-radius: 16px;
@@ -845,34 +1433,34 @@ export default {
     flex-direction: column;
     overflow: hidden;
 }
+
 .ac-chat-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 14px 18px;
     border-bottom: 1px solid var(--grl);
-    background: var(--wh);
     flex-shrink: 0;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 .ac-chat-header-left {
     display: flex;
     align-items: center;
     gap: 12px;
 }
-.ac-chat-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    background: var(--or3);
+.ac-chat-header-right {
     display: flex;
     align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    border: 1.5px solid var(--grl);
-    flex-shrink: 0;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.ac-chat-avatar {
+    font-size: 26px;
+    line-height: 1;
 }
 .ac-chat-name {
-    font-size: 14.5px;
+    font-size: 13.5px;
     font-weight: 700;
     color: var(--dk);
 }
@@ -880,121 +1468,162 @@ export default {
     display: flex;
     align-items: center;
     gap: 5px;
-    font-size: 12px;
+    font-size: 11.5px;
     color: var(--gr);
     margin-top: 2px;
 }
+
 .ac-transfer-btn {
-    background: var(--cr);
-    border: 1.5px solid var(--grl);
-    color: var(--dk);
+    background: var(--or3);
+    border: 1.5px solid var(--or);
+    color: var(--or);
     border-radius: 8px;
-    padding: 7px 13px;
-    font-size: 13px;
-    font-weight: 600;
+    padding: 6px 13px;
+    font-size: 12px;
+    font-weight: 700;
     cursor: pointer;
     font-family: "Poppins", sans-serif;
     transition: all 0.2s;
 }
-.ac-transfer-btn:hover {
-    border-color: var(--or);
-    color: var(--or);
+.ac-transfer-btn:hover:not(:disabled) {
+    background: var(--or);
+    color: #fff;
+}
+.ac-transfer-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 .ac-human-badge {
-    background: #dcfce7;
-    color: #16a34a;
-    border-radius: 8px;
-    padding: 7px 13px;
-    font-size: 12.5px;
+    font-size: 12px;
     font-weight: 600;
+    color: var(--gr);
+    padding: 5px 10px;
+    background: var(--grl);
+    border-radius: 8px;
+}
+.ac-human-badge-active {
+    background: #dcfce7;
+    color: #166534;
+}
+.ac-ticket-status {
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 99px;
+    padding: 3px 9px;
 }
 
+/* ── Messages ── */
 .ac-messages {
     flex: 1;
     overflow-y: auto;
-    padding: 18px;
+    padding: 20px 18px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    background: #fafaf8;
+    gap: 16px;
 }
+
+.ac-welcome {
+    text-align: center;
+    margin: auto;
+    padding: 20px;
+}
+.ac-welcome-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+}
+.ac-welcome h3 {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--dk);
+    margin-bottom: 8px;
+}
+.ac-welcome p {
+    font-size: 14px;
+    color: var(--gr);
+    margin-bottom: 16px;
+    line-height: 1.6;
+}
+
 .ac-msg {
     display: flex;
     align-items: flex-end;
-    gap: 8px;
+    gap: 10px;
 }
 .ac-msg-bot {
-    justify-content: flex-start;
+    flex-direction: row;
 }
 .ac-msg-user {
-    justify-content: flex-end;
+    flex-direction: row-reverse;
 }
 .ac-msg-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 10px;
-    background: var(--or3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
+    font-size: 22px;
+    line-height: 1;
     flex-shrink: 0;
+    margin-bottom: 2px;
 }
 .ac-msg-avatar-user {
-    background: var(--dk);
-    color: #fff;
-    font-size: 14px;
+    font-size: 22px;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-bottom: 2px;
 }
 .ac-msg-bubble {
-    max-width: 72%;
-    background: var(--wh);
-    border: 1.5px solid var(--grl);
-    border-radius: 14px 14px 14px 4px;
-    padding: 12px 15px;
+    max-width: 78%;
+    padding: 11px 15px;
+    border-radius: 16px;
     font-size: 14px;
+    line-height: 1.6;
     color: var(--dk);
-    line-height: 1.65;
+    position: relative;
 }
-.ac-msg-bubble-user {
-    background: var(--dk);
+.ac-msg-bot .ac-msg-bubble {
+    background: #f0e9e4;
+    border-bottom-left-radius: 4px;
+}
+.ac-msg-user .ac-msg-bubble {
+    background: var(--or);
     color: #fff;
-    border-color: var(--dk);
-    border-radius: 14px 14px 4px 14px;
+    border-bottom-right-radius: 4px;
 }
 .ac-msg-bubble-human {
-    border-color: #3b82f6;
-    background: #eff6ff;
+    background: #fff3e0 !important;
+    border-left: 3px solid var(--or);
+}
+.ac-msg-bubble-user {
+    background: var(--or);
+    color: #fff;
+    border-bottom-right-radius: 4px;
 }
 .ac-msg-sender {
     font-size: 11px;
     font-weight: 700;
-    color: #3b82f6;
+    color: var(--or);
     margin-bottom: 4px;
 }
-.ac-suggestions {
+.ac-msg-time {
+    font-size: 10.5px;
+    opacity: 0.55;
+    margin-top: 4px;
+    text-align: right;
+}
+.ac-msg-user .ac-msg-time {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.ac-msg-loading-wrap {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    margin-top: 10px;
+    gap: 12px;
 }
-.ac-suggestion {
-    background: var(--cr);
-    border: 1px solid var(--grl);
-    border-radius: 8px;
-    padding: 7px 12px;
-    font-size: 12.5px;
-    color: var(--gr);
-    text-align: left;
-    cursor: pointer;
-    font-family: "Poppins", sans-serif;
-    transition: all 0.18s;
-    font-weight: 500;
+.ac-msg-skel {
+    height: 52px;
+    border-radius: 12px;
+    background: linear-gradient(90deg, #f0e9e4 25%, #e8ddd4 50%, #f0e9e4 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
 }
-.ac-suggestion:hover {
-    background: var(--or);
-    color: #fff;
-    border-color: var(--or);
-}
+
+/* Typing */
 .ac-typing {
     display: flex;
     align-items: center;
@@ -1024,6 +1653,8 @@ export default {
         transform: translateY(-6px);
     }
 }
+
+/* Transfer notice */
 .ac-transfer-notice {
     display: flex;
     justify-content: center;
@@ -1042,11 +1673,56 @@ export default {
     text-align: center;
 }
 
+/* Suggestions */
+.ac-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 12px;
+}
+.ac-suggestion {
+    background: var(--wh);
+    border: 1.5px solid var(--grl);
+    border-radius: 8px;
+    padding: 7px 12px;
+    font-size: 12.5px;
+    color: var(--gr);
+    cursor: pointer;
+    font-family: "Poppins", sans-serif;
+    transition: all 0.18s;
+    font-weight: 500;
+    text-align: left;
+}
+.ac-suggestion:hover {
+    background: var(--or);
+    color: #fff;
+    border-color: var(--or);
+}
+
+/* ── Input bar ── */
 .ac-input-bar {
     padding: 14px 16px;
     border-top: 1px solid var(--grl);
     background: var(--wh);
     flex-shrink: 0;
+}
+.ac-guest-prompt {
+    text-align: center;
+    font-size: 13px;
+    color: var(--gr);
+    padding: 4px 0;
+}
+.ac-guest-prompt a {
+    color: var(--or);
+    font-weight: 600;
+}
+.ac-resolved-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--gr);
 }
 .ac-input-wrap {
     display: flex;
@@ -1104,6 +1780,37 @@ export default {
 .ac-input-hint {
     font-size: 11.5px;
     color: var(--grm);
+}
+
+/* ═══ SECTIONS ═══ */
+.sec {
+    padding: 64px 4%;
+}
+.sec-cr {
+    background: var(--cr);
+}
+.sec-tag {
+    display: inline-block;
+    background: var(--or3);
+    color: var(--or);
+    border-radius: 99px;
+    padding: 5px 14px;
+    font-size: 12.5px;
+    font-weight: 700;
+    margin-bottom: 14px;
+}
+.sec-title {
+    font-size: clamp(22px, 4vw, 36px);
+    font-weight: 900;
+    color: var(--dk);
+    line-height: 1.2;
+    margin-bottom: 12px;
+}
+.sec-sub {
+    font-size: 15px;
+    color: var(--gr);
+    line-height: 1.7;
+    margin-bottom: 36px;
 }
 
 .ac-how-grid {
@@ -1210,5 +1917,133 @@ export default {
 .ac-usecase:hover .ac-usecase-arrow {
     opacity: 1;
     transform: translateX(0);
+}
+
+/* ═══ CTA ═══ */
+.cta-final {
+    background: var(--dk2);
+    padding: 64px 4%;
+    text-align: center;
+    color: #fff;
+}
+.cta-inner h2 {
+    font-size: clamp(22px, 4vw, 36px);
+    font-weight: 900;
+    margin-bottom: 12px;
+}
+.cta-inner p {
+    font-size: 15px;
+    color: #b8ada7;
+    margin-bottom: 28px;
+}
+.cta-btns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+}
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 13px 26px;
+    border-radius: 10px;
+    font-family: "Poppins", sans-serif;
+    font-size: 14.5px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+.btn-dark {
+    background: var(--or);
+    color: #fff;
+}
+.btn-dark:hover {
+    background: var(--or2);
+    transform: translateY(-1px);
+}
+.btn-ghost {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    border: 1.5px solid rgba(255, 255, 255, 0.18);
+}
+.btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.14);
+}
+
+/* ═══ REVEAL ANIMATIONS ═══ */
+.reveal,
+.reveal-left,
+.reveal-right {
+    opacity: 0;
+    transform: translateY(24px);
+    transition:
+        opacity 0.55s ease,
+        transform 0.55s ease;
+}
+.reveal-left {
+    transform: translateX(-28px);
+}
+.reveal-right {
+    transform: translateX(28px);
+}
+.revealed {
+    opacity: 1;
+    transform: none;
+}
+.reveal-d1 {
+    transition-delay: 0.1s;
+}
+.reveal-d2 {
+    transition-delay: 0.2s;
+}
+.reveal-d3 {
+    transition-delay: 0.3s;
+}
+.au {
+    animation: fadeUp 0.6s ease both;
+}
+.au1 {
+    animation: fadeUp 0.65s 0.1s ease both;
+}
+.au2 {
+    animation: fadeUp 0.65s 0.2s ease both;
+}
+.au3 {
+    animation: fadeUp 0.65s 0.3s ease both;
+}
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* ═══ TOAST ═══ */
+.ac-toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--dk);
+    color: #fff;
+    padding: 12px 22px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 600;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    z-index: 999;
+    white-space: nowrap;
+}
+.ac-toast.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
 }
 </style>

@@ -6,7 +6,7 @@
     $initials = strtoupper(substr($user->name ?? 'U', 0, 1) . substr(explode(' ', $user->name ?? 'U ')[1] ?? '', 0, 1));
 
     if ($role === 'admin') {
-        $pendingDocs = \App\Models\User::whereIn('role', ['contractor','talent'])->where('status','pending')->count();
+        $pendingDocs = \App\Models\User::whereIn('role', ['contractor', 'client'])->where('status','pending')->count();
     }
 
     if ($role === 'contractor') {
@@ -108,25 +108,40 @@
         <div class="ab-nav-section">
             <div class="ab-section-lbl">Finance</div>
             <button class="ab-nav-item" onclick="wip('Transactions')"><span class="ab-nav-icon">💸</span><span>Transactions</span></button>
-            <button class="ab-nav-item" onclick="wip('Revenus plateforme')"><span class="ab-nav-icon">📈</span><span>Revenus plateforme</span></button>
         </div>
         <div class="ab-nav-section">
             <div class="ab-section-lbl">Contenu</div>
             <a class="ab-nav-item {{ $active === 'tenders' ? 'active' : '' }}" href="{{ route('admin.tenders.page') }}">
                 <span class="ab-nav-icon">📝</span><span>Appels d'offres</span>
             </a>
-            <button class="ab-nav-item" onclick="wip('Catalogue services')"><span class="ab-nav-icon">🔧</span><span>Catalogue services</span></button>
-            <button class="ab-nav-item" onclick="wip('Allo Conseils')"><span class="ab-nav-icon">💬</span><span>Allo Conseils</span></button>
+            <a class="ab-nav-item {{ $active === 'services' ? 'active' : '' }}" href="{{ route('admin.services.page') }}">
+                <span class="ab-nav-icon">🔧</span><span>Catalogue services</span>
+            </a>
+            <a class="ab-nav-item {{ $active === 'consulting' ? 'active' : '' }}" href="{{ route('admin.consulting.page') }}">
+                <span class="ab-nav-icon">💬</span><span>Allo Conseils</span>
+            </a>
         </div>
         <div class="ab-nav-section">
             <div class="ab-section-lbl">Outils</div>
-            <button class="ab-nav-item" onclick="wip('Litiges')"><span class="ab-nav-icon">⚖️</span><span>Litiges</span></button>
-            <button class="ab-nav-item" onclick="wip('Paramètres')"><span class="ab-nav-icon">⚙️</span><span>Paramètres</span></button>
+            <a class="ab-nav-item {{ $active === 'disputes' ? 'active' : '' }}" href="{{ route('admin.disputes.page') }}">
+                <span class="ab-nav-icon">⚖️</span><span>Litiges</span>
+            </a>
+            <a class="ab-nav-item {{ $active === 'parameters' ? 'active' : '' }}" href="{{ route('admin.parameters') }}">
+                <span class="ab-nav-icon">⚙️</span><span>Paramètres</span>
+            </a>
         </div>
         @endif
 
         {{-- ══════ CLIENT ══════ --}}
         @if($role === 'client')
+        @php $clientUser = Auth::user(); @endphp
+        @if($clientUser->status === 'approved')
+        <div class="ab-contractor-status">
+            <div class="ab-status-chip ab-status-certified">
+                <span class="ab-status-dot dot-green"></span> ✅ Identité vérifiée
+            </div>
+        </div>
+        @endif
         <div class="ab-nav-section">
             <div class="ab-section-lbl">Mon espace</div>
             <a class="ab-nav-item {{ $active === 'dashboard' ? 'active' : '' }}" href="{{ route('client.dashboard') }}">
@@ -135,11 +150,22 @@
             <a class="ab-nav-item {{ $active === 'missions' ? 'active' : '' }}" href="{{ route('client.missions.page') }}">
                 <span class="ab-nav-icon">📋</span><span>Mes missions</span>
             </a>
-            <button class="ab-nav-item" onclick="wip('Prestataires')"><span class="ab-nav-icon">👷</span><span>Prestataires</span></button>
+        </div>
+        <div class="ab-nav-section">
+            <div class="ab-section-lbl">Mon dossier</div>
+            <a class="ab-nav-item {{ $active === 'dossier' ? 'active' : '' }}" href="{{ route('client.dossier') }}">
+                <span class="ab-nav-icon">📂</span><span>Mon dossier</span>
+                @if($clientUser->status === 'approved')
+                    <span class="ab-nav-badge green">✓</span>
+                @elseif($clientUser->status === 'pending')
+                    <span class="ab-nav-badge orange">⏳</span>
+                @elseif($clientUser->status === 'rejected')
+                    <span class="ab-nav-badge red">✗</span>
+                @endif
+            </a>
         </div>
         <div class="ab-nav-section">
             <div class="ab-section-lbl">Finance</div>
-            <button class="ab-nav-item" onclick="wip('Mes paiements')"><span class="ab-nav-icon">💸</span><span>Mes paiements</span></button>
             <button class="ab-nav-item" onclick="wip('Factures')"><span class="ab-nav-icon">🧾</span><span>Factures</span></button>
         </div>
         <div class="ab-nav-section">
@@ -147,7 +173,9 @@
             <a class="ab-nav-item {{ $active === 'messagerie' ? 'active' : '' }}" href="{{ route('client.messaging') }}">
                 <span class="ab-nav-icon">💬</span><span>Messagerie</span>
             </a>
-            <button class="ab-nav-item" onclick="wip('Mon profil')"><span class="ab-nav-icon">👤</span><span>Mon profil</span></button>
+            <a class="ab-nav-item {{ $active === 'parameters' ? 'active' : '' }}" href="{{ route('client.parameters') }}">
+                <span class="ab-nav-icon">👤</span><span>Mon profil</span>
+            </a>
         </div>
         @endif
 
@@ -169,7 +197,7 @@
         <div class="ab-nav-section">
             <div class="ab-section-lbl">Dossier & Certification</div>
 
-            <button class="ab-nav-item {{ $active === 'dossier' ? 'active' : '' }}" onclick="wip('Mon dossier')">
+            <a class="ab-nav-item {{ $active === 'dossier' ? 'active' : '' }}" href="{{ route('contractor.dossier') }}">
                 <span class="ab-nav-icon">📂</span><span>Mon dossier</span>
                 @if($contractorStatus === 'approved')
                     <span class="ab-nav-badge green">✓</span>
@@ -179,7 +207,7 @@
                 @elseif($contractorStatus === 'rejected')
                     <span class="ab-nav-badge red">✗</span>
                 @endif
-            </button>
+            </a>
 
             <button class="ab-nav-item {{ $active === 'accreditation' ? 'active' : '' }}" onclick="wip('Mon accréditation')">
                 <span class="ab-nav-icon">🏅</span><span>Mon accréditation</span>
@@ -197,8 +225,9 @@
 
         <div class="ab-nav-section">
             <div class="ab-section-lbl">Finance</div>
-            <button class="ab-nav-item" onclick="wip('Mes revenus')"><span class="ab-nav-icon">💰</span><span>Mes revenus</span></button>
-            <button class="ab-nav-item" onclick="wip('Factures')"><span class="ab-nav-icon">🧾</span><span>Factures</span></button>
+            <a class="ab-nav-item {{ $active === 'revenus' ? 'active' : '' }}" href="{{ route('contractor.revenus') }}">
+                <span class="ab-nav-icon">💰</span><span>Mes revenus</span>
+            </a>
         </div>
 
         <div class="ab-nav-section">
@@ -206,8 +235,10 @@
             <a class="ab-nav-item {{ $active === 'messagerie' ? 'active' : '' }}" href="{{ route('contractor.messaging') }}">
                 <span class="ab-nav-icon">💬</span><span>Messagerie</span>
             </a>
-            <button class="ab-nav-item" onclick="wip('Mon profil')"><span class="ab-nav-icon">👤</span><span>Mon profil</span></button>
             <button class="ab-nav-item" onclick="wip('Mes avis')"><span class="ab-nav-icon">⭐</span><span>Mes avis</span></button>
+            <a class="ab-nav-item {{ $active === 'parameters' ? 'active' : '' }}" href="{{ route('contractor.parameters') }}">
+                <span class="ab-nav-icon">👤</span><span>Mon profil</span>
+            </a>
         </div>
         @endif
 

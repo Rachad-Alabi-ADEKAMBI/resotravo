@@ -17,12 +17,19 @@ import AdminMarketComponent           from './components/back/admin/AdminMarketC
 import AdminTalentComponent           from './components/back/admin/AdminTalentComponent.vue'
 import AdminContractorsComponent      from './components/back/admin/AdminContractorsComponent.vue'
 import AdminClientsComponent          from './components/back/admin/AdminClientsComponent.vue'
+import AdminServicesComponent         from './components/back/admin/AdminServicesComponent.vue'
+import AdminConsultingComponent       from './components/back/admin/AdminConsultingComponent.vue'
+import AdminDisputesComponent         from './components/back/admin/AdminDisputesComponent.vue'
 import MissionChatModal               from './components/MissionChatModal.vue'
 import ContractorMissionComponent     from './components/back/contractor/ContractorMissionComponent.vue'
+import ContractorRevenusComponent     from './components/back/contractor/ContractorRevenusComponent.vue'
 import ClientMissionComponent         from './components/back/client/ClientMissionComponent.vue'
 import ValidationDocumentsComponent   from './components/back/admin/ValidationDocumentsComponent.vue'
 import ClientDashboardComponent       from './components/back/client/ClientDashboardComponent.vue'
 import ContractorDashboardComponent   from './components/back/contractor/ContractorDashboardComponent.vue'
+import DossierComponent               from './components/back/shared/DossierComponent.vue'
+import ParametersComponent            from './components/back/shared/ParametersComponent.vue'
+
 
 const app = createApp({})
 
@@ -38,14 +45,20 @@ app.component('admin-dashboard-component',      AdminDashboardComponent)
 app.component('admin-mission-component',        AdminMissionComponent)
 app.component('admin-accreditation-component',  AdminAccreditationComponent)
 app.component('admin-market-component',         AdminMarketComponent)
-app.component('admin-talent-component',       AdminTalentComponent)
-app.component('admin-contractors-component', AdminContractorsComponent)
-app.component('admin-clients-component',     AdminClientsComponent)
+app.component('admin-talent-component',         AdminTalentComponent)
+app.component('admin-contractors-component',    AdminContractorsComponent)
+app.component('admin-clients-component',        AdminClientsComponent)
+app.component('admin-services-component',       AdminServicesComponent)
+app.component('admin-consulting-component',     AdminConsultingComponent)
+app.component('admin-disputes-component',       AdminDisputesComponent)
 app.component('mission-chat-modal',             MissionChatModal)
 app.component('contractor-mission-component',   ContractorMissionComponent)
+app.component('contractor-revenus-component',   ContractorRevenusComponent)
 app.component('client-mission-component',       ClientMissionComponent)
 app.component('validation-documents-component', ValidationDocumentsComponent)
 app.component('client-dashboard-component',     ClientDashboardComponent)
 app.component('contractor-dashboard-component', ContractorDashboardComponent)
+app.component('dossier-component',              DossierComponent)
+app.component('parameters-component',          ParametersComponent)
 
 app.mount('#resotravo-app')

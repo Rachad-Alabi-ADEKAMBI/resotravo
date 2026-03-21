@@ -33,13 +33,17 @@ class Document extends Model
         'cip'         => ['label' => "Certificat d'Identification Personnelle (CIP) — CNI / Passeport", 'icon' => '🪪'],
         'photo'       => ['label' => "Photo d'identité professionnelle",                                'icon' => '📷'],
         'attestation' => ['label' => "Attestation de résidence (moins de 3 mois)",                     'icon' => '📄'],
-        'casier'      => ['label' => "Casier judiciaire vierge (Bulletin n°3)",                        'icon' => '⚖️'],
+        'casier'      => ['label' => "Casier judiciaire",                        'icon' => '⚖️'],
         'diplome'     => ['label' => "Diplôme ou attestation de qualification",                        'icon' => '🎓'],
 
+        // Client
+        'cni'         => ['label' => "Pièce d'identité valide (CNI / Passeport)",                     'icon' => '🪪'],
+        'photo_profil'=> ['label' => "Photo de profil",                                                'icon' => '📸'],
+
         // Talent (BAC+3 minimum)
-        'diplome_sup' => ['label' => "Diplôme supérieur (BAC+3 minimum)",                             'icon' => '🎓'],
-        'cv'          => ['label' => "Curriculum Vitae (CV)",                                          'icon' => '📋'],
-        'certification' => ['label' => "Certificat(s) professionnel(s)",                              'icon' => '🏅'],
+        'diplome_sup'   => ['label' => "Diplôme supérieur (BAC+3 minimum)",    'icon' => '🎓'],
+        'cv'            => ['label' => "Curriculum Vitae (CV)",                 'icon' => '📋'],
+        'certification' => ['label' => "Certificat(s) professionnel(s)",        'icon' => '🏅'],
     ];
 
     /**
@@ -49,9 +53,9 @@ class Document extends Model
     {
         return match ($role) {
             'contractor' => ['cip', 'photo', 'attestation', 'casier', 'diplome'],
-            'talent'     => ['cip', 'photo', 'diplome_sup', 'cv'],
-            'client'     => [],   // aucun document requis
-            'admin'      => [],   // aucun document requis
+            'client'     => ['cni', 'photo_profil'],   // pièce d'identité + photo
+            'talent'     => [],   // les talents n'ont pas de vérification de documents
+            'admin'      => [],
             default      => [],
         };
     }
@@ -64,7 +68,7 @@ class Document extends Model
         'cip'         => "Certificat d'Identification Personnelle (CIP) — CNI / Passeport",
         'photo'       => "Photo d'identité professionnelle",
         'attestation' => "Attestation de résidence (moins de 3 mois)",
-        'casier'      => "Casier judiciaire vierge (Bulletin n°3)",
+        'casier'      => "Casier judiciaire",
         'diplome'     => "Diplôme ou attestation de qualification",
     ];
 

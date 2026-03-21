@@ -4,9 +4,12 @@
 
 @section('content')
 
-  <home-component :routes="{
-    registerClient:     '{{ route('register.client') }}',
-    registerContractor: '{{ route('register.contractor') }}'
-  }"></home-component>
+  <home-component
+    :routes="{
+      registerClient:     '{{ route('register.client') }}',
+      registerContractor: '{{ route('register.contractor') }}'
+    }"
+    :initial-services="{{ json_encode($services) }}"
+  ></home-component>
 
 @endsection

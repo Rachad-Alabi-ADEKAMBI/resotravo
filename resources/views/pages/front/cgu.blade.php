@@ -119,7 +119,7 @@
                     <li>Carte nationale d'identite (CNI) ou passeport en cours de validite</li>
                     <li>Photo d'identite recente</li>
                     <li>Attestation de residence (moins de 3 mois)</li>
-                    <li>Casier judiciaire vierge (Bulletin n°3)</li>
+                    <li>Casier judiciaire (Bulletin n°3)</li>
                     <li>Copie du CIP (Certificat d'Identification Personnelle)</li>
                     <li>Diplome ou attestation de qualification</li>
                 </ol>

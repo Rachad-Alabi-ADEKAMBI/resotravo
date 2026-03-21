@@ -58,7 +58,7 @@
         html { font-size: 16px; scroll-behavior: smooth }
         body {
             font-family: 'Poppins', sans-serif;
-            font-size: 16px; /* ← augmente ici si besoin (ex: 17px) */
+            font-size: 16px;
             background: #f8f4f0;
             color: var(--dk);
             overflow-x: hidden;
@@ -94,6 +94,16 @@
         @media(max-width: 899px) {
             .ad-burger { display: flex !important }
         }
+
+        /* ── Avatar photo de profil ── */
+        .ab-avatar-photo {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+            border: 2px solid var(--or);
+        }
     </style>
 
     @yield('styles')
@@ -112,7 +122,31 @@
     ])
 
     {{-- MAIN — #app ici : Vue monte uniquement sur le contenu --}}
-  <div class="ab-main" id="resotravo-app">
+    @php
+        /*
+         * CORRECTION : on utilise route('profile.photo.user', ['userId' => $authUser->id])
+         * au lieu de route('profile.photo') qui retournait toujours la photo
+         * de l'utilisateur connecté, causant un affichage incorrect pour tous.
+         *
+         * L'URL est maintenant unique par utilisateur (/profile/photo/2, /profile/photo/4…)
+         * ce qui évite aussi les conflits de cache navigateur entre comptes.
+         *
+         * Le type de document est déterminé côté serveur dans la route :
+         *   - client      → type 'photo_profil'
+         *   - contractor  → type 'photo'
+         */
+        $authUser = Auth::user();
+        $photoType = $authUser?->role === 'client' ? 'photo_profil' : 'photo';
+        $hasPhoto  = \App\Models\Document::where('user_id', $authUser?->id)
+                        ->where('type', $photoType)
+                        ->where('status', 'approved')
+                        ->exists();
+        // URL unique par utilisateur → chaque avatar affiche la bonne photo
+        $photoUrl  = $hasPhoto
+            ? route('profile.photo.user', ['userId' => $authUser->id])
+            : null;
+    @endphp
+    <div class="ab-main" id="resotravo-app" data-photo="{{ $photoUrl }}">
         @yield('content')
     </div>
 
@@ -129,7 +163,7 @@
         if (!sidebar) return;
         isOpen = true;
         sidebar.classList.add('open');
-        overlay.classList.add('open');          /* classe .open sur l'overlay */
+        overlay.classList.add('open');
         document.body.style.overflow = 'hidden';
     }
 
@@ -162,9 +196,53 @@
 }());
 </script>
 
+<script>
+(function () {
+    var photoUrl = document.getElementById('resotravo-app')?.dataset?.photo;
+    if (!photoUrl) return;
+
+    // Toutes les classes d'avatar utilisées dans les composants Vue
+    var AVATAR_SELECTOR = [
+        '.ctr-avatar',
+        '.amis-avatar',
+        '.cd-avatar',
+        '.pm-avatar',
+        '.rv-avatar',
+        '.ab-user-av',
+    ].join(', ');
+
+    function injectPhotos() {
+        document.querySelectorAll(AVATAR_SELECTOR).forEach(function (el) {
+            if (el.dataset.photoInjected) return;
+            el.dataset.photoInjected = '1';
+            el.style.padding  = '0';
+            el.style.overflow = 'hidden';
+            el.innerHTML = '<img src="' + photoUrl + '" class="ab-avatar-photo" alt="Photo de profil" onerror="this.parentElement.removeAttribute(\'data-photo-injected\')" />';
+        });
+    }
+
+    // 1 — Premier essai rapide (composants déjà montés)
+    setTimeout(injectPhotos, 300);
+    // 2 — Deuxième essai après montage complet de Vue
+    setTimeout(injectPhotos, 1000);
+    // 3 — MutationObserver : détecte quand Vue injecte les avatars dans le DOM
+    var observer = new MutationObserver(function () {
+        injectPhotos();
+    });
+    observer.observe(document.getElementById('resotravo-app') || document.body, {
+        childList: true,
+        subtree:   true,
+    });
+    // Arrêter l'observer après 5s pour ne pas consommer de ressources inutilement
+    setTimeout(function () { observer.disconnect(); }, 5000);
+
+    // 4 — Re-injecter si navigation sidebar
+    window.addEventListener('ab-sidebar-toggle', function () {
+        setTimeout(injectPhotos, 300);
+    });
+}());
+</script>
+
 @yield('scripts')
-
-
 </body>
-
 </html>

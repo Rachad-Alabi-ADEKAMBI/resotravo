@@ -1,7 +1,9 @@
 {{-- resources/views/pages/back/admin/dashboard.blade.php --}}
 @extends('layouts.back')
 
-@section('title', 'Tableau de bord Admin')
+@section('title', 'Tableau de bord — Resotravo')
+
+@php $active = 'dashboard'; @endphp
 
 @section('content')
 
@@ -11,20 +13,7 @@
             'email' => $user->email,
             'role'  => $user->role,
         ]) }}"
-        :routes="{{ json_encode([
-            'stats'                     => route('admin.stats'),
-            'contractors_pending'       => route('admin.contractors.pending'),
-            'contractors_index'         => route('admin.contractors.index'),
-            'contractors_approve'       => url('/admin/contractors/{id}/status'),
-            'contractors_accreditation' => url('/admin/contractors/{id}/accreditation'),
-            'documents_approve'         => url('/admin/documents/{id}/status'),
-            'missions_index'            => route('admin.missions.index'),
-            'missions_show'             => url('/admin/missions/{id}'),
-            'notifications'             => route('notifications.index'),
-            'notifications_read'        => url('/notifications/{id}/read'),
-            'notifications_all'         => route('notifications.read-all'),
-        ]) }}"
-        :initial-stats="{{ json_encode($stats ?? []) }}"
+        :routes="{{ json_encode($routes) }}"
     ></admin-dashboard-component>
 
 @endsection
