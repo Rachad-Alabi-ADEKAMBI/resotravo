@@ -1,7 +1,7 @@
 {{-- resources/views/pages/back/admin/market.blade.php --}}
 @extends('layouts.back')
 @section('title', "Appels d'offres")
-@php $active = 'tenders'; @endphp
+@php $active = 'market'; @endphp
 
 @section('content')
 <admin-market-component

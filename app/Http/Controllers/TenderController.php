@@ -182,6 +182,22 @@ class TenderController extends Controller
     }
 
     // ══════════════════════════════════════════════════════════════
+    // AUTH — Mes appels d'offres (client)
+    // ══════════════════════════════════════════════════════════════
+
+    public function myTenders(): JsonResponse
+    {
+        $tenders = Tender::where('user_id', Auth::id())
+            ->latest()
+            ->get();
+
+        return response()->json(
+            $tenders->map(fn($t) => $this->formatTender($t))
+        );
+    }
+
+
+    // ══════════════════════════════════════════════════════════════
     // ADMIN — Validation / rejet
     // ══════════════════════════════════════════════════════════════
 
@@ -267,10 +283,10 @@ class TenderController extends Controller
             'created_at'         => $t->created_at->toISOString(),
             // Tags déduits automatiquement
             'tags'               => $t->autoTags(),
+            'user_id'            => $t->user_id,
         ];
 
         if ($admin) {
-            $base['user_id']       = $t->user_id;
             $base['reject_reason'] = $t->reject_reason;
         }
 

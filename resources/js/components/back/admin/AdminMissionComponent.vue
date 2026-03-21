@@ -139,6 +139,7 @@
                     @click="
                         activeTab = t.key;
                         filterStatus = 'all';
+                        currentPage = 1;
                     "
                 >
                     {{ t.label }}
@@ -147,8 +148,8 @@
             </div>
 
             <!-- ── LOADER ── -->
-            <div class="amis-loading" v-if="missionsLoading">
-                <div class="amis-skeleton-row" v-for="n in 6" :key="n"></div>
+            <div class="ac-grid" v-if="missionsLoading">
+                <div class="ac-skeleton" v-for="n in 6" :key="n"></div>
             </div>
 
             <!-- ── ERREUR ── -->
@@ -163,7 +164,7 @@
             </div>
 
             <!-- ── VIDE ── -->
-            <div class="amis-empty" v-else-if="filteredMissions.length === 0">
+            <div class="amis-empty" v-else-if="pagedMissions.length === 0">
                 <div class="amis-empty-icon">📭</div>
                 <div class="amis-empty-title">Aucune mission trouvée</div>
                 <div class="amis-empty-sub">
@@ -171,30 +172,29 @@
                 </div>
             </div>
 
-            <!-- ── LISTE MISSIONS ── -->
-            <div class="amis-mission-list" v-else>
+            <!-- ── GRILLE CARTES ── -->
+            <div class="ac-grid" v-else>
                 <div
-                    class="amis-mission-item"
-                    v-for="m in filteredMissions"
+                    class="ac-card"
+                    v-for="m in pagedMissions"
                     :key="m.id"
-                    @click="openMission(m)"
                     :class="{
-                        urgent: m.status === 'pending' && !m.contractor_id,
+                        'ac-card-urgent':
+                            m.status === 'pending' && !m.contractor_id,
+                        'ac-card-closed': ['completed', 'closed'].includes(
+                            m.status,
+                        ),
+                        'ac-card-cancelled': m.status === 'cancelled',
                     }"
+                    @click="openMission(m)"
                 >
-                    <!-- Indicateur urgent -->
-                    <div
-                        class="amis-urgent-dot"
-                        v-if="m.status === 'pending' && !m.contractor_id"
-                        title="Mission sans prestataire — action requise"
-                    ></div>
-
-                    <div class="amis-mission-left">
-                        <div class="amis-mission-icon">
+                    <!-- En-tête -->
+                    <div class="ac-card-head">
+                        <div class="ac-mission-icon-wrap">
                             {{ serviceIcon(m.service) }}
                         </div>
-                        <div class="amis-mission-body">
-                            <div class="amis-mission-title">
+                        <div class="ac-card-headinfo">
+                            <div class="ac-card-name">
                                 {{ m.service }}
                                 <span
                                     class="amis-type-chip"
@@ -207,64 +207,129 @@
                                     }}
                                 </span>
                             </div>
-                            <div class="amis-mission-client">
+                            <div class="ac-card-sub">📍 {{ m.address }}</div>
+                            <div class="ac-card-sub">
                                 👤 {{ m.client?.name ?? "—" }}
                                 <span
-                                    v-if="m.client?.account_type === 'company'"
                                     class="amis-company-tag"
+                                    v-if="m.client?.account_type === 'company'"
                                     >Entreprise</span
                                 >
                             </div>
-                            <div class="amis-mission-addr">
-                                📍 {{ m.address }}
-                            </div>
-                            <div
-                                class="amis-mission-contractor"
-                                v-if="m.contractor"
-                            >
-                                👷 {{ m.contractor.first_name }}
-                                {{ m.contractor.last_name }}
-                                <span class="amis-contractor-spec"
-                                    >· {{ m.contractor.specialty }}</span
-                                >
-                            </div>
-                            <div
-                                class="amis-mission-contractor amis-no-contractor"
-                                v-else
-                            >
-                                ⚠️ Sans prestataire
-                            </div>
                         </div>
-                    </div>
-
-                    <div class="amis-mission-right">
                         <span
                             class="amis-badge"
                             :class="badgeClass(m.status)"
                             >{{ labelOf(m) }}</span
                         >
-                        <div class="amis-mission-step">
-                            Étape {{ m.step ?? "—" }}/12
-                        </div>
-                        <div class="amis-mission-date">
-                            {{ formatDate(m.created_at) }}
-                        </div>
-                        <div class="amis-mission-amount" v-if="m.total_amount">
-                            {{ formatPrice(m.total_amount) }}
-                            <span class="amis-commission"
-                                >+{{ formatPrice(m.total_amount * 0.1) }}</span
+                    </div>
+
+                    <!-- Prestataire -->
+                    <div class="ac-contractor-row" v-if="m.contractor">
+                        👷 {{ m.contractor.first_name }}
+                        {{ m.contractor.last_name }}
+                        <span class="amis-contractor-spec"
+                            >· {{ m.contractor.specialty }}</span
+                        >
+                    </div>
+                    <div class="ac-contractor-row ac-no-contractor" v-else>
+                        ⚠️ Sans prestataire
+                    </div>
+
+                    <!-- Stats -->
+                    <div class="ac-card-stats">
+                        <div class="ac-cstat">
+                            <span class="ac-cstat-val"
+                                >Étape {{ m.step ?? "—" }}/12</span
                             >
+                            <span class="ac-cstat-lbl">Progression</span>
                         </div>
-                        <!-- Bouton proposer si pas de prestataire -->
+                        <div class="ac-cstat">
+                            <span class="ac-cstat-val">{{
+                                formatDate(m.created_at)
+                            }}</span>
+                            <span class="ac-cstat-lbl">Créée</span>
+                        </div>
+                        <div class="ac-cstat">
+                            <span class="ac-cstat-val">{{
+                                m.total_amount
+                                    ? formatPrice(m.total_amount)
+                                    : "—"
+                            }}</span>
+                            <span class="ac-cstat-lbl">Montant</span>
+                        </div>
+                    </div>
+
+                    <!-- Barre progression -->
+                    <div class="ac-progress-bar">
+                        <div
+                            class="ac-progress-fill"
+                            :style="{ width: ((m.step ?? 0) / 12) * 100 + '%' }"
+                            :class="badgeClass(m.status)"
+                        ></div>
+                    </div>
+
+                    <!-- Action rapide -->
+                    <div
+                        class="ac-card-actions"
+                        @click.stop
+                        v-if="canPropose(m)"
+                    >
                         <button
                             class="amis-btn amis-btn-orange amis-btn-xs"
-                            v-if="canPropose(m)"
                             @click.stop="openProposalPanel(m)"
                         >
-                            📤 Proposer
+                            📤 Proposer un prestataire
                         </button>
                     </div>
                 </div>
+            </div>
+
+            <!-- ── PAGINATION ── -->
+            <div class="ac-pagination" v-if="totalFiltered > 0">
+                <button
+                    class="ac-page-btn"
+                    @click="currentPage = 1"
+                    :disabled="currentPage === 1"
+                >
+                    «
+                </button>
+                <button
+                    class="ac-page-btn"
+                    @click="currentPage--"
+                    :disabled="currentPage === 1"
+                >
+                    ‹
+                </button>
+                <button
+                    class="ac-page-btn"
+                    v-for="p in visiblePages"
+                    :key="p"
+                    :class="{ active: p === currentPage }"
+                    @click="currentPage = p"
+                >
+                    {{ p }}
+                </button>
+                <button
+                    class="ac-page-btn"
+                    @click="currentPage++"
+                    :disabled="currentPage === totalPages"
+                >
+                    ›
+                </button>
+                <button
+                    class="ac-page-btn"
+                    @click="currentPage = totalPages"
+                    :disabled="currentPage === totalPages"
+                >
+                    »
+                </button>
+                <span class="ac-page-info">
+                    Page {{ currentPage }}/{{ totalPages }} ·
+                    {{ totalFiltered }} mission{{
+                        totalFiltered > 1 ? "s" : ""
+                    }}
+                </span>
             </div>
         </div>
         <!-- end amis-content -->
@@ -633,9 +698,7 @@
                                                 selectedContractors.length > 0
                                             "
                                         >
-                                            {{
-                                                selectedContractors.length
-                                            }}
+                                            {{ selectedContractors.length }}
                                             sélectionné{{
                                                 selectedContractors.length > 1
                                                     ? "s"
@@ -700,9 +763,7 @@
                                                         : "N/A"
                                                 }}
                                                 ·
-                                                {{
-                                                    c.completed_missions ?? 0
-                                                }}
+                                                {{ c.completed_missions ?? 0 }}
                                                 missions
                                                 <span v-if="c.radius_km"
                                                     >· {{ c.radius_km }}km</span
@@ -813,9 +874,7 @@
                                         ></div>
                                         <span v-else
                                             >📤 Envoyer
-                                            {{
-                                                selectedContractors.length
-                                            }}
+                                            {{ selectedContractors.length }}
                                             proposition{{
                                                 selectedContractors.length > 1
                                                     ? "s"
@@ -963,12 +1022,20 @@ export default {
             missionsLoading: false,
             missionsError: null,
 
+            // Pagination
+            currentPage: 1,
+            perPage: 6,
+
             // Filtres
             search: "",
             filterStatus: "all",
             filterType: "all",
             filterAssigned: "all",
             activeTab: "all",
+
+            // Pagination
+            currentPage: 1,
+            perPage: 6,
 
             // Mission active
             activeMission: null,
@@ -1097,6 +1164,31 @@ export default {
             return list;
         },
 
+        totalFiltered() {
+            return this.filteredMissions.length;
+        },
+        totalPages() {
+            return Math.max(1, Math.ceil(this.totalFiltered / this.perPage));
+        },
+
+        pagedMissions() {
+            const start = (this.currentPage - 1) * this.perPage;
+            return this.filteredMissions.slice(start, start + this.perPage);
+        },
+
+        visiblePages() {
+            const pages = [];
+            const delta = 2;
+            for (
+                let i = Math.max(1, this.currentPage - delta);
+                i <= Math.min(this.totalPages, this.currentPage + delta);
+                i++
+            ) {
+                pages.push(i);
+            }
+            return pages;
+        },
+
         filteredAvailableContractors() {
             if (!this.contractorSearch.trim()) return this.availableContractors;
             const q = this.contractorSearch.toLowerCase();
@@ -1138,6 +1230,31 @@ export default {
                 this.activeMission &&
                 !["closed"].includes(this.activeMission.status)
             );
+        },
+
+        totalFiltered() {
+            return this.filteredMissions.length;
+        },
+        totalPages() {
+            return Math.max(1, Math.ceil(this.totalFiltered / this.perPage));
+        },
+
+        pagedMissions() {
+            const start = (this.currentPage - 1) * this.perPage;
+            return this.filteredMissions.slice(start, start + this.perPage);
+        },
+
+        visiblePages() {
+            const pages = [];
+            const delta = 2;
+            for (
+                let i = Math.max(1, this.currentPage - delta);
+                i <= Math.min(this.totalPages, this.currentPage + delta);
+                i++
+            ) {
+                pages.push(i);
+            }
+            return pages;
         },
     },
 
@@ -2886,5 +3003,228 @@ export default {
     .amis-filters-right {
         width: 100%;
     }
+}
+
+/* ── GRILLE CARTES MISSIONS ── */
+.ac-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+}
+@media (min-width: 640px) {
+    .ac-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (min-width: 1024px) {
+    .ac-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.ac-skeleton {
+    height: 220px;
+    background: linear-gradient(
+        90deg,
+        var(--grl) 25%,
+        #f0ebe5 50%,
+        var(--grl) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 14px;
+}
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+.ac-card {
+    background: var(--wh);
+    border: 1.5px solid var(--grl);
+    border-radius: 16px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.ac-card:hover {
+    border-color: var(--or);
+    box-shadow: 0 6px 24px rgba(249, 115, 22, 0.1);
+    transform: translateY(-2px);
+}
+.ac-card-urgent {
+    border-left: 4px solid var(--am);
+}
+.ac-card-closed {
+    border-left: 4px solid #22c55e;
+}
+.ac-card-cancelled {
+    border-left: 4px solid #ef4444;
+    opacity: 0.8;
+}
+
+.ac-card-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+.ac-mission-icon-wrap {
+    font-size: 26px;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    background: var(--or3);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.ac-card-headinfo {
+    flex: 1;
+    min-width: 0;
+}
+.ac-card-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--dk);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.ac-card-sub {
+    font-size: 12px;
+    color: var(--gr);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ac-contractor-row {
+    font-size: 12.5px;
+    color: var(--dk);
+    font-weight: 500;
+}
+.ac-no-contractor {
+    color: #f59e0b;
+    font-weight: 600;
+}
+
+.ac-card-stats {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--grl);
+    border-radius: 10px;
+    overflow: hidden;
+}
+.ac-cstat {
+    flex: 1;
+    text-align: center;
+    padding: 7px 4px;
+    border-right: 1px solid var(--grl);
+}
+.ac-cstat:last-child {
+    border-right: none;
+}
+.ac-cstat-val {
+    display: block;
+    font-size: 11.5px;
+    font-weight: 800;
+    color: var(--dk);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.ac-cstat-lbl {
+    display: block;
+    font-size: 10px;
+    color: var(--gr);
+    margin-top: 1px;
+}
+
+.ac-progress-bar {
+    height: 4px;
+    background: var(--grl);
+    border-radius: 99px;
+    overflow: hidden;
+}
+.ac-progress-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: var(--or);
+    transition: width 0.4s ease;
+}
+.ac-progress-fill.done {
+    background: #22c55e;
+}
+.ac-progress-fill.cancelled {
+    background: #ef4444;
+}
+.ac-progress-fill.warning {
+    background: var(--am);
+}
+.ac-progress-fill.active {
+    background: #3b82f6;
+}
+
+.ac-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: 4px;
+    border-top: 1px solid var(--grl);
+}
+
+/* ── PAGINATION ── */
+.ac-pagination {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 28px;
+    padding-bottom: 12px;
+}
+.ac-page-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1.5px solid var(--grl);
+    background: var(--wh);
+    font-family: "Poppins", sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gr);
+    cursor: pointer;
+    transition: all 0.18s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.ac-page-btn:hover:not(:disabled) {
+    border-color: var(--or);
+    color: var(--or);
+}
+.ac-page-btn.active {
+    background: var(--or);
+    border-color: var(--or);
+    color: #fff;
+}
+.ac-page-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.ac-page-info {
+    font-size: 12.5px;
+    color: var(--gr);
+    margin-left: 8px;
 }
 </style>

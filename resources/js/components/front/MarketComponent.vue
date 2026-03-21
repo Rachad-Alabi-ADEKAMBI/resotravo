@@ -80,11 +80,20 @@
                     📝 Publier un AO
                 </button>
                 <button
+                    v-if="isContractorOrTalent"
                     class="mk-tab"
                     :class="{ active: activeTab === 'myCandidatures' }"
                     @click="activeTab = 'myCandidatures'"
                 >
                     📁 Mes candidatures
+                </button>
+                <button
+                    v-if="isClient"
+                    class="mk-tab"
+                    :class="{ active: activeTab === 'myTenders' }"
+                    @click="activeTab = 'myTenders'"
+                >
+                    🗂️ Mes appels d'offres
                 </button>
             </div>
         </div>
@@ -147,8 +156,7 @@
 
             <div class="mk-ao-grid">
                 <div
-                    class="mk-ao-card reveal"
-                    :class="'reveal-d' + ((i % 4) + 1)"
+                    class="mk-ao-card"
                     v-for="(ao, i) in filteredAOs"
                     :key="ao.id"
                     @click="openAO(ao)"
@@ -166,7 +174,7 @@
                     <div class="mk-ao-meta">
                         <span>📍 {{ ao.location }}</span>
                         <span>⏱️ {{ ao.duration }}</span>
-                        <span>💰 {{ ao.budget }}</span>
+                        <span>💰 {{ formatBudget(ao.budget) }}</span>
                     </div>
                     <div class="mk-ao-footer">
                         <div class="mk-ao-company">
@@ -187,8 +195,20 @@
                             <span class="mk-ao-cands-lbl">candidature(s)</span>
                         </div>
                     </div>
-                    <button class="mk-ao-btn" @click.stop="postuler(ao)">
-                        Postuler →
+                    <button
+                        class="mk-ao-btn"
+                        :class="{
+                            'mk-ao-btn-disabled':
+                                isClient && ao.user_id === auth?.id,
+                        }"
+                        :disabled="isClient && ao.user_id === auth?.id"
+                        @click.stop="postuler(ao)"
+                    >
+                        {{
+                            isClient && ao.user_id === auth?.id
+                                ? "🔒 Votre AO"
+                                : "Postuler →"
+                        }}
                     </button>
                 </div>
             </div>
@@ -460,6 +480,108 @@
         </section>
 
         <!-- ═══════════════════════════════════════════
+         TAB 4 — MES APPELS D'OFFRES (client)
+    ═══════════════════════════════════════════ -->
+        <section class="mk-section" v-show="activeTab === 'myTenders'">
+            <div class="mk-cands-header reveal">
+                <h2>🗂️ Mes appels d'offres</h2>
+                <p>Suivez l'état de vos appels d'offres publiés.</p>
+            </div>
+
+            <!-- Loading -->
+            <div class="mk-empty" v-if="myTendersLoading">
+                <div class="mk-empty-icon">⏳</div>
+                <div class="mk-empty-title">Chargement…</div>
+            </div>
+
+            <!-- Erreur -->
+            <div class="mk-form-error" v-else-if="myTendersError">
+                ⚠️ {{ myTendersError }}
+            </div>
+
+            <div class="mk-cands-list" v-else-if="myTenders.length > 0">
+                <div
+                    class="mk-cand-item"
+                    v-for="(t, i) in myTenders"
+                    :key="t.id"
+                >
+                    <div class="mk-cand-left">
+                        <div class="mk-cand-domain">
+                            {{ t.domainIcon ?? "📋" }}
+                        </div>
+                        <div>
+                            <div class="mk-cand-title">{{ t.title }}</div>
+                            <div class="mk-cand-meta">
+                                {{ t.domain }} · {{ t.location }} · 💰
+                                {{ formatBudget(t.budget) }}
+                            </div>
+                            <div class="mk-cand-meta" style="margin-top: 3px">
+                                📅 Limite : {{ t.deadline }} &nbsp;·&nbsp;
+                                <strong>{{
+                                    t.candidatures_count ?? t.candidatures ?? 0
+                                }}</strong>
+                                candidature(s)
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mk-cand-right">
+                        <div class="mk-cand-date">
+                            Publié le {{ t.created_at_label ?? t.created_at }}
+                        </div>
+                        <div
+                            class="mk-cand-status"
+                            :class="{
+                                pending: t.status === 'pending',
+                                selected:
+                                    t.status === 'published' ||
+                                    t.status === 'approved',
+                                rejected:
+                                    t.status === 'rejected' ||
+                                    t.status === 'closed',
+                            }"
+                        >
+                            <span v-if="t.status === 'pending'"
+                                >⏳ En attente de validation</span
+                            >
+                            <span
+                                v-else-if="
+                                    t.status === 'published' ||
+                                    t.status === 'approved'
+                                "
+                                >✅ Publié</span
+                            >
+                            <span v-else-if="t.status === 'rejected'"
+                                >❌ Refusé</span
+                            >
+                            <span v-else-if="t.status === 'closed'"
+                                >🔒 Clôturé</span
+                            >
+                            <span v-else>{{ t.status }}</span>
+                        </div>
+                        <!-- Raison du refus -->
+                        <div
+                            class="mk-reject-reason"
+                            v-if="t.status === 'rejected' && t.reject_reason"
+                        >
+                            💬 <strong>Motif :</strong> {{ t.reject_reason }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mk-empty" v-else>
+                <div class="mk-empty-icon">🗂️</div>
+                <div class="mk-empty-title">Aucun appel d'offres</div>
+                <div class="mk-empty-desc">
+                    Vous n'avez pas encore publié d'appel d'offres.
+                </div>
+                <button class="btn btn-primary" @click="activeTab = 'publish'">
+                    Publier un AO →
+                </button>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════
          MODAL CANDIDATURE
     ═══════════════════════════════════════════ -->
         <div
@@ -469,7 +591,13 @@
         >
             <div class="mk-modal">
                 <div class="mk-modal-header">
-                    <h3>📩 Postuler à cet appel d'offres</h3>
+                    <h3>
+                        {{
+                            isOwnTender
+                                ? "📋 Votre appel d'offres"
+                                : "📩 Postuler à cet appel d'offres"
+                        }}
+                    </h3>
                     <button class="mk-modal-close" @click="showModal = false">
                         ✕
                     </button>
@@ -479,45 +607,83 @@
                         <strong>{{ selectedAO.title }}</strong>
                         <span
                             >{{ selectedAO.company }} ·
-                            {{ selectedAO.location }}</span
+                            {{ selectedAO.location }} · 💰
+                            {{ formatBudget(selectedAO.budget) }}</span
                         >
                     </div>
-                    <div class="mk-field">
-                        <label class="mk-label"
-                            >Lettre de motivation
-                            <span class="mk-req">*</span></label
+                    <!-- Vue proprio : infos de l'AO uniquement -->
+                    <template v-if="isOwnTender">
+                        <div class="mk-modal-own-info">
+                            <div class="mk-modal-own-row">
+                                <span class="mk-modal-own-lbl">📋 Domaine</span
+                                ><span>{{ selectedAO.domain }}</span>
+                            </div>
+                            <div class="mk-modal-own-row">
+                                <span class="mk-modal-own-lbl">⏱️ Durée</span
+                                ><span>{{ selectedAO.duration }}</span>
+                            </div>
+                            <div class="mk-modal-own-row">
+                                <span class="mk-modal-own-lbl">📅 Limite</span
+                                ><span>{{ selectedAO.deadline }}</span>
+                            </div>
+                            <div class="mk-modal-own-row">
+                                <span class="mk-modal-own-lbl"
+                                    >👥 Candidatures</span
+                                ><span>{{ selectedAO.candidatures ?? 0 }}</span>
+                            </div>
+                            <div class="mk-modal-own-row">
+                                <span class="mk-modal-own-lbl">🔖 Statut</span
+                                ><span>{{ selectedAO.urgencyLabel }}</span>
+                            </div>
+                        </div>
+                        <div
+                            class="mk-form-error mk-form-warn"
+                            style="margin-top: 0"
                         >
-                        <textarea
-                            class="mk-input mk-textarea"
-                            v-model="candidature.motivation"
-                            placeholder="Présentez votre expérience, vos compétences et pourquoi vous êtes le profil idéal…"
-                            rows="5"
-                        ></textarea>
-                    </div>
-                    <div class="mk-field">
-                        <label class="mk-label">Tarif proposé (FCFA)</label>
-                        <input
-                            class="mk-input"
-                            type="text"
-                            v-model="candidature.tarif"
-                            placeholder="Ex : 180 000 FCFA"
-                        />
-                    </div>
-                    <div class="mk-field">
-                        <label class="mk-label">Disponibilité</label>
-                        <input
-                            class="mk-input"
-                            type="text"
-                            v-model="candidature.disponibilite"
-                            placeholder="Ex : Disponible à partir du 20 mars 2026"
-                        />
-                    </div>
+                            🔒 Vous êtes l'auteur de cet appel d'offres. Vous ne
+                            pouvez pas y postuler.
+                        </div>
+                    </template>
+                    <!-- Vue candidat : formulaire complet -->
+                    <template v-else>
+                        <div class="mk-field">
+                            <label class="mk-label"
+                                >Lettre de motivation
+                                <span class="mk-req">*</span></label
+                            >
+                            <textarea
+                                class="mk-input mk-textarea"
+                                v-model="candidature.motivation"
+                                placeholder="Présentez votre expérience, vos compétences et pourquoi vous êtes le profil idéal…"
+                                rows="5"
+                            ></textarea>
+                        </div>
+                        <div class="mk-field">
+                            <label class="mk-label">Tarif proposé (FCFA)</label>
+                            <input
+                                class="mk-input"
+                                type="text"
+                                v-model="candidature.tarif"
+                                placeholder="Ex : 180 000 FCFA"
+                            />
+                        </div>
+                        <div class="mk-field">
+                            <label class="mk-label">Disponibilité</label>
+                            <input
+                                class="mk-input"
+                                type="text"
+                                v-model="candidature.disponibilite"
+                                placeholder="Ex : Disponible à partir du 20 mars 2026"
+                            />
+                        </div>
+                    </template>
                 </div>
                 <div class="mk-modal-footer">
                     <button class="btn btn-outline" @click="showModal = false">
-                        Annuler
+                        {{ isOwnTender ? "Fermer" : "Annuler" }}
                     </button>
                     <button
+                        v-if="!isOwnTender"
                         class="btn btn-primary btn-lg"
                         :disabled="!candidature.motivation.trim()"
                         @click="submitCandidature"
@@ -570,6 +736,7 @@ export default {
                 tenders_store: "/client/tenders",
                 tenders_apply: "/tenders/{id}/apply",
                 my_applications: "/tenders/my-applications",
+                my_tenders: "/client/tenders/mine",
             }),
         },
         // Utilisateur connecté (null si visiteur)
@@ -596,9 +763,12 @@ export default {
             // API data
             appelsOffres: [],
             myCandidatures: [],
+            myTenders: [],
             aoLoading: false,
             aoError: null,
             candsLoading: false,
+            myTendersLoading: false,
+            myTendersError: null,
             submitting: false,
             formError: "",
             applyError: "",
@@ -703,6 +873,11 @@ export default {
         isClient() {
             return this.auth?.role === "client";
         },
+        isContractorOrTalent() {
+            return (
+                this.auth?.role === "contractor" || this.auth?.role === "talent"
+            );
+        },
         isGuest() {
             return !this.auth;
         },
@@ -762,6 +937,10 @@ export default {
                 (c) => c.tender_id === this.selectedAO.id,
             );
         },
+        isOwnTender() {
+            if (!this.selectedAO || !this.auth) return false;
+            return this.selectedAO.user_id === this.auth.id;
+        },
     },
 
     watch: {
@@ -770,7 +949,18 @@ export default {
             if (val === "myCandidatures" && this.myCandidatures.length === 0) {
                 this.fetchMyCandidatures();
             }
-            this.$nextTick(() => this.reObserveReveal());
+            if (val === "myTenders") {
+                this.fetchMyTenders();
+            }
+            this.$nextTick(() => {
+                this.reObserveReveal();
+                // Forcer reveal immédiat sur les éléments déjà chargés
+                setTimeout(() => {
+                    document
+                        .querySelectorAll(".mk-section .reveal:not(.revealed)")
+                        .forEach((el) => el.classList.add("revealed"));
+                }, 100);
+            });
         },
         sortBy() {
             this.fetchAOs();
@@ -780,6 +970,9 @@ export default {
     mounted() {
         this.fetchStats();
         this.fetchAOs();
+        if (this.isClient) {
+            this.fetchMyTenders();
+        }
         this.$nextTick(() => this.reObserveReveal());
     },
 
@@ -827,6 +1020,16 @@ export default {
                 this.appelsOffres = Array.isArray(data)
                     ? data
                     : (data.data ?? []);
+                // Forcer révélation des éléments reveal après rendu Vue
+                this.$nextTick(() => {
+                    setTimeout(() => {
+                        document
+                            .querySelectorAll(
+                                ".reveal:not(.revealed),.reveal-left:not(.revealed),.reveal-right:not(.revealed)",
+                            )
+                            .forEach((el) => el.classList.add("revealed"));
+                    }, 80);
+                });
             } catch {
                 this.aoError = "Impossible de charger les appels d'offres.";
             } finally {
@@ -847,6 +1050,27 @@ export default {
                 /* silencieux */
             } finally {
                 this.candsLoading = false;
+            }
+        },
+
+        async fetchMyTenders() {
+            this.myTendersLoading = true;
+            this.myTendersError = null;
+            try {
+                const res = await fetch(this.routes.my_tenders, {
+                    headers: { Accept: "application/json" },
+                });
+                if (!res.ok) throw new Error("HTTP " + res.status);
+                const data = await res.json();
+                this.myTenders = Array.isArray(data) ? data : (data.data ?? []);
+            } catch (e) {
+                console.error("[fetchMyTenders]", e);
+                this.myTendersError =
+                    "Impossible de charger vos appels d'offres. (" +
+                    e.message +
+                    ")";
+            } finally {
+                this.myTendersLoading = false;
             }
         },
 
@@ -975,6 +1199,21 @@ export default {
                     return;
                 }
                 this.formSubmitted = true;
+
+                // Ajouter immédiatement à la liste locale + forcer rechargement
+                const newTender = data.tender ?? data;
+                if (newTender && newTender.id) {
+                    this.myTenders.unshift(newTender);
+                } else {
+                    // Si l'API ne retourne pas le tender, forcer un rechargement complet
+                    this.myTenders = [];
+                }
+
+                // Basculer vers "Mes AO" après 1.5s
+                setTimeout(() => {
+                    this.resetForm();
+                    this.activeTab = "myTenders";
+                }, 1500);
             } catch {
                 this.formError = "Erreur réseau. Veuillez réessayer.";
             } finally {
@@ -996,6 +1235,13 @@ export default {
             };
             this.formSubmitted = false;
             this.formError = "";
+        },
+
+        formatBudget(val) {
+            if (!val) return "—";
+            const num = parseInt(String(val).replace(/\D/g, ""));
+            if (isNaN(num)) return val;
+            return num.toLocaleString("fr-FR") + " F CFA";
         },
 
         reObserveReveal() {
@@ -1022,7 +1268,15 @@ export default {
 };
 </script>
 <style scoped>
-/* ── HERO MARCHÉ ── */
+/* ════════════════════════════════════════════
+   VARIABLES & BASE
+════════════════════════════════════════════ */
+.market-page {
+    width: 100%;
+    overflow-x: hidden;
+}
+
+/* ── HERO ── */
 .mk-hero {
     background: var(--dk2);
     color: #fff;
@@ -1073,7 +1327,6 @@ export default {
     z-index: 2;
     max-width: 760px;
 }
-
 .mk-badge {
     display: inline-flex;
     align-items: center;
@@ -1096,14 +1349,14 @@ export default {
     flex-shrink: 0;
 }
 .mk-hero h1 {
-    font-size: clamp(30px, 6vw, 54px);
+    font-size: clamp(24px, 6vw, 54px);
     font-weight: 800;
     line-height: 1.15;
     margin-bottom: 14px;
     letter-spacing: -0.5px;
 }
 .mk-hero-desc {
-    font-size: 16px;
+    font-size: 15px;
     color: #b8ada7;
     line-height: 1.75;
     margin-bottom: 26px;
@@ -1141,19 +1394,24 @@ export default {
     display: flex;
     gap: 0;
     overflow-x: auto;
+    scrollbar-width: none;
+}
+.mk-tabs::-webkit-scrollbar {
+    display: none;
 }
 .mk-tab {
-    padding: 14px 20px;
+    padding: 13px 16px;
     background: none;
     border: none;
     border-bottom: 3px solid transparent;
     font-family: "Poppins", sans-serif;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--gr);
     cursor: pointer;
     white-space: nowrap;
     transition: all 0.18s;
+    flex-shrink: 0;
 }
 .mk-tab:hover {
     color: var(--dk);
@@ -1165,7 +1423,7 @@ export default {
 
 /* ── SECTION ── */
 .mk-section {
-    padding: 36px 4% 52px;
+    padding: 28px 4% 52px;
     max-width: 1200px;
     margin: 0 auto;
 }
@@ -1174,15 +1432,31 @@ export default {
 .mk-filters {
     background: var(--wh);
     border-radius: 14px;
-    padding: 20px;
+    padding: 16px;
     border: 1.5px solid var(--grl);
     margin-bottom: 24px;
 }
 .mk-filter-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px;
     margin-bottom: 12px;
+}
+.search-input {
+    flex: 1;
+    min-width: 180px;
+    padding: 10px 14px;
+    border: 1.5px solid var(--grl);
+    border-radius: 9px;
+    font-family: "Poppins", sans-serif;
+    font-size: 13.5px;
+    outline: none;
+    background: var(--cr);
+    color: var(--dk);
+    transition: border-color 0.2s;
+}
+.search-input:focus {
+    border-color: var(--or);
 }
 .mk-select {
     padding: 10px 14px;
@@ -1198,6 +1472,14 @@ export default {
 }
 .mk-select:focus {
     border-color: var(--or);
+}
+@media (max-width: 600px) {
+    .mk-select {
+        width: 100%;
+    }
+    .search-input {
+        width: 100%;
+    }
 }
 .mk-filter-tags {
     display: flex;
@@ -1226,6 +1508,8 @@ export default {
     align-items: center;
     justify-content: space-between;
     margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 .mk-count {
     font-size: 14px;
@@ -1239,13 +1523,18 @@ export default {
 /* ── AO GRID ── */
 .mk-ao-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+}
+@media (max-width: 480px) {
+    .mk-ao-grid {
+        grid-template-columns: 1fr;
+    }
 }
 .mk-ao-card {
     background: var(--wh);
     border-radius: 16px;
-    padding: 22px 20px;
+    padding: 18px 16px;
     border: 1.5px solid var(--grl);
     cursor: pointer;
     transition: all 0.25s cubic-bezier(0.22, 0.68, 0, 1.2);
@@ -1275,6 +1564,8 @@ export default {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 .mk-ao-domain-badge {
     background: var(--or3);
@@ -1320,7 +1611,7 @@ export default {
 .mk-ao-meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px;
     font-size: 12.5px;
     color: var(--gr);
 }
@@ -1329,11 +1620,14 @@ export default {
     align-items: center;
     justify-content: space-between;
     margin-top: 4px;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 .mk-ao-company {
     display: flex;
     align-items: center;
     gap: 8px;
+    min-width: 0;
 }
 .mk-ao-company-av {
     width: 30px;
@@ -1352,6 +1646,10 @@ export default {
     font-size: 12.5px;
     font-weight: 700;
     color: var(--dk);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 130px;
 }
 .mk-ao-deadline {
     font-size: 11px;
@@ -1359,6 +1657,7 @@ export default {
 }
 .mk-ao-cands {
     text-align: right;
+    flex-shrink: 0;
 }
 .mk-ao-cands span:first-child {
     font-size: 18px;
@@ -1384,9 +1683,17 @@ export default {
     cursor: pointer;
     transition: all 0.2s;
 }
-.mk-ao-btn:hover {
+.mk-ao-btn:hover:not(:disabled) {
     transform: translateY(-1px);
     box-shadow: 0 4px 14px rgba(249, 115, 22, 0.3);
+}
+.mk-ao-btn.mk-ao-btn-disabled,
+.mk-ao-btn:disabled {
+    background: var(--grl);
+    color: var(--gr);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
 }
 
 /* ── EMPTY ── */
@@ -1424,7 +1731,7 @@ export default {
 .mk-publish-form {
     background: var(--wh);
     border-radius: 16px;
-    padding: 28px 24px;
+    padding: 24px 20px;
     border: 1.5px solid var(--grl);
 }
 .mk-form-header {
@@ -1443,10 +1750,10 @@ export default {
 .mk-form-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
+    gap: 14px;
     margin-bottom: 20px;
 }
-@media (max-width: 600px) {
+@media (max-width: 640px) {
     .mk-form-grid {
         grid-template-columns: 1fr;
     }
@@ -1477,6 +1784,8 @@ export default {
     transition: all 0.2s;
     background: var(--cr);
     color: var(--dk);
+    width: 100%;
+    box-sizing: border-box;
 }
 .mk-input:focus {
     border-color: var(--or);
@@ -1500,6 +1809,15 @@ export default {
     display: flex;
     gap: 10px;
     justify-content: flex-end;
+    flex-wrap: wrap;
+}
+@media (max-width: 480px) {
+    .mk-form-actions {
+        flex-direction: column;
+    }
+    .mk-form-actions .btn {
+        width: 100%;
+    }
 }
 .mk-form-error {
     background: #fef2f2;
@@ -1517,12 +1835,17 @@ export default {
     color: #92400e;
 }
 
-/* ── TIPS ── */
+/* ── TIPS / PROCESS ── */
+.mk-publish-tips {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
 .mk-tips-card,
 .mk-process-card {
     background: var(--wh);
     border-radius: 14px;
-    padding: 22px;
+    padding: 20px;
     border: 1.5px solid var(--grl);
     margin-bottom: 16px;
 }
@@ -1583,7 +1906,7 @@ export default {
     color: var(--gr);
 }
 
-/* ── CANDIDATURES ── */
+/* ── CANDIDATURES / MES AO ── */
 .mk-cands-header {
     margin-bottom: 20px;
 }
@@ -1605,12 +1928,12 @@ export default {
 .mk-cand-item {
     background: var(--wh);
     border-radius: 14px;
-    padding: 18px 20px;
+    padding: 16px 18px;
     border: 1.5px solid var(--grl);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
+    gap: 14px;
     flex-wrap: wrap;
     transition: all 0.2s;
 }
@@ -1622,22 +1945,30 @@ export default {
     display: flex;
     align-items: center;
     gap: 12px;
+    flex: 1;
+    min-width: 0;
 }
 .mk-cand-domain {
     font-size: 28px;
+    flex-shrink: 0;
 }
 .mk-cand-title {
-    font-size: 14.5px;
+    font-size: 14px;
     font-weight: 700;
     color: var(--dk);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 280px;
 }
 .mk-cand-meta {
-    font-size: 12.5px;
+    font-size: 12px;
     color: var(--gr);
     margin-top: 2px;
 }
 .mk-cand-right {
     text-align: right;
+    flex-shrink: 0;
 }
 .mk-cand-date {
     font-size: 12px;
@@ -1662,6 +1993,20 @@ export default {
 .mk-cand-status.rejected {
     background: #fef2f2;
     color: #dc2626;
+}
+@media (max-width: 560px) {
+    .mk-cand-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .mk-cand-right {
+        text-align: left;
+        width: 100%;
+    }
+    .mk-cand-title {
+        max-width: 100%;
+        white-space: normal;
+    }
 }
 
 /* ── MODAL ── */
@@ -1692,12 +2037,12 @@ export default {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 18px 22px;
+    padding: 16px 20px;
     border-bottom: 1px solid var(--grl);
     flex-shrink: 0;
 }
 .mk-modal-header h3 {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 800;
     color: var(--dk);
 }
@@ -1719,7 +2064,7 @@ export default {
     background: var(--cr);
 }
 .mk-modal-body {
-    padding: 20px 22px;
+    padding: 18px 20px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -1746,11 +2091,128 @@ export default {
     display: flex;
     gap: 10px;
     justify-content: flex-end;
-    padding: 16px 22px;
+    padding: 14px 20px;
     border-top: 1px solid var(--grl);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+@media (max-width: 480px) {
+    .mk-modal-footer {
+        flex-direction: column;
+    }
+    .mk-modal-footer .btn {
+        width: 100%;
+    }
+}
+
+/* ── CTA ── */
+.cta-final {
+    background: var(--dk2);
+    padding: 52px 4%;
+    text-align: center;
+}
+.cta-inner {
+    max-width: 600px;
+    margin: 0 auto;
+}
+.cta-inner h2 {
+    font-size: clamp(22px, 4vw, 32px);
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 12px;
+}
+.cta-inner p {
+    font-size: 15px;
+    color: #b8ada7;
+    margin-bottom: 26px;
+    line-height: 1.7;
+}
+.cta-btns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+}
+@media (max-width: 480px) {
+    .cta-btns {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .cta-btns .btn {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+/* ── REVEAL ── */
+.reveal,
+.reveal-left,
+.reveal-right {
+    opacity: 0;
+    transform: translateY(22px);
+    transition:
+        opacity 0.55s ease,
+        transform 0.55s ease;
+}
+.reveal-left {
+    transform: translateX(-22px);
+}
+.reveal-right {
+    transform: translateX(22px);
+}
+.revealed {
+    opacity: 1 !important;
+    transform: none !important;
+}
+.reveal-d1 {
+    transition-delay: 0.05s;
+}
+.reveal-d2 {
+    transition-delay: 0.12s;
+}
+.reveal-d3 {
+    transition-delay: 0.19s;
+}
+.reveal-d4 {
+    transition-delay: 0.26s;
+}
+
+/* ── MODAL PROPRIO ── */
+.mk-modal-own-info {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: var(--cr);
+    border-radius: 10px;
+    padding: 14px 16px;
+    border: 1.5px solid var(--grl);
+}
+.mk-modal-own-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13.5px;
+    gap: 10px;
+}
+.mk-modal-own-lbl {
+    font-weight: 600;
+    color: var(--gr);
     flex-shrink: 0;
 }
 
+/* ── RAISON REFUS ── */
+.mk-reject-reason {
+    margin-top: 8px;
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #dc2626;
+    line-height: 1.5;
+}
+
+/* ── ANIMATIONS ── */
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -1777,5 +2239,25 @@ export default {
     50% {
         opacity: 0.2;
     }
+}
+
+/* ── HSTAT ── */
+.hstat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.hstat .num {
+    font-size: clamp(22px, 4vw, 32px);
+    font-weight: 900;
+    color: var(--or);
+}
+.hstat .lbl {
+    font-size: 12px;
+    color: #b8ada7;
+    font-weight: 500;
+}
+.hl {
+    color: var(--or);
 }
 </style>

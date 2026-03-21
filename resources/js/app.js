@@ -13,6 +13,10 @@ import RegisterContractorComponent    from './components/front/RegisterContracto
 import AdminDashboardComponent        from './components/back/admin/AdminDashboardComponent.vue'
 import AdminMissionComponent          from './components/back/admin/AdminMissionComponent.vue'
 import AdminAccreditationComponent    from './components/back/admin/AdminAccreditationComponent.vue'
+import AdminMarketComponent           from './components/back/admin/AdminMarketComponent.vue'
+import AdminTalentComponent           from './components/back/admin/AdminTalentComponent.vue'
+import AdminContractorsComponent      from './components/back/admin/AdminContractorsComponent.vue'
+import AdminClientsComponent          from './components/back/admin/AdminClientsComponent.vue'
 import MissionChatModal               from './components/MissionChatModal.vue'
 import ContractorMissionComponent     from './components/back/contractor/ContractorMissionComponent.vue'
 import ClientMissionComponent         from './components/back/client/ClientMissionComponent.vue'
@@ -33,9 +37,13 @@ app.component('register-contractor-component',  RegisterContractorComponent)
 app.component('admin-dashboard-component',      AdminDashboardComponent)
 app.component('admin-mission-component',        AdminMissionComponent)
 app.component('admin-accreditation-component',  AdminAccreditationComponent)
-app.component('mission-chat-modal',              MissionChatModal)
-app.component('contractor-mission-component',    ContractorMissionComponent)
-app.component('client-mission-component',        ClientMissionComponent)
+app.component('admin-market-component',         AdminMarketComponent)
+app.component('admin-talent-component',       AdminTalentComponent)
+app.component('admin-contractors-component', AdminContractorsComponent)
+app.component('admin-clients-component',     AdminClientsComponent)
+app.component('mission-chat-modal',             MissionChatModal)
+app.component('contractor-mission-component',   ContractorMissionComponent)
+app.component('client-mission-component',       ClientMissionComponent)
 app.component('validation-documents-component', ValidationDocumentsComponent)
 app.component('client-dashboard-component',     ClientDashboardComponent)
 app.component('contractor-dashboard-component', ContractorDashboardComponent)

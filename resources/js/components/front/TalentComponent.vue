@@ -136,8 +136,23 @@
                 </select>
             </div>
 
+            <!-- Loader -->
+            <div class="tl-empty" v-if="talentsLoading">
+                <div class="tl-empty-icon">⏳</div>
+                <div class="tl-empty-title">Chargement des talents…</div>
+            </div>
+
+            <!-- Erreur -->
+            <div class="tl-empty" v-else-if="talentsError">
+                <div class="tl-empty-icon">⚠️</div>
+                <div class="tl-empty-title">{{ talentsError }}</div>
+                <button class="btn btn-primary" @click="loadTalents">
+                    Réessayer
+                </button>
+            </div>
+
             <!-- Grille de talents -->
-            <div class="tl-grid">
+            <div class="tl-grid" v-else>
                 <div
                     class="tl-card reveal"
                     :class="'reveal-d' + ((i % 3) + 1)"
@@ -905,6 +920,37 @@
                             </div>
 
                             <div
+                                v-if="talentFormError"
+                                style="
+                                    margin-top: 12px;
+                                    background: #fef2f2;
+                                    border: 1px solid #fca5a5;
+                                    border-radius: 8px;
+                                    padding: 10px 14px;
+                                    font-size: 13px;
+                                    color: #dc2626;
+                                "
+                            >
+                                ⚠️ {{ talentFormError }}
+                            </div>
+
+                            <div
+                                v-if="talentFormSubmitted"
+                                style="
+                                    margin-top: 12px;
+                                    background: #f0fdf4;
+                                    border: 1px solid #86efac;
+                                    border-radius: 8px;
+                                    padding: 10px 14px;
+                                    font-size: 13px;
+                                    color: #16a34a;
+                                "
+                            >
+                                ✅ Dossier envoyé ! L'équipe Resotravo vous
+                                contactera sous 48h.
+                            </div>
+
+                            <div
                                 style="
                                     display: flex;
                                     gap: 10px;
@@ -914,20 +960,28 @@
                                 <button
                                     class="btn btn-outline"
                                     @click="formStep = 2"
+                                    :disabled="talentFormSubmitting"
                                 >
                                     Retour
                                 </button>
                                 <button
                                     class="btn btn-primary btn-lg"
                                     style="flex: 1"
-                                    :disabled="talentFormSubmitted"
+                                    :disabled="
+                                        talentFormSubmitted ||
+                                        talentFormSubmitting
+                                    "
                                     @click="submitTalentForm"
                                 >
-                                    {{
-                                        talentFormSubmitted
-                                            ? "Dossier envoye - En attente de validation"
-                                            : "Soumettre mon profil Talent &rarr;"
-                                    }}
+                                    <span v-if="talentFormSubmitting"
+                                        >⏳ Envoi en cours…</span
+                                    >
+                                    <span v-else-if="talentFormSubmitted"
+                                        >✅ Dossier envoyé</span
+                                    >
+                                    <span v-else
+                                        >Soumettre mon profil Talent →</span
+                                    >
                                 </button>
                             </div>
                         </div>
@@ -1033,6 +1087,8 @@ export default {
                 register: "/register",
                 login: "/login",
                 market: "/appels-offres",
+                talents_list: "/talent/list",
+                talents_apply: "/talent/apply",
             }),
         },
     },
@@ -1052,6 +1108,8 @@ export default {
             contactSent: false,
             formStep: 1,
             talentFormSubmitted: false,
+            talentFormSubmitting: false,
+            talentFormError: "",
 
             contactForm: {
                 subject: "",
@@ -1109,249 +1167,9 @@ export default {
                 { icon: "💰", label: "Finance" },
             ],
 
-            talents: [
-                {
-                    id: 1,
-                    name: "Dr. Kokou Mensah",
-                    title: "Ingenieur en Genie Civil",
-                    domain: "Genie Civil",
-                    domainIcon: "🏗️",
-                    level: "Doctorat",
-                    exp: 12,
-                    location: "Cotonou",
-                    score: 4.9,
-                    color: "linear-gradient(135deg, #F97316, #EA580C)",
-                    availability: "Disponible",
-                    availClass: "avail-yes",
-                    skills: [
-                        "BIM",
-                        "Beton arme",
-                        "Gestion chantier",
-                        "AutoCAD",
-                        "Estimation",
-                    ],
-                    bio: "Docteur en Genie Civil avec 12 ans d'experience dans la conception et supervision de projets de construction au Benin et en Afrique de l'Ouest. Specialiste en structures beton arme et gestion de grands chantiers.",
-                    diplomas: [
-                        {
-                            title: "Doctorat Genie Civil",
-                            school: "UAC Abomey-Calavi",
-                            year: 2015,
-                        },
-                        {
-                            title: "Master Gestion de Projets",
-                            school: "ENAM Benin",
-                            year: 2011,
-                        },
-                    ],
-                    experiences: [
-                        {
-                            role: "Directeur Technique",
-                            company: "SOTRA BTP",
-                            period: "2018 - Present",
-                        },
-                        {
-                            role: "Chef de Projet",
-                            company: "Agence BENIN-INFRA",
-                            period: "2015 - 2018",
-                        },
-                    ],
-                },
-                {
-                    id: 2,
-                    name: "Ing. Adjovi Ahossou",
-                    title: "Ingenieure en Genie Electrique",
-                    domain: "Genie Electrique",
-                    domainIcon: "⚡",
-                    level: "Ingenieur (BAC+5)",
-                    exp: 8,
-                    location: "Cotonou",
-                    score: 4.8,
-                    color: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
-                    availability: "Temps partiel",
-                    availClass: "avail-partial",
-                    skills: [
-                        "Tableaux electriques",
-                        "HTA/HTB",
-                        "SCADA",
-                        "Energie solaire",
-                        "Audit energetique",
-                    ],
-                    bio: "Ingenieure diplome avec 8 ans d'experience dans les installations electriques industrielles et les energies renouvelables. Experte en audit energetique et projets solaires.",
-                    diplomas: [
-                        {
-                            title: "Ingenieur Genie Electrique",
-                            school: "EPAC UAC",
-                            year: 2016,
-                        },
-                    ],
-                    experiences: [
-                        {
-                            role: "Ingenieure Electrique",
-                            company: "SBEE",
-                            period: "2016 - Present",
-                        },
-                    ],
-                },
-                {
-                    id: 3,
-                    name: "M. Rachid Biokou",
-                    title: "Expert en Systemes d'Information",
-                    domain: "Genie Informatique",
-                    domainIcon: "💻",
-                    level: "Master 2 (BAC+5)",
-                    exp: 7,
-                    location: "Cotonou",
-                    score: 4.7,
-                    color: "linear-gradient(135deg, #10b981, #059669)",
-                    availability: "Disponible",
-                    availClass: "avail-yes",
-                    skills: [
-                        "DevOps",
-                        "Cloud AWS",
-                        "Architecture SI",
-                        "Laravel",
-                        "Vue.js",
-                    ],
-                    bio: "Expert en systemes d'information et developpement logiciel. Specialiste en architecture cloud et deploiement d'applications web et mobiles a fort trafic.",
-                    diplomas: [
-                        {
-                            title: "Master Informatique",
-                            school: "IMSP Porto-Novo",
-                            year: 2017,
-                        },
-                    ],
-                    experiences: [
-                        {
-                            role: "CTO",
-                            company: "StartupBJ",
-                            period: "2020 - Present",
-                        },
-                        {
-                            role: "Developpeur Senior",
-                            company: "Freelance",
-                            period: "2017 - 2020",
-                        },
-                    ],
-                },
-                {
-                    id: 4,
-                    name: "Mme Fatoumata Sow",
-                    title: "Architecte DPLG",
-                    domain: "Architecture",
-                    domainIcon: "📐",
-                    level: "Master 2 (BAC+5)",
-                    exp: 10,
-                    location: "Porto-Novo",
-                    score: 4.9,
-                    color: "linear-gradient(135deg, #8b5cf6, #6d28d9)",
-                    availability: "Mission specifique",
-                    availClass: "avail-mission",
-                    skills: [
-                        "SketchUp",
-                        "Revit",
-                        "Architecture bioclimatique",
-                        "Permis de construire",
-                        "Suivi chantier",
-                    ],
-                    bio: "Architecte diplomee avec 10 ans de pratique en conception architecturale et suivi de chantiers residentiels et commerciaux. Specialiste en architecture bioclimatique adaptee au climat tropical.",
-                    diplomas: [
-                        {
-                            title: "DPLG Architecture",
-                            school: "EPAC UAC",
-                            year: 2014,
-                        },
-                    ],
-                    experiences: [
-                        {
-                            role: "Architecte chef de projets",
-                            company: "Cabinet ARCH-BJ",
-                            period: "2014 - Present",
-                        },
-                    ],
-                },
-                {
-                    id: 5,
-                    name: "Ing. Serge Houngbo",
-                    title: "Expert Energie Solaire",
-                    domain: "Energie Solaire",
-                    domainIcon: "☀️",
-                    level: "Ingenieur (BAC+5)",
-                    exp: 6,
-                    location: "Abomey-Calavi",
-                    score: 4.8,
-                    color: "linear-gradient(135deg, #f59e0b, #d97706)",
-                    availability: "Disponible",
-                    availClass: "avail-yes",
-                    skills: [
-                        "Dimensionnement solaire",
-                        "Onduleurs",
-                        "PVSyst",
-                        "Raccordement reseau",
-                        "Maintenance",
-                    ],
-                    bio: "Ingenieur specialiste des systemes solaires photovoltaiques avec 6 ans d'experience. A supervise plus de 50 installations solaires au Benin et au Togo.",
-                    diplomas: [
-                        {
-                            title: "Ingenieur Energetique",
-                            school: "EPAC UAC",
-                            year: 2018,
-                        },
-                    ],
-                    experiences: [
-                        {
-                            role: "Responsable Projets Solaires",
-                            company: "GreenEnergy BJ",
-                            period: "2018 - Present",
-                        },
-                    ],
-                },
-                {
-                    id: 6,
-                    name: "Dr. Aissatou Barry",
-                    title: "Expert en Management de Projet",
-                    domain: "Management de projet",
-                    domainIcon: "📋",
-                    level: "Doctorat",
-                    exp: 15,
-                    location: "Cotonou",
-                    score: 5.0,
-                    color: "linear-gradient(135deg, #ef4444, #dc2626)",
-                    availability: "Temps partiel",
-                    availClass: "avail-partial",
-                    skills: [
-                        "PMP",
-                        "PRINCE2",
-                        "Agile/Scrum",
-                        "MS Project",
-                        "Gestion des risques",
-                    ],
-                    bio: "Docteur en management avec certification PMP et PRINCE2. 15 ans d'experience dans la gestion de projets d'envergure en Afrique de l'Ouest pour des institutions internationales.",
-                    diplomas: [
-                        {
-                            title: "Doctorat Management",
-                            school: "Universite Paris Dauphine",
-                            year: 2009,
-                        },
-                        {
-                            title: "MBA",
-                            school: "EDHEC Business School",
-                            year: 2006,
-                        },
-                    ],
-                    experiences: [
-                        {
-                            role: "Directrice de Projets",
-                            company: "PNUD Benin",
-                            period: "2015 - Present",
-                        },
-                        {
-                            role: "Chef de Projet Senior",
-                            company: "Banque Mondiale",
-                            period: "2009 - 2015",
-                        },
-                    ],
-                },
-            ],
+            talents: [],
+            talentsLoading: false,
+            talentsError: "",
 
             benefits: [
                 {
@@ -1484,9 +1302,86 @@ export default {
         this.$nextTick(() => {
             this.reObserveReveal();
         });
+        this.loadTalents();
     },
 
     methods: {
+        // ── Chargement talents depuis l'API ──────────────────────
+        async loadTalents() {
+            this.talentsLoading = true;
+            this.talentsError = "";
+            try {
+                const res = await fetch(
+                    this.routes.talents_list ?? "/talent/list",
+                    { headers: { Accept: "application/json" } },
+                );
+                if (!res.ok) throw new Error("Erreur serveur " + res.status);
+                const data = await res.json();
+                this.talents = data;
+            } catch (e) {
+                this.talentsError =
+                    "Impossible de charger les talents. Réessayez.";
+            } finally {
+                this.talentsLoading = false;
+                this.$nextTick(() => this.reObserveReveal());
+            }
+        },
+
+        // ── Soumission formulaire Talent ─────────────────────────
+        async submitTalentForm() {
+            if (this.talentFormSubmitting) return;
+            this.talentFormSubmitting = true;
+            this.talentFormError = "";
+
+            const payload = {
+                ...this.talentForm,
+                certifications: this.talentForm.certifications.filter(
+                    (c) => c && c.trim() !== "",
+                ),
+            };
+
+            try {
+                const csrf = document
+                    .querySelector('meta[name="csrf-token"]')
+                    ?.getAttribute("content");
+
+                const res = await fetch(
+                    this.routes.talents_apply ?? "/talent/apply",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Accept: "application/json",
+                            ...(csrf ? { "X-CSRF-TOKEN": csrf } : {}),
+                        },
+                        body: JSON.stringify(payload),
+                    },
+                );
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    if (data.errors) {
+                        const first = Object.values(data.errors)[0];
+                        this.talentFormError = Array.isArray(first)
+                            ? first[0]
+                            : first;
+                    } else {
+                        this.talentFormError =
+                            data.message ?? "Une erreur est survenue.";
+                    }
+                    return;
+                }
+
+                this.talentFormSubmitted = true;
+            } catch (e) {
+                this.talentFormError =
+                    "Erreur réseau. Vérifiez votre connexion.";
+            } finally {
+                this.talentFormSubmitting = false;
+            }
+        },
+
         openProfile(talent) {
             this.selectedTalent = talent;
             this.showProfile = true;
@@ -1511,10 +1406,6 @@ export default {
             setTimeout(() => {
                 this.showContact = false;
             }, 2000);
-        },
-
-        submitTalentForm() {
-            this.talentFormSubmitted = true;
         },
 
         addDiploma() {

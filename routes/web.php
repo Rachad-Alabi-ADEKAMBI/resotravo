@@ -8,6 +8,7 @@ use App\Http\Controllers\MessageController;
 use App\Http\Controllers\MissionController;
 use App\Http\Controllers\MissionQuoteController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\TalentController;
 use App\Http\Controllers\TenderController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
@@ -20,8 +21,38 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/',           fn() => view('pages.front.home'))->name('home');
 Route::get('/consulting', fn() => view('pages.front.consulting'))->name('consulting');
-Route::get('/talent',     fn() => view('pages.front.talent'))->name('talent');
-Route::get('/market',     fn() => view('pages.front.market'))->name('market');
+Route::get('/talent', function () {
+    return view('pages.front.talent', [
+        'routes' => [
+            'talents_list'  => route('talents.list'),
+            'talents_apply' => route('talents.apply'),
+            'market'        => route('market'),
+            'register'      => route('register.client'),
+        ],
+    ]);
+})->name('talent');
+
+// ── Talents (publics) ─────────────────────────────────────────
+Route::prefix('talent')->name('talents.')->group(function () {
+    Route::get ('/list',  [TalentController::class, 'index']) ->name('list');
+    Route::post('/apply', [TalentController::class, 'store']) ->name('apply');
+});
+Route::get('/market', function () {
+    $user = Auth::user();
+    return view('pages.front.market', [
+        'auth'   => $user ? ['id' => $user->id, 'role' => $user->role, 'name' => $user->name] : null,
+        'routes' => [
+            'tenders_index'   => route('tenders.index'),
+            'tenders_stats'   => route('tenders.stats'),
+            'tenders_store'   => route('client.tenders.store'),
+            'tenders_apply'   => url('/tenders/{id}/apply'),
+            'my_applications' => route('tenders.my-applications'),
+            'my_tenders'      => route('client.tenders.mine'),
+            'login'           => route('login'),
+            'register'        => route('register.client'),
+        ],
+    ]);
+})->name('market');
 
 // ── Appels d'offres (publics) ────────────────────────────────
 Route::prefix('tenders')->name('tenders.')->group(function () {
@@ -136,7 +167,114 @@ Route::middleware('auth')->group(function () {
         Route::patch('/missions/{mission}/status',   [MissionController::class, 'adminStatus'])  ->name('missions.status');
         Route::post ('/missions/{mission}/propose',  [MissionController::class, 'adminPropose']) ->name('missions.propose');
 
-        // ── Appels d'offres ──────────────────────────────────────
+        // ── Talents ──────────────────────────────────────────────
+        Route::get('/talents/page', function () {
+            $user = Auth::user();
+            return view('pages.back.admin.talents', [
+                'active' => 'talents',
+                'auth'   => ['id' => $user->id, 'role' => $user->role, 'name' => $user->name],
+                'routes' => [
+                    'talents_index'          => route('admin.talents.index'),
+                    'talents_status'         => url('/admin/talents/{application}/status'),
+                    'notifications_index'    => route('notifications.index'),
+                    'notifications_read_all' => route('notifications.read-all'),
+                ],
+            ]);
+        })->name('talents.page');
+        Route::get  ('/talents',                      [TalentController::class, 'adminIndex'])        ->name('talents.index');
+        Route::patch('/talents/{application}/status', [TalentController::class, 'adminUpdateStatus']) ->name('talents.status');
+
+        // ── Contractors (page admin) ──────────────────────────────
+        Route::get('/contractors/page', function () {
+            $user = Auth::user();
+            return view('pages.back.admin.contractors', [
+                'active' => 'contractors',
+                'auth'   => ['id' => $user->id, 'role' => $user->role, 'name' => $user->name],
+                'routes' => [
+                    'contractors_index'       => route('admin.contractors.index'),
+                    'contractors_status'      => url('/admin/contractors/{contractor}/status'),
+                    'contractors_accreditation' => url('/admin/contractors/{contractor}/accreditation'),
+                    'missions_pending'        => route('admin.missions.index') . '?status=pending',
+                    'missions_propose'        => url('/admin/missions/{mission}/propose'),
+                    'notifications_index'     => route('notifications.index'),
+                    'notifications_read_all'  => route('notifications.read-all'),
+                ],
+            ]);
+        })->name('contractors.page');
+
+        // ── Clients (page admin) ──────────────────────────────────
+        Route::get('/clients/page', function () {
+            $user = Auth::user();
+            return view('pages.back.admin.clients', [
+                'active' => 'clients',
+                'auth'   => ['id' => $user->id, 'role' => $user->role, 'name' => $user->name],
+                'routes' => [
+                    'clients_index'          => route('admin.clients.index'),
+                    'clients_status'         => url('/admin/users/{user}/status'),
+                    'notifications_index'    => route('notifications.index'),
+                    'notifications_read_all' => route('notifications.read-all'),
+                ],
+            ]);
+        })->name('clients.page');
+        Route::get('/clients', function () {
+            $clients = \App\Models\User::where('role', 'client')
+                ->with(['client'])
+                ->latest()
+                ->get()
+                ->map(function ($u) {
+                    $clientId = $u->client?->id;
+
+                    $missionsCount     = $clientId ? \App\Models\Mission::where('client_id', $clientId)->count() : 0;
+                    $missionsCompleted = $clientId ? \App\Models\Mission::where('client_id', $clientId)->whereIn('status', ['completed', 'closed'])->count() : 0;
+                    $totalSpent        = $clientId ? \App\Models\Mission::where('client_id', $clientId)->where('status', 'closed')->whereNotNull('total_amount')->sum('total_amount') : 0;
+                    $recentMissions    = $clientId ? \App\Models\Mission::where('client_id', $clientId)->latest()->take(3)->get()->map(fn($m) => [
+                        'id'           => $m->id,
+                        'service'      => $m->service,
+                        'status_label' => $m->status_label,
+                        'created_at'   => $m->created_at?->format('d/m/Y'),
+                    ])->toArray() : [];
+
+                    return [
+                        'id'                 => $u->id,
+                        'name'               => $u->name,
+                        'email'              => $u->email,
+                        'status'             => $u->status ?? 'active',
+                        'phone'              => $u->client?->phone        ?? null,
+                        'city'               => $u->client?->city         ?? null,
+                        'address'            => $u->client?->address      ?? null,
+                        'account_type'       => $u->client?->account_type ?? 'individual',
+                        'company_name'       => $u->client?->company_name ?? null,
+                        'missions_count'     => $missionsCount,
+                        'missions_completed' => $missionsCompleted,
+                        'total_spent'        => $totalSpent > 0 ? $totalSpent : null,
+                        'created_at_label'   => $u->created_at?->format('d/m/Y'),
+                        'recent_missions'    => $recentMissions,
+                    ];
+                });
+            return response()->json($clients);
+        })->name('clients.index');
+        Route::patch('/users/{user}/status', function (\Illuminate\Http\Request $request, \App\Models\User $user) {
+            $request->validate(['status' => 'required|in:active,suspended']);
+            $user->update(['status' => $request->status]);
+            return response()->json(['success' => true, 'status' => $request->status]);
+        })->name('users.status');
+        Route::get('/tenders/page', function () {
+            $user = Auth::user();
+            return view('pages.back.admin.market', [
+                'active' => 'tenders',
+                'auth'   => $user ? ['id' => $user->id, 'role' => $user->role, 'name' => $user->name] : null,
+                'routes' => [
+                    'tenders_index'   => route('tenders.index'),
+                    'tenders_stats'   => route('tenders.stats'),
+                    'tenders_store'   => route('client.tenders.store'),
+                    'tenders_apply'   => url('/tenders/{id}/apply'),
+                    'my_applications' => route('tenders.my-applications'),
+                    'my_tenders'      => route('client.tenders.mine'),
+                    'login'           => route('login'),
+                    'register'        => route('register.client'),
+                ],
+            ]);
+        })->name('tenders.page');
         Route::get  ('/tenders',                     [TenderController::class, 'adminIndex'])        ->name('tenders.index');
         Route::patch('/tenders/{tender}/status',     [TenderController::class, 'adminUpdateStatus']) ->name('tenders.status');
     });
@@ -160,8 +298,9 @@ Route::middleware('auth')->group(function () {
         Route::get  ('/missions/{mission}',        [MissionController::class, 'show'])        ->name('missions.show');
         Route::patch('/missions/{mission}/status', [MissionController::class, 'updateStatus'])->name('missions.status');
 
-        // ── Appels d'offres — publication (client uniquement) ────
-        Route::post('/tenders', [TenderController::class, 'store'])->name('tenders.store');
+        // ── Appels d'offres — publication + mes AO (client uniquement) ────
+        Route::post('/tenders',      [TenderController::class, 'store'])     ->name('tenders.store');
+        Route::get ('/tenders/mine', [TenderController::class, 'myTenders']) ->name('tenders.mine');
     });
 
     // ══════════════════════════════════════════════════════════════
@@ -203,4 +342,4 @@ Route::middleware('auth')->group(function () {
 
 });
 
-require __DIR__ . '/auth.php';
+require __DIR__ . '/auth.php';  

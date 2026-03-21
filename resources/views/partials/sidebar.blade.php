@@ -89,15 +89,15 @@
                     <span class="ab-nav-badge">{{ $pendingDocs }}</span>
                 @endif
             </a>
-            <button class="ab-nav-item {{ $active === 'contractors' ? 'active' : '' }}" onclick="wip('Prestataires')">
+            <a class="ab-nav-item {{ $active === 'contractors' ? 'active' : '' }}" href="{{ route('admin.contractors.page') }}">
                 <span class="ab-nav-icon">👷</span><span>Prestataires</span>
-            </button>
-            <button class="ab-nav-item {{ $active === 'clients' ? 'active' : '' }}" onclick="wip('Clients')">
+            </a>
+            <a class="ab-nav-item {{ $active === 'clients' ? 'active' : '' }}" href="{{ route('admin.clients.page') }}">
                 <span class="ab-nav-icon">👤</span><span>Clients</span>
-            </button>
-            <button class="ab-nav-item {{ $active === 'talents' ? 'active' : '' }}" onclick="wip('Talents')">
+            </a>
+            <a class="ab-nav-item {{ $active === 'talents' ? 'active' : '' }}" href="{{ route('admin.talents.page') }}">
                 <span class="ab-nav-icon">⭐</span><span>Talents</span>
-            </button>
+            </a>
             <a class="ab-nav-item {{ $active === 'accreditation' ? 'active' : '' }}" href="{{ route('admin.accreditation') }}">
                 <span class="ab-nav-icon">🏅</span><span>Accréditations</span>
             </a>
@@ -112,7 +112,9 @@
         </div>
         <div class="ab-nav-section">
             <div class="ab-section-lbl">Contenu</div>
-            <button class="ab-nav-item" onclick="wip('Appels d\'offres')"><span class="ab-nav-icon">📝</span><span>Appels d'offres</span></button>
+            <a class="ab-nav-item {{ $active === 'tenders' ? 'active' : '' }}" href="{{ route('admin.tenders.page') }}">
+                <span class="ab-nav-icon">📝</span><span>Appels d'offres</span>
+            </a>
             <button class="ab-nav-item" onclick="wip('Catalogue services')"><span class="ab-nav-icon">🔧</span><span>Catalogue services</span></button>
             <button class="ab-nav-item" onclick="wip('Allo Conseils')"><span class="ab-nav-icon">💬</span><span>Allo Conseils</span></button>
         </div>
