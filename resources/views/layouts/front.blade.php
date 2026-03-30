@@ -17,8 +17,26 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="format-detection" content="telephone=no"/>
   <meta name="csrf-token" content="{{ csrf_token() }}">
+
+  {{-- Mobile / PWA --}}
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta name="apple-mobile-web-app-title" content="ResoTravo"/>
+  <meta name="theme-color" content="#F97316"/>
+
+  {{-- Capacitor CSP --}}
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self' capacitor://localhost http://localhost https://resotravo.xo.je;
+                 style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+                 font-src 'self' https://fonts.gstatic.com;
+                 script-src 'self' 'unsafe-inline' 'unsafe-eval';
+                 img-src 'self' data: blob: https:;
+                 connect-src 'self' https://resotravo.xo.je capacitor://localhost http://localhost ws://localhost;"/>
+
   <title>@yield('title', 'ResoTravo') — Prestataires certifiés au Bénin</title>
 
   {{-- Fonts --}}
@@ -444,7 +462,7 @@
   @include('partials.nav', ['active' => $active ?? ''])
 
   {{-- #app est ici : Vue monte sur ce div et trouve les composants dans @yield('content') --}}
- <div id="resotravo-app">
+  <div id="resotravo-app">
 
     <main>
       @yield('content')

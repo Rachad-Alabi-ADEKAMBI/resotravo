@@ -187,29 +187,29 @@
                         </thead>
                         <tbody>
                             <tr v-for="m in filteredMissions" :key="m.id">
-                                <td>
+                                <td data-label="Service">
                                     <div class="rv-service-name">
                                         {{ m.service }}
                                     </div>
                                 </td>
-                                <td class="rv-client-name">
+                                <td data-label="Client" class="rv-client-name">
                                     {{ m.client_name ?? "—" }}
                                 </td>
-                                <td class="rv-date">
+                                <td data-label="Date" class="rv-date">
                                     {{
                                         formatDate(
                                             m.completed_at ?? m.created_at,
                                         )
                                     }}
                                 </td>
-                                <td>
+                                <td data-label="Montant">
                                     <span class="rv-amount">{{
                                         m.total_amount
                                             ? formatPrice(m.total_amount)
                                             : "—"
                                     }}</span>
                                 </td>
-                                <td>
+                                <td data-label="Statut">
                                     <span
                                         class="rv-badge"
                                         :class="badgeClass(m.status)"
@@ -221,78 +221,72 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
+            <!-- fin rv-card -->
 
-                <!-- Pagination -->
-                <div class="rv-pagination" v-if="missions.length > 0">
-                    <div class="rv-pagination-info">
-                        {{ paginationInfo }}
-                    </div>
-                    <div class="rv-pagination-controls">
-                        <!-- Première page -->
+            <!-- Pagination — fixée en bas de page sur desktop -->
+            <div class="rv-pagination" v-if="missions.length > 0">
+                <div class="rv-pagination-info">
+                    {{ paginationInfo }}
+                </div>
+                <div class="rv-pagination-controls">
+                    <button
+                        class="rv-page-btn"
+                        :disabled="currentPage === 1"
+                        @click="currentPage = 1"
+                        title="Première page"
+                    >
+                        «
+                    </button>
+                    <button
+                        class="rv-page-btn"
+                        :disabled="currentPage === 1"
+                        @click="currentPage--"
+                        title="Page précédente"
+                    >
+                        ‹
+                    </button>
+                    <template v-for="p in visiblePages" :key="p">
+                        <span v-if="p === '...'" class="rv-page-dots">…</span>
                         <button
+                            v-else
                             class="rv-page-btn"
-                            :disabled="currentPage === 1"
-                            @click="currentPage = 1"
-                            title="Première page"
+                            :class="{
+                                'rv-page-btn--active': p === currentPage,
+                            }"
+                            @click="currentPage = p"
                         >
-                            «
+                            {{ p }}
                         </button>
-                        <!-- Page précédente -->
-                        <button
-                            class="rv-page-btn"
-                            :disabled="currentPage === 1"
-                            @click="currentPage--"
-                            title="Page précédente"
-                        >
-                            ‹
-                        </button>
-                        <!-- Numéros de pages -->
-                        <template v-for="p in visiblePages" :key="p">
-                            <span v-if="p === '...'" class="rv-page-dots"
-                                >…</span
-                            >
-                            <button
-                                v-else
-                                class="rv-page-btn"
-                                :class="{
-                                    'rv-page-btn--active': p === currentPage,
-                                }"
-                                @click="currentPage = p"
-                            >
-                                {{ p }}
-                            </button>
-                        </template>
-                        <!-- Page suivante -->
-                        <button
-                            class="rv-page-btn"
-                            :disabled="currentPage === totalPages"
-                            @click="currentPage++"
-                            title="Page suivante"
-                        >
-                            ›
-                        </button>
-                        <!-- Dernière page -->
-                        <button
-                            class="rv-page-btn"
-                            :disabled="currentPage === totalPages"
-                            @click="currentPage = totalPages"
-                            title="Dernière page"
-                        >
-                            »
-                        </button>
-                    </div>
-                    <div class="rv-pagination-perpage">
-                        <select
-                            v-model="perPage"
-                            @change="currentPage = 1"
-                            class="rv-perpage-select"
-                        >
-                            <option :value="5">5 / page</option>
-                            <option :value="10">10 / page</option>
-                            <option :value="25">25 / page</option>
-                            <option :value="50">50 / page</option>
-                        </select>
-                    </div>
+                    </template>
+                    <button
+                        class="rv-page-btn"
+                        :disabled="currentPage === totalPages"
+                        @click="currentPage++"
+                        title="Page suivante"
+                    >
+                        ›
+                    </button>
+                    <button
+                        class="rv-page-btn"
+                        :disabled="currentPage === totalPages"
+                        @click="currentPage = totalPages"
+                        title="Dernière page"
+                    >
+                        »
+                    </button>
+                </div>
+                <div class="rv-pagination-perpage">
+                    <select
+                        v-model="perPage"
+                        @change="currentPage = 1"
+                        class="rv-perpage-select"
+                    >
+                        <option :value="5">5 / page</option>
+                        <option :value="10">10 / page</option>
+                        <option :value="25">25 / page</option>
+                        <option :value="50">50 / page</option>
+                    </select>
                 </div>
             </div>
         </div>
@@ -1112,15 +1106,73 @@ export default {
     color: #dc2626;
 }
 
-/* ── Pagination ── */
+/* ── Tableau responsive (mobile) ── */
+@media (max-width: 640px) {
+    .rv-table thead {
+        display: none;
+    }
+
+    .rv-table tbody tr {
+        display: block;
+        background: #fff;
+        border: 1.5px solid #ede8e3;
+        border-radius: 12px;
+        margin-bottom: 12px;
+        padding: 4px 0;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+    }
+
+    .rv-table tbody tr:last-child {
+        margin-bottom: 0;
+    }
+
+    .rv-table td {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 16px;
+        border-bottom: 1px solid #f5f0eb;
+        font-size: 13px;
+    }
+    .rv-table td:last-child {
+        border-bottom: none;
+    }
+
+    /* Data label à gauche */
+    .rv-table td::before {
+        content: attr(data-label);
+        font-size: 11px;
+        font-weight: 700;
+        color: #8a7d78;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        flex-shrink: 0;
+        margin-right: 12px;
+    }
+
+    .rv-table tbody tr:hover td {
+        background: transparent;
+    }
+    .rv-table-wrap {
+        overflow-x: unset;
+    }
+}
+
+/* ── Pagination — sticky en bas sur desktop ── */
 .rv-pagination {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    background: #fff;
+    border-top: 1.5px solid #ede8e3;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 14px 20px;
-    border-top: 1px solid #f5f0eb;
+    padding: 12px 20px;
     flex-wrap: wrap;
+    margin-top: auto;
 }
 .rv-pagination-info {
     font-size: 12.5px;

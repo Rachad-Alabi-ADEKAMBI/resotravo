@@ -211,9 +211,44 @@ Route::middleware('auth')->group(function () {
         Route::patch('/{conversation}/read',       [MessageController::class, 'read'])                  ->name('read');
     });
 
-    // Vues messagerie dédiées
-    Route::get('/contractor/messagerie', fn() => view('pages.back.contractor.messaging'))->middleware('role:contractor')->name('contractor.messaging');
-    Route::get('/client/messagerie',     fn() => view('pages.back.client.messaging'))    ->middleware('role:client')    ->name('client.messaging');
+    Route::get('/unread-messages', [MessageController::class, 'unreadSummary'])->name('unread-messages');
+
+    // ── Messagerie — pages dédiées (split view) ─────────────────
+    Route::get('/client/messages', function () {
+        $user = Auth::user();
+        return view('pages.back.client.messages', [
+            'active' => 'messages',
+            'user'   => $user,
+            'routes' => [
+                'conversations_index'    => route('conversations.index'),
+                'conversations_messages' => url('/conversations/{id}/messages'),
+                'conversations_send'     => url('/conversations/{id}/messages'),
+                'conversations_attach'   => url('/conversations/{id}/attachment'),
+                'conversations_read'     => url('/conversations/{id}/read'),
+                'notifications'          => route('notifications.index'),
+                'notifications_all'      => route('notifications.read-all'),
+                'profile_photo'          => route('profile.photo'),
+            ],
+        ]);
+    })->middleware('role:client')->name('client.messages');
+
+    Route::get('/contractor/messages', function () {
+        $user = Auth::user();
+        return view('pages.back.contractor.messages', [
+            'active' => 'messages',
+            'user'   => $user,
+            'routes' => [
+                'conversations_index'    => route('conversations.index'),
+                'conversations_messages' => url('/conversations/{id}/messages'),
+                'conversations_send'     => url('/conversations/{id}/messages'),
+                'conversations_attach'   => url('/conversations/{id}/attachment'),
+                'conversations_read'     => url('/conversations/{id}/read'),
+                'notifications'          => route('notifications.index'),
+                'notifications_all'      => route('notifications.read-all'),
+                'profile_photo'          => route('profile.photo'),
+            ],
+        ]);
+    })->middleware('role:contractor')->name('contractor.messages');
 
     // ══════════════════════════════════════════════════════════════
     // ADMIN
@@ -235,7 +270,7 @@ Route::middleware('auth')->group(function () {
                     'talents_index'      => route('admin.talents.index'),
                     'disputes_index'     => route('admin.disputes.index'),
                     'tickets_index'      => route('admin.consulting.index'),
-                    'tenders_index'      => route('admin.tenders.index'),
+                    'tenders_index'      => route('admin.tenders.admin-index'),
                     'validation_index'   => route('admin.documents.dossiers'),
                     // Navigation
                     'missions_page'      => route('admin.missions'),
@@ -244,7 +279,7 @@ Route::middleware('auth')->group(function () {
                     'talents_page'       => route('admin.talents.page'),
                     'disputes_page'      => route('admin.disputes.page'),
                     'consulting_page'    => route('admin.consulting.page'),
-                    'tenders_page'       => route('admin.tenders.page'),
+                    'tenders_page'       => route('admin.tenders.admin-page'),
                     'services_page'      => route('admin.services.page'),
                     'validation_page'    => route('admin.validation'),
                     'accreditation_page' => route('admin.accreditation'),
@@ -254,6 +289,25 @@ Route::middleware('auth')->group(function () {
                 ],
             ]);
         })->name('dashboard');
+
+        // ── Messages admin ───────────────────────────────────────
+        Route::get('/messages', function () {
+            $user = Auth::user();
+            return view('pages.back.admin.messages', [
+                'active' => 'messages',
+                'user'   => $user,
+                'routes' => [
+                    'conversations_index'    => route('conversations.index'),
+                    'conversations_messages' => url('/conversations/{id}/messages'),
+                    'conversations_send'     => url('/conversations/{id}/messages'),
+                    'conversations_attach'   => url('/conversations/{id}/attachment'),
+                    'conversations_read'     => url('/conversations/{id}/read'),
+                    'notifications'          => route('notifications.index'),
+                    'notifications_all'      => route('notifications.read-all'),
+                    'profile_photo'          => route('profile.photo'),
+                ],
+            ]);
+        })->name('messages');
 
         // ── Paramètres admin ─────────────────────────────────────
         Route::get('/parameters', function () {
@@ -273,6 +327,65 @@ Route::middleware('auth')->group(function () {
         Route::get('/missions',      [AdminController::class, 'missions'])      ->name('missions');
         Route::get('/accreditation', [AdminController::class, 'accreditation']) ->name('accreditation');
         Route::get('/validation',    fn() => view('pages.back.admin.validation_documents'))->name('validation');
+
+        // ── Revenus & Finances ────────────────────────────────────
+        Route::get('/revenus', function () {
+            $user = Auth::user();
+            return view('pages.back.admin.revenus', [
+                'active' => 'revenus',
+                'user'   => $user,
+                'routes' => [
+                    'revenus_index'     => route('admin.revenus.data'),
+                    'notifications'     => route('notifications.index'),
+                    'notifications_all' => route('notifications.read-all'),
+                ],
+            ]);
+        })->name('revenus');
+
+        Route::get('/revenus/data', function (\Illuminate\Http\Request $request) {
+            $period = $request->get('period', 'month');
+            $role   = $request->get('role', '');
+
+            $dateFrom = match($period) {
+                'week'    => now()->startOfWeek(),
+                'month'   => now()->startOfMonth(),
+                'quarter' => now()->startOfQuarter(),
+                'year'    => now()->startOfYear(),
+                default   => now()->startOfMonth(),
+            };
+
+            $missions = \App\Models\Mission::whereIn('status', ['completed', 'closed'])
+                ->where('updated_at', '>=', $dateFrom)
+                ->with(['client.user', 'contractor.user'])
+                ->latest()
+                ->get()
+                ->map(fn($m) => [
+                    'id'              => $m->id,
+                    'service'         => $m->service,
+                    'client_name'     => $m->client?->user?->name     ?? '—',
+                    'contractor_name' => $m->contractor?->user?->name ?? '—',
+                    'total_amount'    => $m->total_amount,
+                    'status'          => $m->status,
+                    'completed_at'    => $m->updated_at,
+                    'created_at'      => $m->created_at,
+                ]);
+
+            $volumeTotal        = $missions->sum('total_amount');
+            $count              = $missions->count();
+            $commissionsPercues = round($volumeTotal * 0.10);
+            $versesPrestataires = round($volumeTotal * 0.90);
+            $enAttente          = \App\Models\Mission::where('status', 'active')->sum('total_amount');
+
+            return response()->json([
+                'missions'            => $missions,
+                'volume_total'        => $volumeTotal,
+                'commissions_percues' => $commissionsPercues,
+                'missions_cloturees'  => $count,
+                'panier_moyen'        => $count > 0 ? round($volumeTotal / $count) : 0,
+                'en_attente'          => $enAttente,
+                'verses_prestataires' => $versesPrestataires,
+            ]);
+        })->name('revenus.data');
 
         Route::get  ('/documents/dossiers',          [DocumentController::class, 'dossiers'])        ->name('documents.dossiers');
         Route::patch('/documents/{document}/status', [DocumentController::class, 'updateStatus'])    ->name('documents.status');
@@ -390,20 +503,14 @@ Route::middleware('auth')->group(function () {
             $user = Auth::user();
             return view('pages.back.admin.market', [
                 'active' => 'tenders',
-                'auth'   => $user ? ['id' => $user->id, 'role' => $user->role, 'name' => $user->name] : null,
+                'user'   => $user,
                 'routes' => [
-                    'tenders_index'   => route('tenders.index'),
-                    'tenders_stats'   => route('tenders.stats'),
-                    'tenders_store'   => route('client.tenders.store'),
-                    'tenders_apply'   => url('/tenders/{id}/apply'),
-                    'my_applications' => route('tenders.my-applications'),
-                    'my_tenders'      => route('client.tenders.mine'),
-                    'login'           => route('login'),
-                    'register'        => route('register.client'),
+                    'tenders_index'  => route('admin.tenders.admin-index'),
+                    'tenders_status' => url('/admin/tenders/{id}/status'),
                 ],
             ]);
-        })->name('tenders.page');
-        Route::get  ('/tenders',                 [TenderController::class, 'adminIndex'])        ->name('tenders.index');
+        })->name('tenders.admin-page');
+        Route::get  ('/tenders',                 [TenderController::class, 'adminIndex'])        ->name('tenders.admin-index');
         Route::patch('/tenders/{tender}/status', [TenderController::class, 'adminUpdateStatus']) ->name('tenders.status');
 
         // ── Services (catalogue) ──────────────────────────────────
@@ -486,17 +593,25 @@ Route::middleware('auth')->group(function () {
             $user        = Auth::user();
             $docProgress = $user->documentProgress();
             return view('pages.back.client.dashboard', [
-                'active'          => 'dashboard',
-                'user'            => $user,
-                'docProgressData' => $docProgress,
+                'active'             => 'dashboard',
+                'user'               => $user,
+                'docProgressData'    => $docProgress,
+                'userStatus'         => $user->status,
+                'completedMissions'  => $user->client
+                    ? \App\Models\Mission::where('client_id', $user->client->id)->where('status', 'closed')->count()
+                    : 0,
                 'routes'          => [
                     'missions_index'    => route('client.missions.index'),
                     'missions_page'     => route('client.missions.page'),
-                    'missions_status'   => url('/client/missions/{mission}/status'),
+                    'missions_store'    => route('client.missions.store'),
+                    'missions_status'   => url('/client/missions/{id}/status'),
                     'documents_index'   => route('documents.index'),
                     'dossier_page'      => route('client.dossier'),
                     'notifications'     => route('notifications.index'),
                     'notifications_all' => route('notifications.read-all'),
+                    'messages_page'     => route('client.messages'),
+                    'paiements_page'    => route('client.paiements'),
+                    'parameters_page'   => route('client.parameters'),
                 ],
             ]);
         })->name('dashboard');
@@ -516,6 +631,65 @@ Route::middleware('auth')->group(function () {
             ]);
         })->name('dossier');
 
+        // ── Paiements client ──────────────────────────────────────
+        Route::get('/paiements', function () {
+            $user = Auth::user();
+            return view('pages.back.client.paiements', [
+                'active' => 'paiements',
+                'user'   => $user,
+                'routes' => [
+                    'paiements_index'   => route('client.paiements.index'),
+                    'notifications'     => route('notifications.index'),
+                    'notifications_all' => route('notifications.read-all'),
+                ],
+            ]);
+        })->name('paiements');
+
+        // ── API paiements client (données JSON) ───────────────────
+        Route::get('/paiements/data', function (\Illuminate\Http\Request $request) {
+            $user    = Auth::user();
+            $client  = \App\Models\Client::where('user_id', $user->id)->first();
+            $period  = $request->get('period', 'month');
+
+            $dateFrom = match($period) {
+                'week'    => now()->startOfWeek(),
+                'month'   => now()->startOfMonth(),
+                'quarter' => now()->startOfQuarter(),
+                'year'    => now()->startOfYear(),
+                default   => now()->startOfMonth(),
+            };
+
+            $missions = \App\Models\Mission::where('client_id', $client?->id)
+                ->whereIn('status', ['completed', 'closed'])
+                ->where('updated_at', '>=', $dateFrom)
+                ->with('contractor.user')
+                ->latest()
+                ->get()
+                ->map(fn($m) => [
+                    'id'              => $m->id,
+                    'service'         => $m->service,
+                    'contractor_name' => $m->contractor?->user?->name ?? '—',
+                    'total_amount'    => $m->total_amount,
+                    'status'          => $m->status,
+                    'completed_at'    => $m->updated_at,
+                    'created_at'      => $m->created_at,
+                ]);
+
+            $total     = $missions->sum('total_amount');
+            $count     = $missions->count();
+            $enAttente = \App\Models\Mission::where('client_id', $client?->id)
+                ->where('status', 'active')
+                ->sum('total_amount');
+
+            return response()->json([
+                'missions'            => $missions,
+                'total_depenses'      => $total,
+                'missions_terminees'  => $count,
+                'depense_moyenne'     => $count > 0 ? round($total / $count) : 0,
+                'en_attente'          => $enAttente,
+            ]);
+        })->name('paiements.index');
+
         // ── Paramètres client ─────────────────────────────────────
         Route::get('/parameters', function () {
             $user = Auth::user();
@@ -532,15 +706,63 @@ Route::middleware('auth')->group(function () {
 
         // ── Missions ──────────────────────────────────────────────
         Route::get('/missions/page', function () {
-            $user   = Auth::user();
-            $client = \App\Models\Client::where('user_id', $user->id)->first();
-            return view('pages.back.client.missions', compact('user', 'client'));
+            $user        = Auth::user();
+            $client      = \App\Models\Client::where('user_id', $user->id)->first();
+            $docProgress = $user->documentProgress();
+            $routes = [
+                'missions_index'           => route('client.missions.index'),
+                'missions_store'           => route('client.missions.store'),
+                'missions_status'          => url('/client/missions') . '/{id}/status',
+                'reviews_store'            => url('/client/missions'),
+                'notifications'            => route('notifications.index'),
+                'notifications_read'       => url('/notifications') . '/{id}/read',
+                'notifications_all'        => route('notifications.read-all'),
+                'conversations'            => route('conversations.index'),
+                'conversations_mission'    => url('/conversations/mission') . '/{id}',
+                'conversations_messages'   => url('/conversations') . '/{id}/messages',
+                'conversations_send'       => url('/conversations') . '/{id}/messages',
+                'conversations_attachment' => url('/conversations') . '/{id}/attachment',
+                'conversations_read'       => url('/conversations') . '/{id}/read',
+                'unread_summary'           => route('unread-messages'),
+                'dossier_page'             => route('client.dossier'),
+            ];
+            return view('pages.back.client.missions', compact('user', 'client', 'routes', 'docProgress'));
         })->name('missions.page');
 
         Route::get  ('/missions',                  [MissionController::class, 'index'])       ->name('missions.index');
         Route::post ('/missions',                  [MissionController::class, 'store'])       ->name('missions.store');
         Route::get  ('/missions/{mission}',        [MissionController::class, 'show'])        ->name('missions.show');
         Route::patch('/missions/{mission}/status', [MissionController::class, 'updateStatus'])->name('missions.status');
+
+        // ── Avis prestataire ──────────────────────────────────────
+        Route::post('/missions/{mission}/review', function (\Illuminate\Http\Request $request, \App\Models\Mission $mission) {
+            $request->validate([
+                'rating'  => 'required|integer|between:1,5',
+                'comment' => 'nullable|string|max:500',
+            ]);
+
+            // Vérifier que c'est bien le client de cette mission
+            $user   = Auth::user();
+            $client = \App\Models\Client::where('user_id', $user->id)->firstOrFail();
+            if ($mission->client_id !== $client->id) {
+                abort(403);
+            }
+
+            // Mettre à jour la note moyenne du prestataire
+            $contractor = $mission->contractor;
+            if ($contractor) {
+                $totalReviews  = $contractor->reviews_count ?? 0;
+                $currentRating = $contractor->average_rating ?? 0;
+                $newCount      = $totalReviews + 1;
+                $newRating     = round((($currentRating * $totalReviews) + $request->rating) / $newCount, 2);
+                $contractor->update([
+                    'average_rating' => $newRating,
+                    'reviews_count'  => $newCount,
+                ]);
+            }
+
+            return response()->json(['success' => true]);
+        })->name('missions.review');
 
         // ── Appels d'offres — publication + mes AO (client uniquement) ────
         Route::post('/tenders',      [TenderController::class, 'store'])     ->name('tenders.store');
@@ -630,6 +852,38 @@ Route::middleware('auth')->group(function () {
                 'en_attente'          => $enAttente,
             ]);
         })->name('revenus.index');
+
+        // ── Accréditation contractor ─────────────────────────────────
+        Route::get('/accreditation', function () {
+            $user       = Auth::user();
+            $contractor = $user->contractor;
+            return view('pages.back.contractor.accreditation', [
+                'active'     => 'accreditation',
+                'user'       => $user,
+                'contractor' => $contractor,
+                'routes'     => [
+                    'accreditation_request' => route('contractor.accreditation.request'),
+                    'dossier_page'          => route('contractor.dossier'),
+                    'notifications'         => route('notifications.index'),
+                    'notifications_read'    => url('/notifications/{id}/read'),
+                    'notifications_all'     => route('notifications.read-all'),
+                ],
+            ]);
+        })->name('accreditation');
+
+        // ── API demande accréditation entreprise ──────────────────
+        Route::post('/accreditation/request', function (\Illuminate\Http\Request $request) {
+            $user    = Auth::user();
+            $message = $request->input('message', '');
+            \App\Models\User::where('role', 'admin')->each(function ($admin) use ($user, $message) {
+                $admin->notifications()->create([
+                    'title' => '🏅 Demande accréditation Entreprise',
+                    'body'  => $user->name . ' demande l\'accréditation Entreprise.' . ($message ? ' Message : ' . $message : ''),
+                    'url'   => route('admin.accreditation'),
+                ]);
+            });
+            return response()->json(['success' => true]);
+        })->name('accreditation.request');
 
         // ── Paramètres contractor ─────────────────────────────────
         Route::get('/parameters', function () {

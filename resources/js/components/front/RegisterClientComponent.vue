@@ -362,19 +362,28 @@
                     </div>
 
                     <!-- CGU -->
-                    <div class="rc-checkbox-row">
-                        <input type="checkbox" id="cgv" v-model="form.cgv" />
-                        <label for="cgv">
-                            J'accepte les
-                            <a :href="routes.cgu" target="_blank"
-                                >Conditions Générales d'Utilisation</a
+                    <div class="rc-cgu-block">
+                        <div v-if="form.cgv" class="rc-cgu-accepted">
+                            <span class="rc-cgu-check">✓</span>
+                            <span
+                                >CGU acceptées —
+                                <button
+                                    type="button"
+                                    class="rc-cgu-reread"
+                                    @click="openCguModal"
+                                >
+                                    Relire
+                                </button></span
                             >
-                            et la
-                            <a :href="routes.policy" target="_blank"
-                                >Politique de Confidentialité</a
-                            >
-                            de Resotravo.
-                        </label>
+                        </div>
+                        <button
+                            v-else
+                            type="button"
+                            class="rc-btn-cgu"
+                            @click="openCguModal"
+                        >
+                            📜 Lire et accepter les CGU
+                        </button>
                     </div>
                     <div
                         class="rc-err"
@@ -416,6 +425,299 @@
                     >
                         Accéder à mon espace →
                     </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════ MODAL CGU ══════════════ -->
+        <div
+            class="rc-modal-overlay"
+            v-if="cguModal.visible"
+            @click.self="closeCguModal"
+        >
+            <div class="rc-modal rc-modal-cgu">
+                <div class="rc-modal-cgu-header">
+                    <div
+                        class="rc-modal-icon"
+                        style="margin-bottom: 0; font-size: 28px"
+                    >
+                        📜
+                    </div>
+                    <h3 class="rc-modal-title" style="margin-bottom: 0">
+                        Conditions Générales d'Utilisation
+                    </h3>
+                    <p
+                        class="rc-modal-cgu-hint"
+                        v-if="!cguModal.scrolledToBottom"
+                    >
+                        ↓ Faites défiler jusqu'en bas pour accepter
+                    </p>
+                    <p class="rc-modal-cgu-hint rc-modal-cgu-hint--ok" v-else>
+                        ✓ Vous avez lu les CGU
+                    </p>
+                </div>
+
+                <!-- Zone scrollable -->
+                <div
+                    class="rc-modal-cgu-body"
+                    ref="cguScrollBox"
+                    @scroll="onCguScroll"
+                >
+                    <div class="rc-cgu-content">
+                        <div class="legal-intro-modal">
+                            <p>
+                                Les présentes Conditions Générales d'Utilisation
+                                (CGU) régissent l'utilisation de la plateforme
+                                <strong>Resotravo</strong>, accessible à
+                                l'adresse <strong>resotravo.bj</strong>.
+                            </p>
+                            <p>
+                                En créant un compte ou en utilisant nos
+                                services, vous acceptez sans réserve
+                                l'intégralité des présentes CGU.
+                            </p>
+                        </div>
+
+                        <div class="cgu-article">
+                            <h4>
+                                <span class="cgu-num">01</span> Objet et champ
+                                d'application
+                            </h4>
+                            <p>
+                                Resotravo est une plateforme numérique de mise
+                                en relation entre des Clients (particuliers et
+                                entreprises), des Prestataires (artisans et
+                                ouvriers spécialisés) et des Talents
+                                (professionnels qualifiés BAC+3 minimum).
+                                Resotravo agit en qualité d'intermédiaire et ne
+                                peut être considéré comme partie aux contrats
+                                conclus entre Clients et Prestataires ou
+                                Talents.
+                            </p>
+                        </div>
+
+                        <div class="cgu-article">
+                            <h4><span class="cgu-num">02</span> Définitions</h4>
+                            <p>
+                                <strong>Plateforme</strong> : le site web et les
+                                services Resotravo accessibles via
+                                resotravo.bj.<br />
+                                <strong>Client</strong> : toute personne
+                                physique ou morale inscrite en qualité de
+                                client.<br />
+                                <strong>Prestataire</strong> : tout
+                                professionnel inscrit pour proposer ses
+                                services.<br />
+                                <strong>Mission</strong> : toute intervention
+                                commandée par un Client via la plateforme.<br />
+                                <strong>Commission</strong> : rémunération de
+                                Resotravo fixée à 10% du montant de chaque
+                                mission réalisée.
+                            </p>
+                        </div>
+
+                        <div class="cgu-article">
+                            <h4>
+                                <span class="cgu-num">03</span> Inscription et
+                                accès à la plateforme
+                            </h4>
+                            <p>
+                                L'inscription est ouverte à toute personne
+                                physique majeure ou morale disposant d'une
+                                adresse email valide. L'utilisateur s'engage à
+                                fournir des informations exactes, complètes et à
+                                les maintenir à jour. La création d'un compte
+                                est gratuite.
+                            </p>
+                            <p>
+                                Chaque utilisateur est seul responsable de la
+                                confidentialité de ses identifiants. En cas de
+                                perte ou de compromission, l'utilisateur doit
+                                contacter immédiatement Resotravo.
+                            </p>
+                        </div>
+
+                        <div class="cgu-article">
+                            <h4>
+                                <span class="cgu-num">04</span> Accréditation
+                                des prestataires
+                            </h4>
+                            <p>
+                                Tout prestataire souhaitant accepter des
+                                missions doit soumettre : CNI ou passeport,
+                                photo d'identité, attestation de résidence
+                                (moins de 3 mois), casier judiciaire (Bulletin
+                                n°3), copie du CIP et diplôme ou attestation de
+                                qualification.
+                            </p>
+                            <p>
+                                <strong>Accréditation DOMICILE</strong> :
+                                accordée automatiquement après validation du
+                                dossier.
+                                <strong>Accréditation ENTREPRISE</strong> :
+                                délivrée exclusivement par décision de
+                                l'administrateur après vérification
+                                complémentaire.
+                            </p>
+                        </div>
+
+                        <div class="cgu-article">
+                            <h4>
+                                <span class="cgu-num">05</span> Fonctionnement
+                                des missions
+                            </h4>
+                            <p>
+                                Chaque intervention suit un workflow en 12
+                                étapes validées par le client à chaque jalon
+                                clé. Le paiement est déclenché uniquement après
+                                confirmation de fin des travaux par le client.
+                                Aucun paiement en dehors de la plateforme n'est
+                                autorisé.
+                            </p>
+                        </div>
+
+                        <div class="cgu-article">
+                            <h4>
+                                <span class="cgu-num">06</span> Paiement et
+                                commission
+                            </h4>
+                            <p>
+                                Le paiement s'effectue exclusivement via MTN
+                                MoMo. Resotravo prélève une commission de 10%
+                                sur chaque prestation réalisée. Le prestataire
+                                perçoit 90% du montant du devis approuvé. Tout
+                                paiement hors-plateforme dégage Resotravo de
+                                toute responsabilité.
+                            </p>
+                        </div>
+
+                        <div class="cgu-article">
+                            <h4>
+                                <span class="cgu-num">07</span> Responsabilités
+                            </h4>
+                            <p>
+                                Resotravo est un intermédiaire de mise en
+                                relation. La responsabilité des interventions
+                                incombe exclusivement aux prestataires.
+                                Resotravo ne garantit pas les résultats des
+                                interventions mais s'engage à mettre en relation
+                                des prestataires vérifiés et certifiés.
+                            </p>
+                        </div>
+
+                        <div class="cgu-article">
+                            <h4>
+                                <span class="cgu-num">08</span> Propriété
+                                intellectuelle
+                            </h4>
+                            <p>
+                                L'ensemble des contenus de la plateforme (logo,
+                                textes, interface) est la propriété exclusive de
+                                Resotravo. Toute reproduction sans autorisation
+                                est interdite.
+                            </p>
+                        </div>
+
+                        <div class="cgu-article">
+                            <h4>
+                                <span class="cgu-num">09</span> Protection des
+                                données
+                            </h4>
+                            <p>
+                                Les données des utilisateurs sont collectées et
+                                traitées dans le respect de la réglementation en
+                                vigueur. Elles sont chiffrées et ne sont jamais
+                                revendues à des tiers. Vous disposez d'un droit
+                                d'accès, de rectification et de suppression de
+                                vos données.
+                            </p>
+                        </div>
+
+                        <div class="cgu-article">
+                            <h4>
+                                <span class="cgu-num">10</span> Résiliation et
+                                sanctions
+                            </h4>
+                            <p>
+                                Resotravo se réserve le droit de suspendre ou
+                                supprimer tout compte en cas de violation des
+                                CGU, de fausses informations, de comportement
+                                frauduleux ou de paiement hors plateforme.
+                            </p>
+                        </div>
+
+                        <div class="cgu-article">
+                            <h4>
+                                <span class="cgu-num">11</span> Modification des
+                                CGU
+                            </h4>
+                            <p>
+                                Resotravo se réserve le droit de modifier les
+                                présentes CGU à tout moment. Les utilisateurs
+                                seront informés par email et/ou notification. La
+                                poursuite de l'utilisation vaut acceptation des
+                                nouvelles CGU.
+                            </p>
+                        </div>
+
+                        <div class="cgu-article">
+                            <h4>
+                                <span class="cgu-num">12</span> Droit applicable
+                                et litiges
+                            </h4>
+                            <p>
+                                Les présentes CGU sont soumises au droit
+                                béninois. Tout litige sera soumis à la
+                                compétence exclusive des juridictions du Bénin.
+                                Resotravo peut jouer un rôle de médiateur sous
+                                2h après signalement.
+                            </p>
+                        </div>
+
+                        <div class="cgu-article">
+                            <h4><span class="cgu-num">13</span> Contact</h4>
+                            <p>
+                                🌐 <strong>resotravo.bj</strong><br />
+                                ✉️ contact@resotravo.bj<br />
+                                📞 +229 01 96 66 36 44<br />
+                                💬 WhatsApp : +229 01 96 66 36 44<br />
+                                📍 Cotonou, Bénin
+                            </p>
+                        </div>
+
+                        <div class="cgu-last-update">
+                            Version 2.0 — Mars 2026
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Barre de progression du scroll -->
+                <div class="rc-cgu-scroll-bar">
+                    <div
+                        class="rc-cgu-scroll-fill"
+                        :style="{ width: cguModal.scrollPct + '%' }"
+                    ></div>
+                </div>
+
+                <!-- Boutons -->
+                <div class="rc-modal-cgu-footer">
+                    <button
+                        type="button"
+                        class="rc-btn rc-btn-secondary"
+                        @click="closeCguModal"
+                        style="flex: 1"
+                    >
+                        Fermer
+                    </button>
+                    <button
+                        type="button"
+                        class="rc-btn rc-btn-primary"
+                        :disabled="!cguModal.scrolledToBottom"
+                        @click="acceptCgu"
+                        style="flex: 2"
+                    >
+                        ✓ Oui, j'ai lu et j'accepte
+                    </button>
                 </div>
             </div>
         </div>
@@ -494,10 +796,16 @@ export default {
                 company_name: "",
                 password: "",
                 password_confirmation: "",
-                cgv: true,
+                cgv: false,
             },
 
             errors: {},
+
+            cguModal: {
+                visible: false,
+                scrolledToBottom: false,
+                scrollPct: 0,
+            },
 
             errorModal: {
                 visible: false,
@@ -529,6 +837,39 @@ export default {
     },
 
     methods: {
+        /* ── Modal CGU ── */
+        openCguModal() {
+            this.cguModal.visible = true;
+            this.cguModal.scrolledToBottom = false;
+            this.cguModal.scrollPct = 0;
+            this.$nextTick(() => {
+                const box = this.$refs.cguScrollBox;
+                if (box) box.scrollTop = 0;
+            });
+        },
+
+        closeCguModal() {
+            this.cguModal.visible = false;
+        },
+
+        acceptCgu() {
+            this.form.cgv = true;
+            this.cguModal.visible = false;
+            if (this.errors.cgv) delete this.errors.cgv;
+        },
+
+        onCguScroll(e) {
+            const el = e.target;
+            const scrolled = el.scrollTop + el.clientHeight;
+            const total = el.scrollHeight;
+            const pct = Math.min(100, Math.round((scrolled / total) * 100));
+            this.cguModal.scrollPct = pct;
+            // Considéré comme "en bas" quand il reste moins de 40px
+            if (total - scrolled <= 40) {
+                this.cguModal.scrolledToBottom = true;
+            }
+        },
+
         /* ── Validation par étape ── */
         validate() {
             this.errors = {};
@@ -1062,29 +1403,182 @@ export default {
 }
 
 /* CGU */
-.rc-checkbox-row {
+.rc-cgu-block {
+    margin-bottom: 16px;
+}
+.rc-btn-cgu {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px 18px;
+    border-radius: 10px;
+    border: 2px dashed var(--or, #f97316);
+    background: var(--or3, #fff7ed);
+    color: var(--or, #f97316);
+    font-size: 14px;
+    font-weight: 700;
+    font-family: "Poppins", sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+    justify-content: center;
+}
+.rc-btn-cgu:hover {
+    background: rgba(249, 115, 22, 0.12);
+    transform: translateY(-1px);
+}
+.rc-cgu-accepted {
+    display: flex;
+    align-items: center;
     gap: 10px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: #f0fdf4;
+    border: 1.5px solid #86efac;
+    font-size: 13.5px;
+    color: #16a34a;
+    font-weight: 600;
+}
+.rc-cgu-check {
+    font-size: 16px;
+}
+.rc-cgu-reread {
+    background: none;
+    border: none;
+    color: var(--or, #f97316);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+    font-family: "Poppins", sans-serif;
+}
+
+/* MODAL CGU */
+.rc-modal-cgu {
+    max-width: 620px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+    overflow: hidden;
+}
+.rc-modal-cgu-header {
+    padding: 24px 28px 16px;
+    border-bottom: 1.5px solid var(--grl, #e8ddd4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    text-align: center;
+}
+.rc-modal-cgu-hint {
+    font-size: 12.5px;
+    color: var(--grm, #8a7d78);
+    margin: 0;
+    font-style: italic;
+}
+.rc-modal-cgu-hint--ok {
+    color: #16a34a;
+    font-style: normal;
+    font-weight: 600;
+}
+.rc-modal-cgu-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 28px;
+    scroll-behavior: smooth;
+}
+.rc-modal-cgu-body::-webkit-scrollbar {
+    width: 6px;
+}
+.rc-modal-cgu-body::-webkit-scrollbar-track {
+    background: var(--grl, #e8ddd4);
+    border-radius: 99px;
+}
+.rc-modal-cgu-body::-webkit-scrollbar-thumb {
+    background: var(--or, #f97316);
+    border-radius: 99px;
+}
+.rc-cgu-scroll-bar {
+    height: 4px;
+    background: var(--grl, #e8ddd4);
+    flex-shrink: 0;
+}
+.rc-cgu-scroll-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--or, #f97316), var(--or2, #ea580c));
+    transition: width 0.1s;
+    border-radius: 0 99px 99px 0;
+}
+.rc-modal-cgu-footer {
+    padding: 16px 28px 24px;
+    display: flex;
+    gap: 12px;
+    border-top: 1.5px solid var(--grl, #e8ddd4);
+}
+
+/* Contenu CGU dans le modal */
+.legal-intro-modal {
+    background: var(--or3, #fff7ed);
+    border: 1px solid rgba(249, 115, 22, 0.2);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    font-size: 13.5px;
+    color: var(--dk, #1c1412);
+    line-height: 1.7;
+}
+.legal-intro-modal p {
+    margin-bottom: 6px;
+}
+.legal-intro-modal p:last-child {
+    margin-bottom: 0;
+}
+.cgu-article {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--grl, #e8ddd4);
+}
+.cgu-article:last-of-type {
+    border-bottom: none;
+}
+.cgu-article h4 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14.5px;
+    font-weight: 800;
+    color: var(--dk, #1c1412);
+    margin-bottom: 8px;
+}
+.cgu-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: linear-gradient(
+        135deg,
+        var(--or, #f97316),
+        var(--or2, #ea580c)
+    );
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.cgu-article p {
     font-size: 13.5px;
     color: var(--gr, #7c6a5a);
-    margin-bottom: 16px;
-    line-height: 1.5;
+    line-height: 1.75;
 }
-.rc-checkbox-row input {
-    width: 16px;
-    height: 16px;
-    accent-color: var(--or, #f97316);
-    flex-shrink: 0;
-    margin-top: 2px;
-}
-.rc-checkbox-row a {
-    color: var(--or, #f97316);
-    font-weight: 600;
-    text-decoration: none;
-}
-.rc-checkbox-row a:hover {
-    text-decoration: underline;
+.cgu-last-update {
+    text-align: center;
+    font-size: 12px;
+    color: var(--grm, #8a7d78);
+    padding: 16px 0 4px;
+    font-style: italic;
 }
 
 /* ERREUR */

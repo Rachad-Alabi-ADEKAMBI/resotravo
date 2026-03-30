@@ -601,9 +601,9 @@ export default {
 
             suggestions: [
                 "Quel prestataire pour réparer mon disjoncteur ?",
-                "Comment fonctionne le paiement MTN MoMo ?",
+                "Comment fonctionne le paiement MoMo ?",
                 "Je veux publier un appel d'offres",
-                "Quel est le délai pour trouver un artisan ?",
+                "Quel est le délai pour trouver un prestataire ?",
             ],
 
             howSteps: [
@@ -650,7 +650,7 @@ export default {
                 },
                 {
                     icon: "📍",
-                    question: "Puis-je choisir moi-même mon artisan ?",
+                    question: "Puis-je choisir moi-même mon prestataire ?",
                     tag: "Géolocalisation",
                 },
                 {

@@ -49,6 +49,7 @@
             'conversations_messages' => url('/conversations/{id}/messages'),
             'conversations_send'     => url('/conversations/{id}/messages'),
             'conversations_attach'   => url('/conversations/{id}/attachment'),
+            'missions_quote_store'   => url('/contractor/missions/{id}/quote'),
             'conversations_read'     => url('/conversations/{id}/read'),
         ]) }}"
     ></contractor-dashboard-component>

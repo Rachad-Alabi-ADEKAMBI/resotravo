@@ -93,6 +93,7 @@
                         class="clm-search"
                         type="text"
                         v-model="search"
+                        @input="currentPage = 1"
                         placeholder="Rechercher une mission…"
                     />
                 </div>
@@ -102,7 +103,10 @@
                         v-for="t in tabs"
                         :key="t.key"
                         :class="{ active: activeTab === t.key }"
-                        @click="activeTab = t.key"
+                        @click="
+                            activeTab = t.key;
+                            currentPage = 1;
+                        "
                     >
                         {{ t.label }}
                         <span class="clm-tab-count">{{
@@ -129,7 +133,7 @@
             </div>
 
             <!-- Vide -->
-            <div class="clm-empty" v-else-if="filteredMissions.length === 0">
+            <div class="clm-empty" v-else-if="totalFiltered === 0">
                 <div class="clm-empty-icon">📭</div>
                 <div class="clm-empty-title">Aucune mission</div>
                 <div class="clm-empty-sub">
@@ -149,7 +153,7 @@
             <div class="clm-list" v-else>
                 <div
                     class="clm-item"
-                    v-for="m in filteredMissions"
+                    v-for="m in pagedMissions"
                     :key="m.id"
                     @click="openMission(m)"
                 >
@@ -199,6 +203,53 @@
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- ── PAGINATION ── -->
+            <div class="clm-pagination" v-if="totalPages > 1">
+                <button
+                    class="clm-page-btn"
+                    @click="currentPage = 1"
+                    :disabled="currentPage === 1"
+                >
+                    «
+                </button>
+                <button
+                    class="clm-page-btn"
+                    @click="currentPage--"
+                    :disabled="currentPage === 1"
+                >
+                    ‹
+                </button>
+                <button
+                    class="clm-page-btn"
+                    v-for="p in visiblePages"
+                    :key="p"
+                    :class="{ active: p === currentPage }"
+                    @click="currentPage = p"
+                >
+                    {{ p }}
+                </button>
+                <button
+                    class="clm-page-btn"
+                    @click="currentPage++"
+                    :disabled="currentPage === totalPages"
+                >
+                    ›
+                </button>
+                <button
+                    class="clm-page-btn"
+                    @click="currentPage = totalPages"
+                    :disabled="currentPage === totalPages"
+                >
+                    »
+                </button>
+                <span class="clm-page-info">
+                    {{ (currentPage - 1) * perPage + 1 }}–{{
+                        Math.min(currentPage * perPage, totalFiltered)
+                    }}
+                    sur {{ totalFiltered }}
+                </span>
             </div>
         </div>
 
@@ -306,6 +357,18 @@
                                     ><strong>{{
                                         activeMission.description ?? "—"
                                     }}</strong>
+                                </div>
+                                <div class="clm-row clm-row-images" v-if="activeMission.images && activeMission.images.length">
+                                    <span>Photos</span>
+                                    <div class="clm-mission-images">
+                                        <img
+                                            v-for="(url, i) in activeMission.images"
+                                            :key="i"
+                                            :src="url"
+                                            @click="missionLightbox = url"
+                                            class="clm-mission-img"
+                                        />
+                                    </div>
                                 </div>
                                 <div
                                     class="clm-row"
@@ -586,25 +649,103 @@
                                 </div>
                             </div>
 
-                            <!-- Paiement débloqué -->
+                            <!-- Paiement MoMo — visible dès completed, même après avis -->
                             <div
                                 class="clm-action-block clm-action-pay"
-                                v-if="activeMission.payment_unlocked"
+                                v-if="
+                                    activeMission.payment_unlocked ||
+                                    activeMission.status === 'completed'
+                                "
                             >
                                 <div class="clm-action-pay-icon">💸</div>
                                 <div class="clm-action-pay-title">
                                     Paiement requis
                                 </div>
                                 <div class="clm-action-pay-sub">
-                                    Procédez au paiement MTN MoMo pour clôturer
-                                    la mission.
+                                    Choisissez votre réseau et procédez au
+                                    paiement mobile pour clôturer la mission.
                                 </div>
                                 <button
                                     class="clm-btn clm-btn-orange clm-btn-full"
-                                    @click="wip('Paiement MoMo')"
+                                    @click="openMomoModal(activeMission)"
                                 >
-                                    Payer via MTN MoMo →
+                                    💳 Payer via Mobile Money →
                                 </button>
+                            </div>
+
+                            <!-- Avis prestataire (statut completed) -->
+                            <div
+                                class="clm-action-block clm-action-review"
+                                v-if="activeMission.status === 'completed'"
+                            >
+                                <div class="clm-review-header">
+                                    <span class="clm-review-icon">⭐</span>
+                                    <div>
+                                        <div class="clm-review-title">
+                                            Évaluez le prestataire
+                                        </div>
+                                        <div class="clm-review-sub">
+                                            Votre avis aide la communauté
+                                            Resotravo
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="clm-stars-wrap">
+                                    <button
+                                        class="clm-star"
+                                        v-for="n in 5"
+                                        :key="n"
+                                        :class="{
+                                            active: n <= reviewModal.rating,
+                                        }"
+                                        @click="reviewModal.rating = n"
+                                        type="button"
+                                    >
+                                        ★
+                                    </button>
+                                    <span
+                                        class="clm-star-label"
+                                        v-if="reviewModal.rating"
+                                    >
+                                        {{ starLabel(reviewModal.rating) }}
+                                    </span>
+                                </div>
+                                <textarea
+                                    class="clm-review-textarea"
+                                    v-model="reviewModal.comment"
+                                    placeholder="Décrivez votre expérience (optionnel)…"
+                                    rows="3"
+                                    maxlength="500"
+                                ></textarea>
+                                <div class="clm-review-count">
+                                    {{ reviewModal.comment.length }}/500
+                                </div>
+                                <button
+                                    class="clm-btn clm-btn-green clm-btn-full"
+                                    @click="submitReviewAndClose(activeMission)"
+                                    :disabled="
+                                        !reviewModal.rating ||
+                                        reviewModal.loading
+                                    "
+                                >
+                                    <div
+                                        class="clm-spinner"
+                                        v-if="reviewModal.loading"
+                                    ></div>
+                                    <span v-else
+                                        >✓ Soumettre l'avis et clôturer la
+                                        mission</span
+                                    >
+                                </button>
+                                <div class="clm-review-skip">
+                                    <button
+                                        class="clm-link"
+                                        @click="closeMissionOnly(activeMission)"
+                                        :disabled="reviewModal.loading"
+                                    >
+                                        Passer et clôturer sans avis →
+                                    </button>
+                                </div>
                             </div>
 
                             <!-- Statuts informatifs -->
@@ -816,10 +957,37 @@
                     </button>
                     <div class="clm-geo-ok" v-if="geoOk">
                         <span>📍</span>
-                        <span>Position enregistrée</span>
+                        <span class="clm-geo-ok-addr">{{
+                            geoAddress || "Position enregistrée"
+                        }}</span>
                         <button class="clm-geo-reset" @click="resetGeo">
                             ✕
                         </button>
+                    </div>
+                    <!-- Images optionnelles -->
+                    <div class="clm-field">
+                        <label>Photos (optionnel, max 5 × 10 Mo)</label>
+                        <div class="clm-img-upload-row">
+                            <label class="clm-img-add-btn" title="Ajouter des photos">
+                                <input
+                                    type="file"
+                                    multiple
+                                    accept="image/*"
+                                    style="display:none"
+                                    ref="imgInput"
+                                    @change="onImagesSelect"
+                                />
+                                <span>＋ Photo</span>
+                            </label>
+                            <div
+                                class="clm-img-thumb"
+                                v-for="(img, i) in imagesPreviews"
+                                :key="i"
+                            >
+                                <img :src="img.url" :alt="img.name" />
+                                <button class="clm-img-remove" @click.prevent="removeImage(i)">✕</button>
+                            </div>
+                        </div>
                     </div>
                     <div class="clm-alert-error" v-if="formError">
                         {{ formError }}
@@ -1005,6 +1173,11 @@
             @unread="onChatUnread($event)"
         />
 
+        <!-- Lightbox images mission -->
+        <div class="clm-lightbox" v-if="missionLightbox" @click="missionLightbox = null">
+            <img :src="missionLightbox" />
+        </div>
+
         <!-- TOASTS -->
         <div class="clm-toast-container">
             <div
@@ -1014,6 +1187,128 @@
                 :class="t.type"
             >
                 {{ t.message }}
+            </div>
+        </div>
+
+        <!-- ══════════════ MODAL PAIEMENT MOMO ══════════════ -->
+        <div
+            class="clm-modal-overlay"
+            v-if="momoModal.visible"
+            @click.self="momoModal.visible = false"
+        >
+            <div class="clm-modal">
+                <div class="clm-modal-header">
+                    <div>
+                        <h3>💳 Paiement Mobile Money</h3>
+                        <div class="clm-modal-sub">
+                            Mission #{{ momoModal.mission?.id }} —
+                            {{ formatPrice(momoModal.mission?.total_amount) }}
+                        </div>
+                    </div>
+                    <button
+                        class="clm-modal-close"
+                        @click="momoModal.visible = false"
+                    >
+                        &#215;
+                    </button>
+                </div>
+                <div class="clm-modal-body">
+                    <div class="clm-field">
+                        <label class="clm-form-label"
+                            >Réseau Mobile Money
+                            <span class="clm-req">*</span></label
+                        >
+                        <div class="clm-momo-networks">
+                            <button
+                                type="button"
+                                class="clm-momo-network"
+                                v-for="net in momoNetworks"
+                                :key="net.value"
+                                :class="{
+                                    active: momoModal.network === net.value,
+                                }"
+                                @click="momoModal.network = net.value"
+                            >
+                                <span class="clm-momo-net-icon">{{
+                                    net.icon
+                                }}</span>
+                                <span class="clm-momo-net-label">{{
+                                    net.label
+                                }}</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="clm-field">
+                        <label class="clm-form-label"
+                            >Numéro de téléphone
+                            <span class="clm-req">*</span></label
+                        >
+                        <input
+                            class="clm-input"
+                            type="tel"
+                            v-model="momoModal.phone"
+                            placeholder="Ex : 97 12 34 56"
+                            maxlength="20"
+                        />
+                        <div class="clm-momo-hint">
+                            Entrez le numéro associé à votre compte
+                            {{
+                                momoModal.network
+                                    ? momoNetworks.find(
+                                          (n) => n.value === momoModal.network,
+                                      )?.label
+                                    : "Mobile Money"
+                            }}.
+                        </div>
+                    </div>
+                    <div
+                        class="clm-momo-recap"
+                        v-if="momoModal.network && momoModal.phone"
+                    >
+                        <div class="clm-momo-recap-row">
+                            <span>Réseau</span>
+                            <strong>{{
+                                momoNetworks.find(
+                                    (n) => n.value === momoModal.network,
+                                )?.label
+                            }}</strong>
+                        </div>
+                        <div class="clm-momo-recap-row">
+                            <span>Numéro</span>
+                            <strong>{{ momoModal.phone }}</strong>
+                        </div>
+                        <div class="clm-momo-recap-row">
+                            <span>Montant</span>
+                            <strong class="clm-momo-amount">{{
+                                formatPrice(momoModal.mission?.total_amount)
+                            }}</strong>
+                        </div>
+                    </div>
+                    <div class="clm-momo-warning">
+                        🔒 Vous recevrez une demande de paiement sur votre
+                        téléphone. Confirmez avec votre code PIN.
+                    </div>
+                </div>
+                <div class="clm-modal-footer">
+                    <button
+                        class="clm-btn clm-btn-ghost"
+                        @click="momoModal.visible = false"
+                    >
+                        Annuler
+                    </button>
+                    <button
+                        class="clm-btn clm-btn-orange"
+                        @click="submitMomo"
+                        :disabled="
+                            !momoModal.network ||
+                            !momoModal.phone.trim() ||
+                            momoModal.loading
+                        "
+                    >
+                        <div class="clm-spinner" v-if="momoModal.loading"></div>
+                        <span v-else>✓ Confirmer le paiement</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -1057,8 +1352,12 @@ export default {
             showNewMission: false,
             submitting: false,
             formError: "",
+            imageFiles: [],
+            imagesPreviews: [],
+            missionLightbox: null,
             geoLoading: false,
             geoOk: false,
+            geoAddress: "",
             form: {
                 location_type: "residential",
                 service: "",
@@ -1070,6 +1369,23 @@ export default {
 
             // Signalement
             signalModal: { visible: false, reason: "", loading: false },
+
+            // Avis prestataire
+            reviewModal: { rating: 0, comment: "", loading: false },
+
+            // Paiement MoMo
+            momoModal: {
+                visible: false,
+                mission: null,
+                network: "",
+                phone: "",
+                loading: false,
+            },
+            momoNetworks: [
+                { value: "mtn", label: "MTN Bénin", icon: "🟡" },
+                { value: "moov", label: "Moov Bénin", icon: "🔵" },
+                { value: "celtiis", label: "Celtiis", icon: "🟠" },
+            ],
 
             // Refus devis
             rejectQuoteModal: {
@@ -1099,6 +1415,10 @@ export default {
             toasts: [],
             toastId: 0,
             sidebarOpen: false,
+
+            // Pagination
+            currentPage: 1,
+            perPage: 10,
 
             services: [
                 { value: "plomberie", label: "Plomberie", icon: "🔧" },
@@ -1208,6 +1528,28 @@ export default {
             }
             return list;
         },
+        totalFiltered() {
+            return this.filteredMissions.length;
+        },
+        totalPages() {
+            return Math.max(1, Math.ceil(this.totalFiltered / this.perPage));
+        },
+        pagedMissions() {
+            const start = (this.currentPage - 1) * this.perPage;
+            return this.filteredMissions.slice(start, start + this.perPage);
+        },
+        visiblePages() {
+            const pages = [];
+            const delta = 2;
+            for (
+                let i = Math.max(1, this.currentPage - delta);
+                i <= Math.min(this.totalPages, this.currentPage + delta);
+                i++
+            ) {
+                pages.push(i);
+            }
+            return pages;
+        },
     },
 
     methods: {
@@ -1246,9 +1588,16 @@ export default {
                 const csrf = document.querySelector(
                     'meta[name="csrf-token"]',
                 )?.content;
-                const url = this.routes.missions_status.replace(
-                    "{id}",
+                const url = this.routes.missions_status
+                    .replace("{id}", mission.id)
+                    .replace("{mission}", mission.id);
+                console.log(
+                    "[DEBUG] missions_status URL:",
+                    url,
+                    "| mission.id:",
                     mission.id,
+                    "| routes.missions_status:",
+                    this.routes.missions_status,
                 );
                 const res = await fetch(url, {
                     method: "PATCH",
@@ -1278,9 +1627,107 @@ export default {
 
         async confirmCompletion(m) {
             await this.updateMissionStatus(m, "completed");
+            this.reviewModal = { rating: 0, comment: "", loading: false };
             this.showToast(
-                "Fin des travaux confirmée ! Vous pouvez procéder au paiement.",
+                "Fin des travaux confirmée ! Évaluez le prestataire et procédez au paiement.",
                 "success",
+            );
+        },
+
+        async submitReviewAndClose(m) {
+            if (!this.reviewModal.rating) return;
+            this.reviewModal.loading = true;
+            try {
+                const csrf =
+                    document.querySelector('meta[name="csrf-token"]')
+                        ?.content ?? "";
+                const reviewUrl =
+                    (this.routes.reviews_store ?? "/client/missions") +
+                    "/" +
+                    m.id +
+                    "/review";
+                await fetch(reviewUrl, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": csrf,
+                        Accept: "application/json",
+                    },
+                    body: JSON.stringify({
+                        rating: this.reviewModal.rating,
+                        comment: this.reviewModal.comment.trim(),
+                    }),
+                });
+                await this.closeMissionOnly(m);
+            } catch {
+                this.showToast(
+                    "Erreur lors de la soumission de l'avis.",
+                    "error",
+                );
+                this.reviewModal.loading = false;
+            }
+        },
+
+        async closeMissionOnly(m) {
+            this.reviewModal.loading = true;
+            await this.updateMissionStatus(m, "closed");
+            this.reviewModal = { rating: 0, comment: "", loading: false };
+            this.showToast(
+                "Mission clôturée. Merci de votre confiance !",
+                "success",
+            );
+        },
+
+        openMomoModal(mission) {
+            this.momoModal = {
+                visible: true,
+                mission,
+                network: "",
+                phone: "",
+                loading: false,
+            };
+        },
+
+        async submitMomo() {
+            if (!this.momoModal.network || !this.momoModal.phone.trim()) return;
+            this.momoModal.loading = true;
+            try {
+                // Réutiliser updateMissionStatus qui gère déjà l'URL correctement
+                const result = await this.updateMissionStatus(
+                    this.momoModal.mission,
+                    "closed",
+                    {
+                        momo_network: this.momoModal.network,
+                        momo_phone: this.momoModal.phone.trim(),
+                    },
+                );
+                if (result) {
+                    this.momoModal.visible = false;
+                    this.showToast(
+                        "🎉 Paiement confirmé ! Mission clôturée avec succès.",
+                        "success",
+                    );
+                }
+            } catch {
+                this.showToast(
+                    "Erreur lors du paiement. Veuillez réessayer.",
+                    "error",
+                );
+            } finally {
+                this.momoModal.loading = false;
+            }
+        },
+
+        starLabel(n) {
+            return (
+                [
+                    "",
+                    "😕 Mauvais",
+                    "😐 Passable",
+                    "🙂 Correct",
+                    "😊 Bien",
+                    "🤩 Excellent !",
+                ][n] ?? ""
             );
         },
 
@@ -1363,7 +1810,115 @@ export default {
                 .total-row td { padding: 12px 10px; font-size: 15px; font-weight: 800; border-top: 2px solid #f97316; }
                 .diag { background: #fff7ed; border-left: 4px solid #f97316; padding: 10px 14px; font-size: 13px; color: #7c6a5a; border-radius: 4px; margin-bottom: 8px; }
                 .footer { margin-top: 40px; font-size: 11px; color: #8a7d78; text-align: center; border-top: 1px solid #e8ddd4; padding-top: 16px; }
-            </style></head><body>
+            
+/* ── PAGINATION ── */
+.clm-pagination {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 24px;
+    padding-bottom: 16px;
+}
+.clm-page-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1.5px solid var(--grl);
+    background: var(--wh);
+    font-family: "Poppins", sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gr);
+    cursor: pointer;
+    transition: all 0.18s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.clm-page-btn:hover:not(:disabled) {
+    border-color: var(--or);
+    color: var(--or);
+}
+.clm-page-btn.active {
+    background: var(--or);
+    border-color: var(--or);
+    color: #fff;
+}
+.clm-page-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.clm-page-info {
+    font-size: 12.5px;
+    color: var(--gr);
+    margin-left: 8px;
+}
+
+/* ── MODAL PAIEMENT MOMO ── */
+.clm-momo-networks {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+}
+.clm-momo-network {
+    flex: 1;
+    min-width: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 14px 10px;
+    border: 2px solid var(--grl);
+    border-radius: 12px;
+    background: var(--wh);
+    cursor: pointer;
+    transition: all 0.18s;
+    font-family: "Poppins", sans-serif;
+}
+.clm-momo-network:hover { border-color: var(--or); }
+.clm-momo-network.active {
+    border-color: var(--or);
+    background: var(--or3);
+}
+.clm-momo-net-icon  { font-size: 26px; }
+.clm-momo-net-label { font-size: 12px; font-weight: 700; color: var(--dk); }
+.clm-momo-hint {
+    font-size: 12px;
+    color: var(--gr);
+    margin-top: 6px;
+    line-height: 1.5;
+}
+.clm-momo-recap {
+    background: #f8f4f0;
+    border: 1.5px solid var(--grl);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.clm-momo-recap-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: var(--gr);
+}
+.clm-momo-recap-row strong { color: var(--dk); }
+.clm-momo-amount { color: var(--or); font-size: 15px; }
+.clm-momo-warning {
+    font-size: 12.5px;
+    color: #92400e;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    padding: 10px 14px;
+    line-height: 1.5;
+}
+</style></head><body>
             <div class="header">
                 <div><div class="brand">Reso<span>Travo</span></div><div style="font-size:12px;color:#7c6a5a;margin-top:4px;">Plateforme de mise en relation</div></div>
                 <div class="meta">
@@ -1444,16 +1999,68 @@ export default {
             };
             this.formError = "";
             this.geoOk = false;
+            this.imageFiles = [];
+            this.imagesPreviews = [];
             this.showNewMission = true;
         },
         askGeo() {
             if (!navigator.geolocation) return;
             this.geoLoading = true;
+            this.geoOk = false;
             navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    this.form.latitude = pos.coords.latitude;
-                    this.form.longitude = pos.coords.longitude;
-                    this.geoOk = true;
+                async (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lon = pos.coords.longitude;
+                    this.form.latitude = lat;
+                    this.form.longitude = lon;
+
+                    // Reverse geocoding via Nominatim — attendre l'adresse avant d'afficher
+                    try {
+                        const res = await fetch(
+                            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=fr`,
+                            { headers: { "Accept-Language": "fr" } },
+                        );
+                        const data = await res.json();
+                        const a = data.address ?? {};
+
+                        // Construire l'adresse la plus précise possible (adapté Afrique de l'Ouest)
+                        const street =
+                            a.road ?? a.pedestrian ?? a.path ?? a.footway ?? "";
+                        const quarter =
+                            a.neighbourhood ??
+                            a.suburb ??
+                            a.quarter ??
+                            a.hamlet ??
+                            a.village ??
+                            "";
+                        const city =
+                            a.city ??
+                            a.town ??
+                            a.municipality ??
+                            a.county ??
+                            "";
+                        const country = a.country ?? "";
+
+                        const parts = [street, quarter, city, country].filter(
+                            Boolean,
+                        );
+
+                        // Si on a au moins 2 composants on l'utilise, sinon display_name complet
+                        this.geoAddress =
+                            parts.length >= 2
+                                ? parts.join(", ")
+                                : (data.display_name ??
+                                  `${lat.toFixed(5)}, ${lon.toFixed(5)}`);
+
+                        // Toujours pré-remplir le champ adresse avec la position GPS
+                        this.form.address = this.geoAddress;
+                    } catch {
+                        // Fallback : coordonnées brutes
+                        this.geoAddress = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+                        this.form.address = this.geoAddress;
+                    }
+
+                    this.geoOk = true; // afficher APRÈS avoir l'adresse
                     this.geoLoading = false;
                 },
                 () => {
@@ -1463,14 +2070,32 @@ export default {
                         "error",
                     );
                 },
-                { timeout: 10000 },
+                { timeout: 15000, enableHighAccuracy: true, maximumAge: 0 },
             );
         },
         resetGeo() {
             this.form.latitude = null;
             this.form.longitude = null;
             this.geoOk = false;
+            this.geoAddress = "";
         },
+        onImagesSelect(e) {
+            const files = Array.from(e.target.files);
+            const remaining = 5 - this.imageFiles.length;
+            files.slice(0, remaining).forEach((file) => {
+                this.imageFiles.push(file);
+                this.imagesPreviews.push({
+                    url: URL.createObjectURL(file),
+                    name: file.name,
+                });
+            });
+            if (this.$refs.imgInput) this.$refs.imgInput.value = "";
+        },
+        removeImage(index) {
+            this.imageFiles.splice(index, 1);
+            this.imagesPreviews.splice(index, 1);
+        },
+
         async submitMission() {
             this.formError = "";
             if (!this.form.service) {
@@ -1491,14 +2116,23 @@ export default {
                 const csrf = document.querySelector(
                     'meta[name="csrf-token"]',
                 )?.content;
+                const fd = new FormData();
+                Object.entries(this.form).forEach(([k, v]) => {
+                    if (v === null || v === undefined) return;
+                    if (Array.isArray(v)) {
+                        v.forEach((item) => fd.append(k + "[]", item));
+                    } else {
+                        fd.append(k, v);
+                    }
+                });
+                this.imageFiles.forEach((f) => fd.append("images[]", f));
                 const res = await fetch(this.routes.missions_store, {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/json",
                         "X-CSRF-TOKEN": csrf,
                         Accept: "application/json",
                     },
-                    body: JSON.stringify(this.form),
+                    body: fd,
                 });
                 const data = await res.json();
                 if (!res.ok) {
@@ -1584,7 +2218,6 @@ export default {
                 this.unreadCount = Math.max(0, this.unreadCount - 1);
             }
             this.notifOpen = false;
-            if (n.url) window.location.href = n.url;
         },
         async markAllRead() {
             const csrf = document.querySelector(
@@ -1779,6 +2412,17 @@ export default {
         wip(f) {
             this.showToast(f + " — bientôt disponible.", "");
         },
+        onGlobalUnreadUpdate(evt) {
+            const byMission = evt.detail?.by_mission ?? {};
+            // Ne pas écraser le compteur de la conversation ouverte (déjà lue)
+            if (this.chatMissionId) {
+                const updated = { ...byMission };
+                delete updated[this.chatMissionId];
+                this.unreadByMission = updated;
+            } else {
+                this.unreadByMission = byMission;
+            }
+        },
         showToast(message, type = "") {
             const id = ++this.toastId;
             this.toasts.push({ id, message, type });
@@ -1814,10 +2458,12 @@ export default {
         window.addEventListener("ab-sidebar-close", () => {
             this.sidebarOpen = false;
         });
+        window.addEventListener("rt-unread-update", this.onGlobalUnreadUpdate);
     },
     beforeUnmount() {
         clearInterval(this.notifInterval);
         document.removeEventListener("click", this.handleClickOutside);
+        window.removeEventListener("rt-unread-update", this.onGlobalUnreadUpdate);
     },
 };
 </script>
@@ -2317,6 +2963,7 @@ export default {
     max-width: 520px;
     height: 100vh;
     overflow-y: auto;
+    overflow-x: hidden;
     display: flex;
     flex-direction: column;
     box-shadow: -8px 0 40px rgba(0, 0, 0, 0.15);
@@ -2478,44 +3125,43 @@ export default {
 
 /* PANEL BODY */
 .clm-panel-body {
-    padding: 20px 24px 40px;
+    padding: 20px 20px 60px;
     flex: 1;
 }
 .clm-panel-cols {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
-@media (min-width: 500px) {
-    .clm-panel-cols {
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-    }
-    .clm-info-col,
-    .clm-actions-col {
-        min-width: 0;
-    }
+.clm-info-col,
+.clm-actions-col {
+    min-width: 0;
+    width: 100%;
 }
 .clm-section {
-    background: var(--grl);
-    border-radius: 12px;
-    padding: 14px 16px;
-    margin-bottom: 14px;
+    background: var(--wh);
+    border: 1.5px solid var(--grl);
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 16px;
 }
 .clm-section-title {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 800;
     color: var(--gr);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 10px;
+    letter-spacing: 0.8px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 .clm-row {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    padding: 7px 0;
-    border-bottom: 1px solid #d5c9c0;
+    align-items: flex-start;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--grl);
     font-size: 13px;
     gap: 12px;
 }
@@ -2525,11 +3171,15 @@ export default {
 .clm-row span {
     color: var(--gr);
     flex-shrink: 0;
+    min-width: 80px;
 }
 .clm-row strong {
     font-weight: 700;
     color: var(--dk);
     text-align: right;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    max-width: 65%;
 }
 .clm-masked {
     font-size: 12px;
@@ -2858,6 +3508,131 @@ export default {
 .clm-btn-red:hover:not(:disabled) {
     background: #dc2626;
 }
+.clm-btn-green {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(34, 197, 94, 0.3);
+}
+.clm-btn-green:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+.clm-btn-green:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ── Avis ── */
+.clm-action-review {
+    border-color: #fde68a;
+    background: #fffbeb;
+}
+.clm-review-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+.clm-review-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+}
+.clm-review-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: #92400e;
+}
+.clm-review-sub {
+    font-size: 12px;
+    color: #a16207;
+    margin-top: 2px;
+}
+.clm-stars-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+.clm-star {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: #d1d5db;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    transition:
+        color 0.15s,
+        transform 0.12s;
+}
+.clm-star:hover,
+.clm-star.active {
+    color: #f59e0b;
+    transform: scale(1.15);
+}
+.clm-star-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #92400e;
+    margin-left: 6px;
+}
+.clm-review-textarea {
+    width: 100%;
+    border: 1.5px solid #fcd34d;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-family: "Poppins", sans-serif;
+    font-size: 13px;
+    color: #1c1412;
+    background: #fff;
+    outline: none;
+    resize: vertical;
+    transition: border-color 0.15s;
+    margin-bottom: 4px;
+}
+.clm-review-textarea:focus {
+    border-color: #f59e0b;
+}
+.clm-review-textarea::placeholder {
+    color: #b5a9a3;
+}
+.clm-review-count {
+    font-size: 11px;
+    color: #a16207;
+    text-align: right;
+    margin-bottom: 12px;
+}
+.clm-review-skip {
+    text-align: center;
+    margin-top: 8px;
+}
+.clm-link {
+    background: none;
+    border: none;
+    font-size: 12px;
+    color: #8a7d78;
+    cursor: pointer;
+    font-family: "Poppins", sans-serif;
+    text-decoration: underline;
+    padding: 0;
+}
+.clm-link:hover {
+    color: #4a3f3a;
+}
+.clm-link:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ── Adresse géolocalisée ── */
+.clm-geo-ok-addr {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #15803d;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 .clm-btn-ghost {
     background: var(--grl);
     color: var(--dk);
@@ -3103,6 +3878,100 @@ export default {
     cursor: pointer;
     font-size: 16px;
     margin-left: auto;
+}
+.clm-img-upload-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+}
+.clm-img-add-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    border: 2px dashed #e8ddd4;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #8a7d78;
+    transition: border-color 0.15s, color 0.15s;
+    flex-shrink: 0;
+}
+.clm-img-add-btn:hover {
+    border-color: #f97316;
+    color: #f97316;
+}
+.clm-img-thumb {
+    position: relative;
+    width: 72px;
+    height: 72px;
+    border-radius: 10px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.clm-img-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.clm-img-remove {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 18px;
+    height: 18px;
+    background: rgba(0,0,0,0.6);
+    border: none;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+.clm-row-images {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+}
+.clm-mission-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+}
+.clm-mission-img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+.clm-mission-img:hover {
+    opacity: 0.85;
+}
+.clm-lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 20px;
+}
+.clm-lightbox img {
+    max-width: 100%;
+    max-height: 90vh;
+    border-radius: 8px;
 }
 .clm-scroll-btn {
     position: sticky;

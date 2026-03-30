@@ -114,6 +114,14 @@
                                         @click="openImage(m.attachment_url)"
                                     />
                                 </div>
+                                <!-- Audio -->
+                                <div
+                                    class="chat-attachment-audio"
+                                    v-if="m.type === 'audio' && m.attachment_url"
+                                >
+                                    <span class="chat-file-icon">🎵</span>
+                                    <audio controls :src="m.attachment_url" preload="metadata"></audio>
+                                </div>
                                 <!-- Fichier -->
                                 <a
                                     class="chat-attachment-file"
@@ -162,6 +170,9 @@
                         v-if="attachmentPreview.isImage"
                         :src="attachmentPreview.url"
                     />
+                    <div v-else-if="attachmentPreview.isAudio" class="chat-preview-file">
+                        <span>🎵</span> {{ attachmentPreview.name }}
+                    </div>
                     <div v-else class="chat-preview-file">
                         <span>📎</span> {{ attachmentPreview.name }}
                     </div>
@@ -194,7 +205,7 @@
                 <input
                     type="file"
                     style="display: none"
-                    accept="image/*,.pdf,.doc,.docx"
+                    accept="image/*,.pdf,.doc,.docx,audio/*,.mp3,.wav,.ogg,.m4a,.aac"
                     @change="onFileSelect"
                     ref="fileInput"
                 />
@@ -449,6 +460,7 @@ export default {
             if (!file) return;
             this.pendingFile = file;
             const isImage = file.type.startsWith("image/");
+            const isAudio = file.type.startsWith("audio/");
             if (isImage) {
                 const reader = new FileReader();
                 reader.onload = (ev) => {
@@ -456,6 +468,7 @@ export default {
                         url: ev.target.result,
                         name: file.name,
                         isImage: true,
+                        isAudio: false,
                     };
                 };
                 reader.readAsDataURL(file);
@@ -464,6 +477,7 @@ export default {
                     url: null,
                     name: file.name,
                     isImage: false,
+                    isAudio,
                 };
             }
         },
@@ -566,11 +580,16 @@ export default {
                 pending: "En attente",
                 assigned: "Proposée",
                 accepted: "Acceptée",
+                contact_made: "Contact établi",
                 on_the_way: "En route",
+                tracking: "Suivi en cours",
                 in_progress: "En cours",
                 quote_submitted: "Devis soumis",
+                order_placed: "Devis approuvé",
+                awaiting_confirm: "Att. confirmation",
                 completed: "Terminée",
                 closed: "Clôturée",
+                cancelled: "Annulée",
             };
             return map[s] ?? s;
         },
@@ -856,6 +875,18 @@ export default {
     opacity: 1;
     color: rgba(255, 255, 255, 0.95);
     font-weight: 700;
+}
+
+/* Audio */
+.chat-attachment-audio {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+}
+.chat-attachment-audio audio {
+    max-width: 220px;
+    height: 36px;
 }
 
 /* Pièce jointe */

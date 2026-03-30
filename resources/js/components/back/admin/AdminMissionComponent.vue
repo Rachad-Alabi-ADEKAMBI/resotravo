@@ -172,51 +172,99 @@
                 </div>
             </div>
 
-            <!-- ── GRILLE CARTES ── -->
-            <div class="ac-grid" v-else>
+            <!-- ── LISTE MISSIONS ── -->
+            <div class="ac-list" v-else>
                 <div
-                    class="ac-card"
+                    class="ac-row"
                     v-for="m in pagedMissions"
                     :key="m.id"
                     :class="{
-                        'ac-card-urgent':
+                        'ac-row-urgent':
                             m.status === 'pending' && !m.contractor_id,
-                        'ac-card-closed': ['completed', 'closed'].includes(
+                        'ac-row-closed': ['completed', 'closed'].includes(
                             m.status,
                         ),
-                        'ac-card-cancelled': m.status === 'cancelled',
+                        'ac-row-cancelled': m.status === 'cancelled',
                     }"
                     @click="openMission(m)"
                 >
-                    <!-- En-tête -->
-                    <div class="ac-card-head">
-                        <div class="ac-mission-icon-wrap">
-                            {{ serviceIcon(m.service) }}
+                    <!-- Icône -->
+                    <div class="ac-row-icon">{{ serviceIcon(m.service) }}</div>
+
+                    <!-- Infos principales -->
+                    <div class="ac-row-main">
+                        <div class="ac-row-title">
+                            {{ m.service }}
+                            <span
+                                class="amis-type-chip"
+                                :class="m.location_type"
+                            >
+                                {{
+                                    m.location_type === "business" ? "🏢" : "🏠"
+                                }}
+                            </span>
                         </div>
-                        <div class="ac-card-headinfo">
-                            <div class="ac-card-name">
-                                {{ m.service }}
-                                <span
-                                    class="amis-type-chip"
-                                    :class="m.location_type"
-                                >
-                                    {{
-                                        m.location_type === "business"
-                                            ? "🏢"
-                                            : "🏠"
-                                    }}
-                                </span>
-                            </div>
-                            <div class="ac-card-sub">📍 {{ m.address }}</div>
-                            <div class="ac-card-sub">
+                        <div class="ac-row-meta">
+                            <span>📍 {{ m.address }}</span>
+                            <span>
                                 👤 {{ m.client?.name ?? "—" }}
                                 <span
                                     class="amis-company-tag"
                                     v-if="m.client?.account_type === 'company'"
                                     >Entreprise</span
                                 >
-                            </div>
+                            </span>
                         </div>
+                    </div>
+
+                    <!-- Prestataire -->
+                    <div class="ac-row-contractor">
+                        <span v-if="m.contractor">
+                            👷 {{ m.contractor.first_name }}
+                            {{ m.contractor.last_name }}
+                            <span class="amis-contractor-spec"
+                                >· {{ m.contractor.specialty }}</span
+                            >
+                        </span>
+                        <span class="ac-no-contractor" v-else
+                            >⚠️ Sans prestataire</span
+                        >
+                    </div>
+
+                    <!-- Progression -->
+                    <div class="ac-row-progress">
+                        <div class="ac-row-step">
+                            Étape {{ m.step ?? "—" }}/12
+                        </div>
+                        <div class="ac-progress-bar">
+                            <div
+                                class="ac-progress-fill"
+                                :style="{
+                                    width: ((m.step ?? 0) / 12) * 100 + '%',
+                                }"
+                                :class="badgeClass(m.status)"
+                            ></div>
+                        </div>
+                    </div>
+
+                    <!-- Date -->
+                    <div class="ac-row-stats">
+                        <span class="ac-row-stat-val">{{
+                            formatDate(m.created_at)
+                        }}</span>
+                        <span class="ac-row-stat-lbl">Créée</span>
+                    </div>
+
+                    <!-- Montant -->
+                    <div class="ac-row-stats">
+                        <span class="ac-row-stat-val">{{
+                            m.total_amount ? formatPrice(m.total_amount) : "—"
+                        }}</span>
+                        <span class="ac-row-stat-lbl">Montant</span>
+                    </div>
+
+                    <!-- Badge -->
+                    <div class="ac-row-badge">
                         <span
                             class="amis-badge"
                             :class="badgeClass(m.status)"
@@ -224,62 +272,14 @@
                         >
                     </div>
 
-                    <!-- Prestataire -->
-                    <div class="ac-contractor-row" v-if="m.contractor">
-                        👷 {{ m.contractor.first_name }}
-                        {{ m.contractor.last_name }}
-                        <span class="amis-contractor-spec"
-                            >· {{ m.contractor.specialty }}</span
-                        >
-                    </div>
-                    <div class="ac-contractor-row ac-no-contractor" v-else>
-                        ⚠️ Sans prestataire
-                    </div>
-
-                    <!-- Stats -->
-                    <div class="ac-card-stats">
-                        <div class="ac-cstat">
-                            <span class="ac-cstat-val"
-                                >Étape {{ m.step ?? "—" }}/12</span
-                            >
-                            <span class="ac-cstat-lbl">Progression</span>
-                        </div>
-                        <div class="ac-cstat">
-                            <span class="ac-cstat-val">{{
-                                formatDate(m.created_at)
-                            }}</span>
-                            <span class="ac-cstat-lbl">Créée</span>
-                        </div>
-                        <div class="ac-cstat">
-                            <span class="ac-cstat-val">{{
-                                m.total_amount
-                                    ? formatPrice(m.total_amount)
-                                    : "—"
-                            }}</span>
-                            <span class="ac-cstat-lbl">Montant</span>
-                        </div>
-                    </div>
-
-                    <!-- Barre progression -->
-                    <div class="ac-progress-bar">
-                        <div
-                            class="ac-progress-fill"
-                            :style="{ width: ((m.step ?? 0) / 12) * 100 + '%' }"
-                            :class="badgeClass(m.status)"
-                        ></div>
-                    </div>
-
-                    <!-- Action rapide -->
-                    <div
-                        class="ac-card-actions"
-                        @click.stop
-                        v-if="canPropose(m)"
-                    >
+                    <!-- Action -->
+                    <div class="ac-row-action" @click.stop>
                         <button
+                            v-if="canPropose(m)"
                             class="amis-btn amis-btn-orange amis-btn-xs"
                             @click.stop="openProposalPanel(m)"
                         >
-                            📤 Proposer un prestataire
+                            📤 Proposer
                         </button>
                     </div>
                 </div>
@@ -464,10 +464,15 @@
                                     👤 Client
                                 </div>
                                 <div class="amis-detail-row">
-                                    <span>Nom</span
-                                    ><strong>{{
-                                        activeMission.client.name
-                                    }}</strong>
+                                    <span>Nom</span>
+                                    <strong>
+                                        {{ activeMission.client.name }}
+                                        <span
+                                            v-if="activeMission.client.is_verified"
+                                            class="amis-verified-badge"
+                                            title="Identité vérifiée"
+                                        >✅ Identité vérifiée</span>
+                                    </strong>
                                 </div>
                                 <div
                                     class="amis-detail-row"
@@ -1753,7 +1758,6 @@ export default {
                 this.unreadCount = Math.max(0, this.unreadCount - 1);
             }
             this.notifOpen = false;
-            if (n.url) window.location.href = n.url;
         },
 
         async markAllRead() {
@@ -2466,6 +2470,18 @@ export default {
     letter-spacing: 0.5px;
     margin-bottom: 10px;
 }
+.amis-verified-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    color: #15803d;
+    background: #dcfce7;
+    border: 1px solid #86efac;
+    border-radius: 99px;
+    padding: 1px 8px;
+    margin-left: 6px;
+    vertical-align: middle;
+}
 .amis-detail-row {
     display: flex;
     justify-content: space-between;
@@ -3005,25 +3021,18 @@ export default {
     }
 }
 
-/* ── GRILLE CARTES MISSIONS ── */
-.ac-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 16px;
-}
-@media (min-width: 640px) {
-    .ac-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-@media (min-width: 1024px) {
-    .ac-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
+/* ── LISTE MISSIONS ── */
+.ac-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1.5px solid var(--grl);
+    border-radius: 16px;
+    overflow: hidden;
 }
 
 .ac-skeleton {
-    height: 220px;
+    height: 52px;
     background: linear-gradient(
         90deg,
         var(--grl) 25%,
@@ -3032,7 +3041,6 @@ export default {
     );
     background-size: 200% 100%;
     animation: shimmer 1.4s infinite;
-    border-radius: 14px;
 }
 @keyframes shimmer {
     0% {
@@ -3043,118 +3051,101 @@ export default {
     }
 }
 
-.ac-card {
-    background: var(--wh);
-    border: 1.5px solid var(--grl);
-    border-radius: 16px;
-    padding: 16px;
-    cursor: pointer;
-    transition: all 0.2s;
+.ac-row {
     display: flex;
-    flex-direction: column;
-    gap: 10px;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--wh);
+    border-bottom: 1px solid var(--grl);
+    cursor: pointer;
+    transition: background 0.15s;
 }
-.ac-card:hover {
-    border-color: var(--or);
-    box-shadow: 0 6px 24px rgba(249, 115, 22, 0.1);
-    transform: translateY(-2px);
+.ac-row:last-child {
+    border-bottom: none;
 }
-.ac-card-urgent {
+.ac-row:hover {
+    background: #fff8f3;
+}
+.ac-row-urgent {
     border-left: 4px solid var(--am);
 }
-.ac-card-closed {
+.ac-row-closed {
     border-left: 4px solid #22c55e;
 }
-.ac-card-cancelled {
+.ac-row-cancelled {
     border-left: 4px solid #ef4444;
-    opacity: 0.8;
+    opacity: 0.75;
 }
 
-.ac-card-head {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-}
-.ac-mission-icon-wrap {
-    font-size: 26px;
+/* Icône */
+.ac-row-icon {
+    font-size: 22px;
     flex-shrink: 0;
-    width: 40px;
-    height: 40px;
+    width: 38px;
+    height: 38px;
     background: var(--or3);
     border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
-.ac-card-headinfo {
-    flex: 1;
+
+/* Infos principales */
+.ac-row-main {
+    flex: 2;
     min-width: 0;
 }
-.ac-card-name {
-    font-size: 14px;
+.ac-row-title {
+    font-size: 13px;
     font-weight: 700;
     color: var(--dk);
     display: flex;
     align-items: center;
     gap: 6px;
-    flex-wrap: wrap;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
-.ac-card-sub {
-    font-size: 12px;
+.ac-row-meta {
+    display: flex;
+    gap: 12px;
+    font-size: 11.5px;
     color: var(--gr);
     margin-top: 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    flex-wrap: wrap;
 }
 
-.ac-contractor-row {
-    font-size: 12.5px;
+/* Prestataire */
+.ac-row-contractor {
+    flex: 1.5;
+    font-size: 12px;
     color: var(--dk);
     font-weight: 500;
-}
-.ac-no-contractor {
-    color: #f59e0b;
-    font-weight: 600;
-}
-
-.ac-card-stats {
-    display: flex;
-    gap: 0;
-    border: 1px solid var(--grl);
-    border-radius: 10px;
-    overflow: hidden;
-}
-.ac-cstat {
-    flex: 1;
-    text-align: center;
-    padding: 7px 4px;
-    border-right: 1px solid var(--grl);
-}
-.ac-cstat:last-child {
-    border-right: none;
-}
-.ac-cstat-val {
-    display: block;
-    font-size: 11.5px;
-    font-weight: 800;
-    color: var(--dk);
+    min-width: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
-.ac-cstat-lbl {
-    display: block;
-    font-size: 10px;
-    color: var(--gr);
-    margin-top: 1px;
-}
 
+/* Progression */
+.ac-row-progress {
+    flex: 0 0 120px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.ac-row-step {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--dk);
+}
 .ac-progress-bar {
     height: 4px;
     background: var(--grl);
     border-radius: 99px;
     overflow: hidden;
+    width: 100%;
 }
 .ac-progress-fill {
     height: 100%;
@@ -3175,12 +3166,50 @@ export default {
     background: #3b82f6;
 }
 
-.ac-card-actions {
+/* Stats date/montant */
+.ac-row-stats {
+    flex: 0 0 90px;
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    padding-top: 4px;
-    border-top: 1px solid var(--grl);
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+.ac-row-stat-val {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--dk);
+    white-space: nowrap;
+}
+.ac-row-stat-lbl {
+    font-size: 10px;
+    color: var(--gr);
+}
+
+/* Badge */
+.ac-row-badge {
+    flex: 0 0 100px;
+    display: flex;
+    justify-content: center;
+}
+
+/* Action */
+.ac-row-action {
+    flex: 0 0 110px;
+    display: flex;
+    justify-content: flex-end;
+    min-height: 30px;
+}
+
+/* Responsive : masquer colonnes secondaires sur mobile */
+@media (max-width: 768px) {
+    .ac-row-contractor,
+    .ac-row-progress,
+    .ac-row-stats {
+        display: none;
+    }
+    .ac-row-main {
+        flex: 1;
+    }
 }
 
 /* ── PAGINATION ── */

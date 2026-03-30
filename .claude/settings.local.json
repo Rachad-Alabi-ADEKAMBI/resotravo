@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php artisan:*)",
+      "Bash(npm run:*)",
+      "Bash(grep -l \"document\\\\|accreditation\" /c/xampp/htdocs/resotravo/resources/js/components/back/client/*.vue)",
+      "Bash(npm install:*)",
+      "Bash(npx cap:*)",
+      "Bash(ipconfig)"
+    ]
+  }
+}

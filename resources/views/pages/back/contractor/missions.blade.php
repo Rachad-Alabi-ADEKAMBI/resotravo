@@ -18,6 +18,7 @@
         'conversations_send'     => url('/conversations/{id}/messages'),
         'conversations_attach'   => url('/conversations/{id}/attachment'),
         'conversations_read'     => url('/conversations/{id}/read'),
+        'unread_summary'         => route('unread-messages'),
     ]) }}"
 ></contractor-mission-component>
 @endsection

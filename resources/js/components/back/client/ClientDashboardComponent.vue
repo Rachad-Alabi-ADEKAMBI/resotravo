@@ -78,7 +78,10 @@
                     </div>
                 </div>
                 <div class="cd-avatar">{{ client.initials }}</div>
-                <button class="cd-btn cd-btn-orange" @click="openNewMission">
+                <button
+                    class="cd-btn cd-btn-orange"
+                    @click="openNewMission"
+                >
                     ＋ Nouvelle mission
                 </button>
             </div>
@@ -88,6 +91,87 @@
              CONTENU
         ══════════════════════════════════ -->
         <div class="cd-content">
+            <!-- ── Badge Identité vérifiée ── -->
+            <div class="cd-banner-verified" v-if="isIdentityVerified">
+                <span class="cd-verified-icon">✅</span>
+                <div>
+                    <div class="cd-verified-title">Identité vérifiée</div>
+                    <div class="cd-verified-sub">Votre compte bénéficie du badge de confiance Resotravo.</div>
+                </div>
+            </div>
+
+            <!-- ── Bannière obtenir le badge (si pas encore vérifié) ── -->
+            <div class="cd-banner-pending" v-else-if="!isIdentityVerified">
+                <div class="cd-banner-pending-left">
+                    <div class="cd-banner-pending-icon">
+                        {{
+                            isApproved
+                                ? (clientProfile.completed_missions >= 5 ? "✅" : "🏅")
+                                : docProgress.percentage === 0
+                                  ? "📋"
+                                  : docProgress.percentage < 100
+                                    ? "⏳"
+                                    : "🔍"
+                        }}
+                    </div>
+                    <div>
+                        <div class="cd-banner-pending-title">
+                            {{
+                                isApproved
+                                    ? "Plus que " + Math.max(0, 5 - (clientProfile.completed_missions ?? 0)) + " mission(s) pour obtenir le badge Identité vérifiée"
+                                    : docProgress.percentage < 100
+                                        ? "Obtenez le badge « Identité vérifiée »"
+                                        : "Dossier en cours de vérification"
+                            }}
+                        </div>
+                        <div class="cd-banner-pending-sub">
+                            {{
+                                isApproved
+                                    ? "Vous avez " + (clientProfile.completed_missions ?? 0) + "/5 missions terminées. Continuez à publier des missions !"
+                                    : docProgress.percentage < 100
+                                        ? "Déposez votre pièce d'identité et une photo de profil, puis complétez 5 missions pour obtenir le badge."
+                                        : "Vos documents ont été reçus. La validation prend généralement moins de 24h."
+                            }}
+                        </div>
+                        <!-- Progression documents si pas encore soumis -->
+                        <div class="cd-banner-progress-wrap" v-if="!isApproved">
+                            <div class="cd-banner-progress-track">
+                                <div
+                                    class="cd-banner-progress-fill"
+                                    :style="{ width: docProgress.percentage + '%' }"
+                                ></div>
+                            </div>
+                            <span class="cd-banner-progress-label">
+                                {{ docProgress.approved }}/{{ docProgress.total }} documents validés
+                            </span>
+                        </div>
+                        <!-- Progression missions si documents OK -->
+                        <div class="cd-banner-progress-wrap" v-else>
+                            <div class="cd-banner-progress-track">
+                                <div
+                                    class="cd-banner-progress-fill cd-banner-progress-missions"
+                                    :style="{ width: Math.min(100, ((clientProfile.completed_missions ?? 0) / 5) * 100) + '%' }"
+                                ></div>
+                            </div>
+                            <span class="cd-banner-progress-label">
+                                {{ clientProfile.completed_missions ?? 0 }}/5 missions terminées
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <a
+                    v-if="!isApproved"
+                    :href="routes.dossier_page"
+                    class="cd-btn cd-btn-orange cd-banner-btn"
+                >
+                    {{
+                        docProgress.percentage < 100
+                            ? "📂 Déposer mes documents"
+                            : "👁 Voir mon dossier"
+                    }}
+                </a>
+            </div>
+
             <!-- ── Bannière compte entreprise ── -->
             <div
                 class="cd-banner-company"
@@ -292,110 +376,9 @@
                         </div>
                     </div>
 
-                    <!-- Actions rapides -->
-                    <div class="cd-card">
-                        <div class="cd-card-header">
-                            <h3>⚡ Actions rapides</h3>
-                        </div>
-                        <div class="cd-quick-actions">
-                            <button
-                                class="cd-quick-btn"
-                                @click="openNewMission"
-                            >
-                                <span>➕</span> Nouvelle mission
-                            </button>
-                            <button
-                                class="cd-quick-btn"
-                                @click="wip('Rechercher un prestataire')"
-                            >
-                                <span>🔍</span> Trouver un prestataire
-                            </button>
-                            <button
-                                class="cd-quick-btn"
-                                @click="wip('Publier un appel d\'offres')"
-                                v-if="client.account_type === 'company'"
-                            >
-                                <span>📝</span> Publier un appel d'offres
-                            </button>
-                            <button
-                                class="cd-quick-btn"
-                                @click="
-                                    chatMissionId =
-                                        missions.find((m) =>
-                                            [
-                                                'accepted',
-                                                'contact_made',
-                                                'on_the_way',
-                                                'tracking',
-                                                'in_progress',
-                                            ].includes(m.status),
-                                        )?.id ?? null
-                                "
-                            >
-                                <span>💬</span> Messagerie
-                            </button>
-                            <button
-                                class="cd-quick-btn"
-                                @click="wip('Mes paiements')"
-                            >
-                                <span>💸</span> Mes paiements
-                            </button>
-                            <button
-                                class="cd-quick-btn"
-                                @click="wip('Mes factures')"
-                            >
-                                <span>🧾</span> Mes factures
-                            </button>
-                        </div>
-                    </div>
                 </div>
             </div>
 
-            <!-- ── Prestataires recommandés ── -->
-            <div class="cd-card">
-                <div class="cd-card-header">
-                    <h3>⭐ Prestataires recommandés près de vous</h3>
-                    <button
-                        class="cd-btn cd-btn-ghost cd-btn-sm"
-                        @click="wip('Tous les prestataires')"
-                    >
-                        Voir tout
-                    </button>
-                </div>
-                <div class="cd-contractors-grid">
-                    <div
-                        class="cd-contractor-card"
-                        v-for="c in contractors"
-                        :key="c.id"
-                        @click="wip('Profil prestataire')"
-                    >
-                        <div
-                            class="cd-contractor-av"
-                            :style="{ background: c.color }"
-                        >
-                            {{ c.initials }}
-                        </div>
-                        <div class="cd-contractor-name">{{ c.name }}</div>
-                        <div class="cd-contractor-spec">{{ c.specialty }}</div>
-                        <div class="cd-contractor-rating">
-                            ⭐ {{ c.rating }} <span>({{ c.reviews }})</span>
-                        </div>
-                        <div class="cd-contractor-zone">📍 {{ c.zone }}</div>
-                        <button
-                            class="cd-btn cd-btn-orange"
-                            style="
-                                width: 100%;
-                                margin-top: 10px;
-                                font-size: 12px;
-                                padding: 8px;
-                            "
-                            @click.stop="wip('Contacter le prestataire')"
-                        >
-                            Contacter
-                        </button>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <!-- ══════════════════════════════════
@@ -453,6 +436,19 @@
                     <div class="cd-detail-row">
                         <span>Description</span>
                         <strong>{{ activeMission.description }}</strong>
+                    </div>
+                    <!-- Photos de la mission -->
+                    <div class="cd-detail-row cd-detail-photos" v-if="activeMission.images && activeMission.images.length">
+                        <span>Photos</span>
+                        <div class="cd-dash-images">
+                            <img
+                                v-for="(url, i) in activeMission.images"
+                                :key="i"
+                                :src="url"
+                                @click="dashLightbox = url"
+                                class="cd-dash-img"
+                            />
+                        </div>
                     </div>
                     <div
                         class="cd-detail-row"
@@ -540,18 +536,21 @@
                     <!-- Paiement débloqué (étape 11 → 12) -->
                     <div
                         class="cd-action-block cd-action-pay"
-                        v-if="activeMission.payment_unlocked"
+                        v-if="
+                            activeMission.payment_unlocked ||
+                            activeMission.status === 'completed'
+                        "
                     >
                         <p>
                             💸 Les travaux sont confirmés. Procédez au paiement
-                            MoMo pour clôturer la mission.
+                            Mobile Money pour clôturer la mission.
                         </p>
                         <button
                             class="cd-btn cd-btn-orange"
                             style="width: 100%"
-                            @click="wip('Paiement MoMo')"
+                            @click="openMomoModal(activeMission)"
                         >
-                            Payer via MTN MoMo →
+                            💳 Payer via Mobile Money →
                         </button>
                     </div>
                 </div>
@@ -565,22 +564,11 @@
                     <button
                         class="cd-btn cd-btn-orange cd-chat-btn-notif"
                         @click="chatMissionId = activeMission.id"
-                        v-if="
-                            [
-                                'accepted',
-                                'contact_made',
-                                'on_the_way',
-                                'tracking',
-                                'in_progress',
-                                'quote_submitted',
-                                'order_placed',
-                                'awaiting_confirm',
-                            ].includes(activeMission.status)
-                        "
+                        v-if="activeMission.status !== 'pending'"
                     >
-                        💬 Contacter le prestataire
-                        <span class="cd-chat-badge" v-if="chatUnread > 0">{{
-                            chatUnread
+                        💬 Messages
+                        <span class="cd-chat-badge" v-if="unreadByMission[activeMission.id] > 0">{{
+                            unreadByMission[activeMission.id]
                         }}</span>
                     </button>
                 </div>
@@ -821,6 +809,11 @@
             @unread="onChatUnread($event)"
         />
 
+        <!-- Lightbox photos mission -->
+        <div class="cd-dash-lightbox" v-if="dashLightbox" @click="dashLightbox = null">
+            <img :src="dashLightbox" />
+        </div>
+
         <!-- WIP MODAL -->
         <div
             class="cd-wip-overlay"
@@ -851,6 +844,128 @@
                 :key="t.id"
             >
                 {{ t.message }}
+            </div>
+        </div>
+
+        <!-- ══════════════ MODAL PAIEMENT MOMO ══════════════ -->
+        <div
+            class="cd-modal-overlay"
+            v-if="momoModal.visible"
+            @click.self="momoModal.visible = false"
+        >
+            <div class="cd-modal">
+                <div class="cd-modal-header">
+                    <div>
+                        <h3>💳 Paiement Mobile Money</h3>
+                        <div class="cd-modal-sub">
+                            Mission #{{ momoModal.mission?.id }} —
+                            {{ formatPrice(momoModal.mission?.total_amount) }}
+                        </div>
+                    </div>
+                    <button
+                        class="cd-modal-close"
+                        @click="momoModal.visible = false"
+                    >
+                        &#215;
+                    </button>
+                </div>
+                <div class="cd-modal-body">
+                    <div class="cd-field">
+                        <label class="cd-label"
+                            >Réseau Mobile Money
+                            <span class="req">*</span></label
+                        >
+                        <div class="clm-momo-networks">
+                            <button
+                                type="button"
+                                class="clm-momo-network"
+                                v-for="net in momoNetworks"
+                                :key="net.value"
+                                :class="{
+                                    active: momoModal.network === net.value,
+                                }"
+                                @click="momoModal.network = net.value"
+                            >
+                                <span class="clm-momo-net-icon">{{
+                                    net.icon
+                                }}</span>
+                                <span class="clm-momo-net-label">{{
+                                    net.label
+                                }}</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="cd-field">
+                        <label class="cd-label"
+                            >Numéro de téléphone
+                            <span class="req">*</span></label
+                        >
+                        <input
+                            class="cd-input"
+                            type="tel"
+                            v-model="momoModal.phone"
+                            placeholder="Ex : 97 12 34 56"
+                            maxlength="20"
+                        />
+                        <div class="clm-momo-hint">
+                            Entrez le numéro associé à votre compte
+                            {{
+                                momoModal.network
+                                    ? momoNetworks.find(
+                                          (n) => n.value === momoModal.network,
+                                      )?.label
+                                    : "Mobile Money"
+                            }}.
+                        </div>
+                    </div>
+                    <div
+                        class="clm-momo-recap"
+                        v-if="momoModal.network && momoModal.phone"
+                    >
+                        <div class="clm-momo-recap-row">
+                            <span>Réseau</span>
+                            <strong>{{
+                                momoNetworks.find(
+                                    (n) => n.value === momoModal.network,
+                                )?.label
+                            }}</strong>
+                        </div>
+                        <div class="clm-momo-recap-row">
+                            <span>Numéro</span>
+                            <strong>{{ momoModal.phone }}</strong>
+                        </div>
+                        <div class="clm-momo-recap-row">
+                            <span>Montant</span>
+                            <strong class="clm-momo-amount">{{
+                                formatPrice(momoModal.mission?.total_amount)
+                            }}</strong>
+                        </div>
+                    </div>
+                    <div class="clm-momo-warning">
+                        🔒 Vous recevrez une demande de paiement sur votre
+                        téléphone. Confirmez avec votre code PIN.
+                    </div>
+                </div>
+                <div class="cd-modal-footer">
+                    <button
+                        class="cd-btn cd-btn-ghost"
+                        @click="momoModal.visible = false"
+                    >
+                        Annuler
+                    </button>
+                    <button
+                        class="cd-btn cd-btn-orange"
+                        @click="submitMomo"
+                        :disabled="
+                            !momoModal.network ||
+                            !momoModal.phone.trim() ||
+                            momoModal.loading
+                        "
+                    >
+                        <div class="cd-spinner" v-if="momoModal.loading"></div>
+                        <span v-else>✓ Confirmer le paiement</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -901,6 +1016,14 @@ export default {
                 conversations_read: "/conversations/{id}/read",
             }),
         },
+        docProgressData: {
+            type: Object,
+            default: () => ({ approved: 0, total: 2, percentage: 0 }),
+        },
+        userStatus: {
+            type: String,
+            default: "pending",
+        },
     },
 
     data() {
@@ -918,6 +1041,21 @@ export default {
             chatMissionId: null,
             chatUnread: 0,
             unreadByMission: {}, // { missionId: count }
+            dashLightbox: null,
+            // Paiement MoMo
+            momoModal: {
+                visible: false,
+                mission: null,
+                network: "",
+                phone: "",
+                loading: false,
+            },
+            momoNetworks: [
+                { value: "mtn", label: "MTN Bénin", icon: "🟡" },
+                { value: "moov", label: "Moov Bénin", icon: "🔵" },
+                { value: "celtiis", label: "Celtiis", icon: "🟠" },
+            ],
+
             toasts: [],
             toastId: 0,
 
@@ -1032,6 +1170,17 @@ export default {
             };
         },
 
+        isApproved() {
+            return this.userStatus === "approved";
+        },
+        isIdentityVerified() {
+            return this.isApproved && (this.clientProfile?.completed_missions ?? 0) >= 5;
+        },
+        docProgress() {
+            return (
+                this.docProgressData ?? { approved: 0, total: 2, percentage: 0 }
+            );
+        },
         greeting() {
             const h = new Date().getHours();
             if (h < 12) return "Bonjour";
@@ -1085,31 +1234,27 @@ export default {
         },
 
         filteredMissions() {
-            if (this.tab === "all") return this.missions;
-            const activeStatuses = [
-                "assigned",
-                "accepted",
-                "contact_made",
-                "on_the_way",
-                "tracking",
-                "in_progress",
-                "quote_submitted",
-                "order_placed",
-                "awaiting_confirm",
-            ];
-            if (this.tab === "active")
-                return this.missions.filter((m) =>
-                    activeStatuses.includes(m.status),
-                );
-            if (this.tab === "pending")
-                return this.missions.filter((m) => m.status === "pending");
-            if (this.tab === "closed")
-                return this.missions.filter((m) =>
-                    ["completed", "closed"].includes(m.status),
-                );
-            if (this.tab === "cancelled")
-                return this.missions.filter((m) => m.status === "cancelled");
-            return this.missions;
+            let list;
+            if (this.tab === "all") {
+                list = this.missions;
+            } else {
+                const activeStatuses = [
+                    "assigned", "accepted", "contact_made", "on_the_way",
+                    "tracking", "in_progress", "quote_submitted", "order_placed",
+                    "awaiting_confirm",
+                ];
+                if (this.tab === "active")
+                    list = this.missions.filter((m) => activeStatuses.includes(m.status));
+                else if (this.tab === "pending")
+                    list = this.missions.filter((m) => m.status === "pending");
+                else if (this.tab === "closed")
+                    list = this.missions.filter((m) => ["completed", "closed"].includes(m.status));
+                else if (this.tab === "cancelled")
+                    list = this.missions.filter((m) => m.status === "cancelled");
+                else
+                    list = this.missions;
+            }
+            return list.slice(0, 5);
         },
 
         tabLabel() {
@@ -1443,6 +1588,46 @@ export default {
                 const copy = { ...this.unreadByMission };
                 delete copy[this.chatMissionId];
                 this.unreadByMission = copy;
+            }
+        },
+
+        openMomoModal(mission) {
+            this.momoModal = {
+                visible: true,
+                mission,
+                network: "",
+                phone: "",
+                loading: false,
+            };
+        },
+
+        async submitMomo() {
+            if (!this.momoModal.network || !this.momoModal.phone.trim()) return;
+            this.momoModal.loading = true;
+            try {
+                // Réutiliser updateMissionStatus qui gère déjà l'URL correctement
+                const result = await this.updateMissionStatus(
+                    this.momoModal.mission,
+                    "closed",
+                    {
+                        momo_network: this.momoModal.network,
+                        momo_phone: this.momoModal.phone.trim(),
+                    },
+                );
+                if (result) {
+                    this.momoModal.visible = false;
+                    this.showToast(
+                        "🎉 Paiement confirmé ! Mission clôturée avec succès.",
+                        "success",
+                    );
+                }
+            } catch {
+                this.showToast(
+                    "Erreur lors du paiement. Veuillez réessayer.",
+                    "error",
+                );
+            } finally {
+                this.momoModal.loading = false;
             }
         },
 
@@ -2443,6 +2628,40 @@ export default {
 .cd-detail-row:last-child {
     border-bottom: none;
 }
+.cd-detail-photos {
+    align-items: flex-start;
+}
+.cd-dash-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end;
+}
+.cd-dash-img {
+    width: 72px;
+    height: 72px;
+    object-fit: cover;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: opacity .15s;
+}
+.cd-dash-img:hover { opacity: .85; }
+.cd-dash-lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.88);
+    z-index: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 20px;
+}
+.cd-dash-lightbox img {
+    max-width: 100%;
+    max-height: 90vh;
+    border-radius: 8px;
+}
 .cd-detail-row span:first-child {
     color: var(--gr);
     flex-shrink: 0;
@@ -2821,5 +3040,190 @@ export default {
     align-items: center;
     justify-content: center;
     padding: 0 4px;
+}
+
+/* ── Badge Identité vérifiée ── */
+.cd-banner-verified {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+    border: 1.5px solid #86efac;
+    border-radius: 14px;
+    padding: 14px 20px;
+    margin-bottom: 20px;
+}
+.cd-verified-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+}
+.cd-verified-title {
+    font-size: 14.5px;
+    font-weight: 800;
+    color: #15803d;
+}
+.cd-verified-sub {
+    font-size: 12.5px;
+    color: #166534;
+    margin-top: 2px;
+}
+.cd-banner-progress-missions {
+    background: linear-gradient(90deg, #f97316, #ea580c) !important;
+}
+
+/* ── Bannière compte en attente de validation ── */
+.cd-banner-pending {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    background: linear-gradient(135deg, #fffbeb, #fef3c7);
+    border: 1.5px solid #fde68a;
+    border-left: 4px solid var(--am);
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 4px;
+    flex-wrap: wrap;
+}
+.cd-banner-pending-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    flex: 1;
+    min-width: 0;
+}
+.cd-banner-pending-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+.cd-banner-pending-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: #92400e;
+    margin-bottom: 4px;
+    line-height: 1.4;
+}
+.cd-banner-pending-sub {
+    font-size: 12.5px;
+    color: #78350f;
+    line-height: 1.6;
+}
+.cd-banner-progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+.cd-banner-progress-track {
+    flex: 1;
+    height: 6px;
+    background: #fde68a;
+    border-radius: 99px;
+    overflow: hidden;
+    max-width: 200px;
+}
+.cd-banner-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--or), var(--or2));
+    border-radius: 99px;
+    transition: width 0.4s ease;
+}
+.cd-banner-progress-label {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #92400e;
+    white-space: nowrap;
+}
+.cd-banner-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+    text-decoration: none;
+    padding: 10px 18px;
+}
+@media (max-width: 640px) {
+    .cd-banner-pending {
+        flex-direction: column;
+    }
+    .cd-banner-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* ── MODAL PAIEMENT MOMO ── */
+.clm-momo-networks {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+}
+.clm-momo-network {
+    flex: 1;
+    min-width: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 14px 10px;
+    border: 2px solid var(--grl);
+    border-radius: 12px;
+    background: var(--wh);
+    cursor: pointer;
+    transition: all 0.18s;
+    font-family: "Poppins", sans-serif;
+}
+.clm-momo-network:hover {
+    border-color: var(--or);
+}
+.clm-momo-network.active {
+    border-color: var(--or);
+    background: var(--or3);
+}
+.clm-momo-net-icon {
+    font-size: 26px;
+}
+.clm-momo-net-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--dk);
+}
+.clm-momo-hint {
+    font-size: 12px;
+    color: var(--gr);
+    margin-top: 6px;
+    line-height: 1.5;
+}
+.clm-momo-recap {
+    background: #f8f4f0;
+    border: 1.5px solid var(--grl);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.clm-momo-recap-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: var(--gr);
+}
+.clm-momo-recap-row strong {
+    color: var(--dk);
+}
+.clm-momo-amount {
+    color: var(--or);
+    font-size: 15px;
+}
+.clm-momo-warning {
+    font-size: 12.5px;
+    color: #92400e;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    padding: 10px 14px;
+    line-height: 1.5;
 }
 </style>

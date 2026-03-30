@@ -11,6 +11,7 @@ use App\Notifications\AppNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class MissionController extends Controller
@@ -32,6 +33,8 @@ class MissionController extends Controller
             'description'    => 'required|string|min:20|max:2000',
             'availabilities' => 'nullable|array',
             'location_type'  => ['required', Rule::in(['residential', 'business'])],
+            'images'         => 'nullable|array|max:5',
+            'images.*'       => 'image|max:10240',
         ]);
 
         if ($data['location_type'] === 'business' && $client->account_type === 'individual') {
@@ -41,11 +44,20 @@ class MissionController extends Controller
         }
 
         $mission = Mission::create([
-            ...$data,
+            ...collect($data)->except('images')->toArray(),
             'client_id'      => $client->id,
             'status'         => Mission::STATUS_PENDING,
             'min_distance_m' => $client->min_distance_m ?? 0,
         ]);
+
+        // Store images after creation (need mission ID for path)
+        if ($request->hasFile('images')) {
+            $paths = [];
+            foreach ($request->file('images') as $img) {
+                $paths[] = $img->store("missions/{$mission->id}", 'public');
+            }
+            $mission->update(['images' => $paths]);
+        }
 
         $user->notify(new AppNotification(
             event: 'mission.created',
@@ -489,6 +501,12 @@ class MissionController extends Controller
                 $net        = $mission->total_amount ? round($mission->total_amount * 0.9) : null;
                 $commission = $mission->commission;
 
+                // Incrémenter le compteur de missions terminées du client
+                if ($mission->client) {
+                    $mission->client->increment('completed_missions');
+                    $mission->client->increment('total_missions');
+                }
+
                 $clientUser?->notify(new AppNotification(
                     event: 'payment.sent',
                     title: 'Mission clôturée',
@@ -680,6 +698,7 @@ class MissionController extends Controller
             'latitude'         => $mission->latitude,
             'longitude'        => $mission->longitude,
             'description'      => $mission->description,
+            'images'           => collect($mission->images ?? [])->map(fn($p) => Storage::disk('public')->url($p))->values()->toArray(),
             'availabilities'   => $mission->availabilities,
             'location_type'    => $mission->location_type,
             'min_distance_m'   => $mission->min_distance_m,
@@ -704,6 +723,9 @@ class MissionController extends Controller
                 'profile_picture' => $client->profile_picture,
                 'account_type'    => $client->account_type,
                 'company_name'    => $client->company_name,
+                'completed_missions' => Mission::where('client_id', $client->id)->where('status', Mission::STATUS_CLOSED)->count(),
+                'is_verified'     => $client->user?->status === 'approved'
+                                     && Mission::where('client_id', $client->id)->where('status', Mission::STATUS_CLOSED)->count() >= 5,
             ] : null,
             'contractor' => $contractor ? [
                 'id'              => $contractor->id,
@@ -768,6 +790,8 @@ class MissionController extends Controller
                 'email'        => $client->user?->email,
                 'phone'        => $client->phone,
                 'account_type' => $client->account_type,
+                'is_verified'  => $client->user?->status === 'approved'
+                                  && Mission::where('client_id', $client->id)->where('status', Mission::STATUS_CLOSED)->count() >= 5,
             ] : null,
             'contractor' => $contractor ? [
                 'first_name'     => $contractor->first_name,

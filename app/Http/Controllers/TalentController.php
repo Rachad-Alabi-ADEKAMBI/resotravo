@@ -229,15 +229,24 @@ class TalentController extends Controller
         ]);
 
         if ($data['status'] === 'approved' && !$application->user_id) {
-            // Créer un compte user avec rôle talent
-            $user = User::create([
-                'name'     => $application->full_name,
-                'email'    => $application->email,
-                'password' => Hash::make(Str::random(12)), // mot de passe temporaire
-                'role'     => 'talent',
-            ]);
+            // Vérifier si un compte avec cet email existe déjà
+            $existingUser = User::where('email', $application->email)->first();
 
-            $application->user_id = $user->id;
+            if ($existingUser) {
+                // Compte existant : le convertir en talent actif
+                $existingUser->update(['role' => 'talent', 'status' => 'active']);
+                $application->user_id = $existingUser->id;
+            } else {
+                // Créer un compte user avec rôle talent et statut actif
+                $user = User::create([
+                    'name'     => $application->full_name,
+                    'email'    => $application->email,
+                    'password' => Hash::make(Str::random(12)),
+                    'role'     => 'talent',
+                    'status'   => 'active',
+                ]);
+                $application->user_id = $user->id;
+            }
         }
 
         $application->status        = $data['status'];

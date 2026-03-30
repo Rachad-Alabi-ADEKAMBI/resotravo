@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    network_security_config.xml
+    Autorise le trafic HTTP cleartext vers les serveurs de développement local.
+    En production (HTTPS), ce fichier peut être simplifié ou supprimé.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- Émulateur Android (alias de 127.0.0.1 / localhost) -->
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <!-- Appareil physique connecté via IP LAN -->
+        <domain includeSubdomains="false">192.168.1.1</domain>
+        <!-- Toute IP 192.168.x.x (réseau local) -->
+        <domain includeSubdomains="true">192.168.0.0</domain>
+        <domain includeSubdomains="true">10.0.0.0</domain>
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
+    <!-- Production : HTTPS uniquement -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">resotravo.com</domain>
+    </domain-config>
+</network-security-config>

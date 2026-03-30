@@ -160,13 +160,14 @@ class MessageController extends Controller
         }
 
         $request->validate([
-            'file' => 'required|file|max:10240|mimes:jpg,jpeg,png,webp,gif,pdf,doc,docx',
+            'file' => 'required|file|max:10240|mimes:jpg,jpeg,png,webp,gif,pdf,doc,docx,mp3,wav,ogg,m4a,aac',
         ]);
 
         $file      = $request->file('file');
         $mime      = $file->getMimeType();
         $isImage   = str_starts_with($mime, 'image/');
-        $type      = $isImage ? 'image' : 'file';
+        $isAudio   = str_starts_with($mime, 'audio/');
+        $type      = $isImage ? 'image' : ($isAudio ? 'audio' : 'file');
         $path      = $file->store("conversations/{$conversation->id}", 'public');
 
         $message = Message::create([
@@ -182,13 +183,59 @@ class MessageController extends Controller
         $message->load('sender');
 
         $conversation->update([
-            'last_message'    => $isImage ? '📷 Photo' : '📎 ' . $file->getClientOriginalName(),
+            'last_message'    => $isImage ? '📷 Photo' : ($isAudio ? '🎵 ' . $file->getClientOriginalName() : '📎 ' . $file->getClientOriginalName()),
             'last_message_at' => now(),
         ]);
 
         return response()->json([
             'message' => $message->toArray(),
         ], 201);
+    }
+
+    /**
+     * GET /unread-messages
+     * Résumé des messages non lus : total, par mission, dernier message reçu.
+     */
+    public function unreadSummary(): JsonResponse
+    {
+        $user = Auth::user();
+
+        $conversations = Conversation::whereHas('participants', fn($q) => $q->where('user_id', $user->id))
+            ->with(['participants', 'mission'])
+            ->get();
+
+        $total     = 0;
+        $byMission = [];
+        $latest    = null;
+        $latestAt  = null;
+
+        foreach ($conversations as $conv) {
+            $count = $conv->unreadCountFor($user->id);
+            if ($count <= 0) continue;
+
+            $total += $count;
+
+            if ($conv->mission_id) {
+                $byMission[$conv->mission_id] = $count;
+            }
+
+            if ($conv->last_message_at && ($latestAt === null || $conv->last_message_at > $latestAt)) {
+                $latestAt = $conv->last_message_at;
+                $other    = $conv->participants->first(fn($p) => $p->id !== $user->id);
+                $latest   = [
+                    'conversation_id' => $conv->id,
+                    'mission_id'      => $conv->mission_id,
+                    'sender_name'     => $other?->name ?? 'Quelqu\'un',
+                    'mission_service' => $conv->mission?->service ?? ($conv->title ?? 'Mission'),
+                ];
+            }
+        }
+
+        return response()->json([
+            'total'      => $total,
+            'by_mission' => $byMission,
+            'latest'     => $latest,
+        ]);
     }
 
     /**

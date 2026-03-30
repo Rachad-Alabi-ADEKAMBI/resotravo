@@ -293,10 +293,15 @@
                             >
                                 <div class="ctm-section-title">👤 Client</div>
                                 <div class="ctm-row">
-                                    <span>Nom</span
-                                    ><strong>{{
-                                        activeMission.client.name
-                                    }}</strong>
+                                    <span>Nom</span>
+                                    <strong>
+                                        {{ activeMission.client.name }}
+                                        <span
+                                            v-if="activeMission.client.is_verified"
+                                            class="ctm-verified-badge"
+                                            title="Identité vérifiée"
+                                        >✅ Identité vérifiée</span>
+                                    </strong>
                                 </div>
                                 <div class="ctm-row">
                                     <span>Contact</span
@@ -344,11 +349,11 @@
                                 </div>
                                 <div
                                     class="ctm-quote-status-badge"
-                                    :class="activeMission.quote.status"
+                                    :class="effectiveQuoteStatus(activeMission)"
                                 >
                                     {{
                                         quoteStatusLabel(
-                                            activeMission.quote.status,
+                                            effectiveQuoteStatus(activeMission),
                                         )
                                     }}
                                 </div>
@@ -396,10 +401,14 @@
                                 </div>
                             </div>
 
-                            <!-- Acceptée : en route -->
+                            <!-- Acceptée / Contact établi : en route -->
                             <div
                                 class="ctm-action-block"
-                                v-if="activeMission.status === 'accepted'"
+                                v-if="
+                                    ['accepted', 'contact_made'].includes(
+                                        activeMission.status,
+                                    )
+                                "
                             >
                                 <p>
                                     🚗 Prêt à partir ? Activez le suivi pour que
@@ -1439,11 +1448,30 @@ export default {
             const map = {
                 draft: "📝 Brouillon",
                 submitted: "⏳ En attente d'approbation",
-                approved: "✅ Approuvé",
+                approved: "✅ Approuvé par le client",
                 rejected: "❌ Refusé",
                 revised: "🔄 Révisé",
             };
             return map[status] ?? status;
+        },
+
+        // Retourne le statut effectif du devis en tenant compte du statut de la mission.
+        // Quand le client valide, la mission passe à order_placed mais quote.status
+        // peut rester "submitted" — on force "approved" dans ce cas.
+        effectiveQuoteStatus(mission) {
+            const approvedMissionStatuses = [
+                "order_placed",
+                "awaiting_confirm",
+                "completed",
+                "closed",
+            ];
+            if (
+                mission.quote?.status === "submitted" &&
+                approvedMissionStatuses.includes(mission.status)
+            ) {
+                return "approved";
+            }
+            return mission.quote?.status ?? "draft";
         },
 
         // ── Abandon mission ───────────────────────────────────────
@@ -1621,7 +1649,6 @@ export default {
                 this.unreadCount = Math.max(0, this.unreadCount - 1);
             }
             this.notifOpen = false;
-            if (n.url) window.location.href = n.url;
         },
         async markAllRead() {
             const csrf = document.querySelector(
@@ -1763,6 +1790,16 @@ export default {
                 new Intl.NumberFormat("fr-FR").format(Math.round(a)) + " FCFA"
             );
         },
+        onGlobalUnreadUpdate(evt) {
+            const byMission = evt.detail?.by_mission ?? {};
+            if (this.chatMissionId) {
+                const updated = { ...byMission };
+                delete updated[this.chatMissionId];
+                this.unreadByMission = updated;
+            } else {
+                this.unreadByMission = byMission;
+            }
+        },
         showToast(message, type = "") {
             const id = ++this.toastId;
             this.toasts.push({ id, message, type });
@@ -1798,10 +1835,12 @@ export default {
         window.addEventListener("ab-sidebar-close", () => {
             this.sidebarOpen = false;
         });
+        window.addEventListener("rt-unread-update", this.onGlobalUnreadUpdate);
     },
     beforeUnmount() {
         clearInterval(this.notifInterval);
         document.removeEventListener("click", this.handleClickOutside);
+        window.removeEventListener("rt-unread-update", this.onGlobalUnreadUpdate);
     },
 };
 </script>
@@ -2456,15 +2495,9 @@ export default {
     flex-direction: column;
     gap: 20px;
 }
-@media (min-width: 800px) {
-    .ctm-panel-cols {
-        flex-direction: row;
-        gap: 24px;
-    }
-    .ctm-info-col,
-    .ctm-actions-col {
-        flex: 1;
-    }
+/* Panel toujours en colonne — trop étroit pour 2 colonnes */
+.ctm-panel-cols {
+    flex-direction: column;
 }
 .ctm-section {
     background: var(--grl);
@@ -2479,6 +2512,18 @@ export default {
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: 10px;
+}
+.ctm-verified-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    color: #15803d;
+    background: #dcfce7;
+    border: 1px solid #86efac;
+    border-radius: 99px;
+    padding: 1px 8px;
+    margin-left: 6px;
+    vertical-align: middle;
 }
 .ctm-row {
     display: flex;

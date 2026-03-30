@@ -28,38 +28,43 @@ class UserController extends Controller
             'password'     => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
+        // Formatage : prénom avec 1ère lettre majuscule, nom de famille tout en majuscules
+        $firstName = ucfirst(strtolower(trim($request->first_name)));
+        $lastName  = strtoupper(trim($request->last_name));
+
         // 1. Créer le User avec role = client
         $user = User::create([
-            'name'     => $request->first_name . ' ' . $request->last_name,
-            'email'    => $request->email,
+            'name'     => $firstName . ' ' . $lastName,
+            'email'    => strtolower(trim($request->email)),
             'password' => Hash::make($request->password),
             'role'     => 'client',
-            'status'   => 'approved', // client approuvé directement
+            'status'   => 'pending', // en attente validation documents
         ]);
 
         // 2. Créer le profil Client
         Client::create([
             'user_id'      => $user->id,
-            'first_name'   => $request->first_name,
-            'last_name'    => $request->last_name,
-            'phone'        => $request->phone,
-            'address'      => $request->address,
+            'first_name'   => $firstName,
+            'last_name'    => $lastName,
+            'phone'        => trim($request->phone),
+            'address'      => trim($request->address),
             'city'         => 'Cotonou',
             'account_type' => $request->account_type,
-            'company_name' => $request->account_type === 'company' ? $request->company_name : null,
+            'company_name' => $request->account_type === 'company' ? trim($request->company_name) : null,
         ]);
 
         // 3. Connecter directement
         Auth::login($user);
 
         return response()->json([
-            'message'  => 'Account created successfully.',
+            'message'  => "Compte créé avec succès, merci d'uploader vos documents",
             'redirect' => route('client.dashboard'),
             'user'     => [
-                'id'    => $user->id,
-                'name'  => $user->name,
-                'email' => $user->email,
-                'role'  => $user->role,
+                'id'     => $user->id,
+                'name'   => $user->name,
+                'email'  => $user->email,
+                'role'   => $user->role,
+                'status' => $user->status,
             ],
         ], 201);
     }
@@ -85,10 +90,14 @@ class UserController extends Controller
             'password'          => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
+        // Formatage : prénom avec 1ère lettre majuscule, nom de famille tout en majuscules
+        $firstName = ucfirst(strtolower(trim($request->first_name)));
+        $lastName  = strtoupper(trim($request->last_name));
+
         // 1. Créer le User avec role = contractor
         $user = User::create([
-            'name'     => $request->first_name . ' ' . $request->last_name,
-            'email'    => $request->email,
+            'name'     => $firstName . ' ' . $lastName,
+            'email'    => strtolower(trim($request->email)),
             'password' => Hash::make($request->password),
             'role'     => 'contractor',
             'status'   => 'pending', // en attente validation documents
@@ -97,14 +106,14 @@ class UserController extends Controller
         // 2. Créer le profil Contractor
         Contractor::create([
             'user_id'           => $user->id,
-            'first_name'        => $request->first_name,
-            'last_name'         => $request->last_name,
-            'phone'             => $request->phone,
-            'city'              => $request->city,
-            'bio'               => $request->bio,
-            'specialty'         => $request->specialty,
+            'first_name'        => $firstName,
+            'last_name'         => $lastName,
+            'phone'             => trim($request->phone),
+            'city'              => trim($request->city),
+            'bio'               => $request->bio ? trim($request->bio) : null,
+            'specialty'         => trim($request->specialty),
             'specialties'       => $request->specialties ?? [],
-            'intervention_zone' => $request->intervention_zone,
+            'intervention_zone' => trim($request->intervention_zone),
             'experience_years'  => $request->experience_years,
         ]);
 
@@ -112,7 +121,7 @@ class UserController extends Controller
         Auth::login($user);
 
         return response()->json([
-            'message'  => 'Account created successfully. Please upload your documents.',
+            'message'  => "Compte créé avec succès, merci d'uploader vos documents",
             'redirect' => route('contractor.dashboard'),
             'user'     => [
                 'id'     => $user->id,

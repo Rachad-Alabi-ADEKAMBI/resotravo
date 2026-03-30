@@ -107,11 +107,13 @@
         </div>
         <div class="ab-nav-section">
             <div class="ab-section-lbl">Finance</div>
-            <button class="ab-nav-item" onclick="wip('Transactions')"><span class="ab-nav-icon">💸</span><span>Transactions</span></button>
+            <a class="ab-nav-item {{ $active === 'revenus' ? 'active' : '' }}" href="{{ route('admin.revenus') }}">
+                <span class="ab-nav-icon">💸</span><span>Revenus & Finances</span>
+            </a>
         </div>
         <div class="ab-nav-section">
             <div class="ab-section-lbl">Contenu</div>
-            <a class="ab-nav-item {{ $active === 'tenders' ? 'active' : '' }}" href="{{ route('admin.tenders.page') }}">
+            <a class="ab-nav-item {{ $active === 'tenders' ? 'active' : '' }}" href="{{ route('admin.tenders.admin-page') }}">
                 <span class="ab-nav-icon">📝</span><span>Appels d'offres</span>
             </a>
             <a class="ab-nav-item {{ $active === 'services' ? 'active' : '' }}" href="{{ route('admin.services.page') }}">
@@ -123,6 +125,9 @@
         </div>
         <div class="ab-nav-section">
             <div class="ab-section-lbl">Outils</div>
+            <a class="ab-nav-item {{ $active === 'messages' ? 'active' : '' }}" href="{{ route('admin.messages') }}" id="sidebar-msg-link">
+                <span class="ab-nav-icon">💬</span><span>Messages<span id="sidebar-msg-count" class="ab-msg-count"></span></span>
+            </a>
             <a class="ab-nav-item {{ $active === 'disputes' ? 'active' : '' }}" href="{{ route('admin.disputes.page') }}">
                 <span class="ab-nav-icon">⚖️</span><span>Litiges</span>
             </a>
@@ -134,14 +139,22 @@
 
         {{-- ══════ CLIENT ══════ --}}
         @if($role === 'client')
-        @php $clientUser = Auth::user(); @endphp
-        @if($clientUser->status === 'approved')
+        @php $clientUser = Auth::user(); $clientApproved = $clientUser->status === 'approved'; @endphp
+
+        {{-- Badge statut --}}
         <div class="ab-contractor-status">
-            <div class="ab-status-chip ab-status-certified">
-                <span class="ab-status-dot dot-green"></span> ✅ Identité vérifiée
-            </div>
+            @if($clientApproved)
+                <div class="ab-status-chip ab-status-certified">
+                    <span class="ab-status-dot dot-green"></span> ✅ Identité vérifiée
+                </div>
+            @else
+                <div class="ab-status-chip ab-status-pending">
+                    <span class="ab-status-dot dot-orange"></span> ⏳ Validation en attente
+                </div>
+            @endif
         </div>
-        @endif
+
+        {{-- Navigation — toujours visible --}}
         <div class="ab-nav-section">
             <div class="ab-section-lbl">Mon espace</div>
             <a class="ab-nav-item {{ $active === 'dashboard' ? 'active' : '' }}" href="{{ route('client.dashboard') }}">
@@ -151,32 +164,39 @@
                 <span class="ab-nav-icon">📋</span><span>Mes missions</span>
             </a>
         </div>
+
+        {{-- Dossier — toujours visible --}}
         <div class="ab-nav-section">
             <div class="ab-section-lbl">Mon dossier</div>
             <a class="ab-nav-item {{ $active === 'dossier' ? 'active' : '' }}" href="{{ route('client.dossier') }}">
                 <span class="ab-nav-icon">📂</span><span>Mon dossier</span>
-                @if($clientUser->status === 'approved')
+                @if($clientApproved)
                     <span class="ab-nav-badge green">✓</span>
-                @elseif($clientUser->status === 'pending')
+                @else
                     <span class="ab-nav-badge orange">⏳</span>
-                @elseif($clientUser->status === 'rejected')
-                    <span class="ab-nav-badge red">✗</span>
                 @endif
             </a>
         </div>
+
+        {{-- Finance — toujours visible --}}
         <div class="ab-nav-section">
             <div class="ab-section-lbl">Finance</div>
-            <button class="ab-nav-item" onclick="wip('Factures')"><span class="ab-nav-icon">🧾</span><span>Factures</span></button>
+            <a class="ab-nav-item {{ $active === 'paiements' ? 'active' : '' }}" href="{{ route('client.paiements') }}">
+                <span class="ab-nav-icon">💳</span><span>Mes paiements</span>
+            </a>
         </div>
+
+        {{-- Compte — toujours visible --}}
         <div class="ab-nav-section">
             <div class="ab-section-lbl">Compte</div>
-            <a class="ab-nav-item {{ $active === 'messagerie' ? 'active' : '' }}" href="{{ route('client.messaging') }}">
-                <span class="ab-nav-icon">💬</span><span>Messagerie</span>
+            <a class="ab-nav-item {{ $active === 'messages' ? 'active' : '' }}" href="{{ route('client.messages') }}" id="sidebar-msg-link">
+                <span class="ab-nav-icon">💬</span><span>Messages<span id="sidebar-msg-count" class="ab-msg-count"></span></span>
             </a>
             <a class="ab-nav-item {{ $active === 'parameters' ? 'active' : '' }}" href="{{ route('client.parameters') }}">
                 <span class="ab-nav-icon">👤</span><span>Mon profil</span>
             </a>
         </div>
+
         @endif
 
         {{-- ══════ CONTRACTOR ══════ --}}
@@ -189,9 +209,6 @@
             <a class="ab-nav-item {{ $active === 'missions' ? 'active' : '' }}" href="{{ route('contractor.missions.page') }}">
                 <span class="ab-nav-icon">📋</span><span>Mes missions</span>
             </a>
-            <button class="ab-nav-item {{ $active === 'disponibilite' ? 'active' : '' }}" onclick="wip('Disponibilité')">
-                <span class="ab-nav-icon">📅</span><span>Disponibilité</span>
-            </button>
         </div>
 
         <div class="ab-nav-section">
@@ -209,7 +226,7 @@
                 @endif
             </a>
 
-            <button class="ab-nav-item {{ $active === 'accreditation' ? 'active' : '' }}" onclick="wip('Mon accréditation')">
+            <a class="ab-nav-item {{ $active === 'accreditation' ? 'active' : '' }}" href="{{ route('contractor.accreditation') }}">
                 <span class="ab-nav-icon">🏅</span><span>Mon accréditation</span>
                 @if($accreditation === 'home')
                     <span class="ab-nav-badge blue">🏠</span>
@@ -220,7 +237,7 @@
                 @elseif($contractorStatus === 'approved')
                     <span class="ab-nav-badge" style="background:#f59e0b">⚠️</span>
                 @endif
-            </button>
+            </a>
         </div>
 
         <div class="ab-nav-section">
@@ -232,10 +249,9 @@
 
         <div class="ab-nav-section">
             <div class="ab-section-lbl">Compte</div>
-            <a class="ab-nav-item {{ $active === 'messagerie' ? 'active' : '' }}" href="{{ route('contractor.messaging') }}">
-                <span class="ab-nav-icon">💬</span><span>Messagerie</span>
+            <a class="ab-nav-item {{ $active === 'messages' ? 'active' : '' }}" href="{{ route('contractor.messages') }}" id="sidebar-msg-link">
+                <span class="ab-nav-icon">💬</span><span>Messages<span id="sidebar-msg-count" class="ab-msg-count"></span></span>
             </a>
-            <button class="ab-nav-item" onclick="wip('Mes avis')"><span class="ab-nav-icon">⭐</span><span>Mes avis</span></button>
             <a class="ab-nav-item {{ $active === 'parameters' ? 'active' : '' }}" href="{{ route('contractor.parameters') }}">
                 <span class="ab-nav-icon">👤</span><span>Mon profil</span>
             </a>
@@ -333,6 +349,7 @@
 .ab-nav-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;margin-left:auto;background:#ef4444;color:#fff;flex-shrink:0}
 .ab-nav-badge.orange{background:var(--or,#F97316)}.ab-nav-badge.green{background:#22c55e}.ab-nav-badge.red{background:#ef4444}
 .ab-nav-badge.blue{background:#3b82f6}.ab-nav-badge.teal{background:#14b8a6}.ab-nav-badge.purple{background:#8b5cf6}
+.ab-msg-count{display:none;font-size:12px;font-weight:700;color:inherit;margin-left:4px}
 /* Bottom */
 .ab-sidebar-bottom{padding:12px 10px;border-top:1px solid rgba(255,255,255,.08);flex-shrink:0}
 .ab-user-chip{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:9px;background:rgba(255,255,255,.05)}

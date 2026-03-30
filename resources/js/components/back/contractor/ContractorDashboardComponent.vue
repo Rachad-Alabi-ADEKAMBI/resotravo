@@ -306,12 +306,6 @@
                     <div class="ctr-card">
                         <div class="ctr-card-header">
                             <h3>👤 Mon profil</h3>
-                            <button
-                                class="ctr-btn ctr-btn-ghost ctr-btn-sm"
-                                @click="wip('Modifier mon profil')"
-                            >
-                                Modifier
-                            </button>
                         </div>
                         <div class="ctr-profile-info">
                             <div
@@ -446,52 +440,6 @@
                                     km</strong
                                 >
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Actions rapides -->
-                    <div class="ctr-card">
-                        <div class="ctr-card-header">
-                            <h3>⚡ Actions rapides</h3>
-                        </div>
-                        <div class="ctr-quick-actions">
-                            <button
-                                class="ctr-quick-btn"
-                                @click="scrollToDocs"
-                                v-if="userStatus === 'pending'"
-                            >
-                                <span>📄</span> Déposer mes documents
-                            </button>
-                            <button
-                                class="ctr-quick-btn"
-                                @click="wip('Mes revenus')"
-                            >
-                                <span>💰</span> Mes revenus
-                            </button>
-                            <button
-                                class="ctr-quick-btn"
-                                @click="wip('Mes avis')"
-                            >
-                                <span>⭐</span> Mes avis clients
-                            </button>
-                            <button
-                                class="ctr-quick-btn"
-                                @click="wip('Messagerie')"
-                            >
-                                <span>💬</span> Messagerie
-                            </button>
-                            <button
-                                class="ctr-quick-btn"
-                                @click="wip('Mes factures')"
-                            >
-                                <span>🧾</span> Mes factures
-                            </button>
-                            <button
-                                class="ctr-quick-btn"
-                                @click="wip('Mon accréditation')"
-                            >
-                                <span>🏅</span> Mon accréditation
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -694,6 +642,19 @@
                         <span>Description</span
                         ><strong>{{ activeMission.description }}</strong>
                     </div>
+                    <!-- Photos de la mission -->
+                    <div class="ctr-detail-row ctr-detail-photos" v-if="activeMission.images && activeMission.images.length">
+                        <span>Photos</span>
+                        <div class="ctr-dash-images">
+                            <img
+                                v-for="(url, i) in activeMission.images"
+                                :key="i"
+                                :src="url"
+                                @click="dashLightbox = url"
+                                class="ctr-dash-img"
+                            />
+                        </div>
+                    </div>
                     <div
                         class="ctr-detail-row"
                         v-if="activeMission.total_amount"
@@ -717,145 +678,253 @@
 
                     <!-- Barre progression -->
 
-                    <!-- ── ACTION : Accepter ou refuser la mission ── -->
+                    <!-- ── ACTION : Accepter ou refuser ── -->
                     <div
-                        class="ctr-action-block ctr-action-assigned"
+                        class="ctm-action-block ctm-action-new"
                         v-if="activeMission.status === 'assigned'"
                     >
-                        <div class="ctr-action-assigned-header">
-                            <div class="ctr-action-assigned-icon">📬</div>
-                            <div>
-                                <div class="ctr-action-title">
-                                    Nouvelle mission proposée
-                                </div>
-                                <div class="ctr-action-sub">
-                                    Vous avez 5 minutes pour accepter ou refuser
-                                    cette mission.
-                                </div>
-                            </div>
+                        <div class="ctm-action-new-icon">📬</div>
+                        <div class="ctm-action-new-title">
+                            Nouvelle mission proposée
                         </div>
-                        <div class="ctr-action-row">
+                        <div class="ctm-action-new-sub">
+                            Vous avez 5 minutes pour répondre.
+                        </div>
+                        <div class="ctm-action-row">
                             <button
-                                class="ctr-btn ctr-btn-red"
+                                class="ctm-btn ctm-btn-red"
                                 @click="openRefuseModal(activeMission)"
                                 :disabled="actionLoading"
                             >
                                 ✗ Refuser
                             </button>
                             <button
-                                class="ctr-btn ctr-btn-green"
+                                class="ctm-btn ctm-btn-green"
                                 @click="updateStatus(activeMission, 'accepted')"
                                 :disabled="actionLoading"
                             >
                                 <div
-                                    class="ctr-spinner"
+                                    class="ctm-spinner"
                                     v-if="actionLoading"
                                 ></div>
-                                <span v-else>✓ Accepter la mission</span>
+                                <span v-else>✓ Accepter</span>
                             </button>
                         </div>
                     </div>
 
-                    <!-- Action : marquer en route -->
+                    <!-- ── En route ── -->
                     <div
-                        class="ctr-action-block"
-                        v-if="activeMission.status === 'accepted'"
+                        class="ctm-action-block"
+                        v-if="
+                            ['accepted', 'contact_made'].includes(
+                                activeMission.status,
+                            )
+                        "
                     >
                         <p>
-                            🚗 Vous êtes prêt à partir ? Activez le suivi GPS
-                            pour que le client puisse vous suivre.
+                            🚗 Prêt à partir ? Activez le suivi pour que le
+                            client vous voie.
                         </p>
                         <button
-                            class="ctr-btn ctr-btn-orange"
-                            style="width: 100%"
+                            class="ctm-btn ctm-btn-orange ctm-btn-full"
                             @click="updateStatus(activeMission, 'on_the_way')"
                             :disabled="actionLoading"
                         >
-                            <div class="ctr-spinner" v-if="actionLoading"></div>
-                            <span v-else>Je suis en route →</span>
+                            <div class="ctm-spinner" v-if="actionLoading"></div>
+                            <span v-else>🚗 Je suis en route →</span>
                         </button>
                     </div>
 
-                    <!-- Action : marquer arrivé -->
+                    <!-- ── Arrivé sur place ── -->
                     <div
-                        class="ctr-action-block"
-                        v-if="activeMission.status === 'tracking'"
+                        class="ctm-action-block"
+                        v-if="
+                            ['on_the_way', 'tracking'].includes(
+                                activeMission.status,
+                            )
+                        "
                     >
                         <p>📍 Êtes-vous arrivé sur place ?</p>
                         <button
-                            class="ctr-btn ctr-btn-orange"
-                            style="width: 100%"
+                            class="ctm-btn ctm-btn-orange ctm-btn-full"
                             @click="updateStatus(activeMission, 'in_progress')"
                             :disabled="actionLoading"
                         >
-                            <div class="ctr-spinner" v-if="actionLoading"></div>
-                            <span v-else>Je suis arrivé sur place</span>
+                            <div class="ctm-spinner" v-if="actionLoading"></div>
+                            <span v-else>📍 Je suis arrivé sur place</span>
                         </button>
                     </div>
 
-                    <!-- Action : soumettre un devis -->
+                    <!-- ── Devis (saisie / révision) ── -->
                     <div
-                        class="ctr-action-block"
-                        v-if="activeMission.status === 'in_progress'"
+                        class="ctm-action-block ctm-action-quote"
+                        v-if="
+                            activeMission.status === 'in_progress' ||
+                            (activeMission.status === 'quote_submitted' &&
+                                activeMission.quote?.status === 'rejected')
+                        "
                     >
-                        <p>
-                            📄 Vous pouvez maintenant soumettre votre devis au
-                            client.
-                        </p>
-                        <button
-                            class="ctr-btn ctr-btn-orange"
-                            style="width: 100%"
-                            @click="wip('Saisir le devis')"
+                        <div class="ctm-action-quote-icon">📄</div>
+                        <div class="ctm-action-quote-title">
+                            {{
+                                activeMission.quote?.status === "rejected"
+                                    ? "Devis refusé par le client"
+                                    : "Saisir le devis"
+                            }}
+                        </div>
+                        <div
+                            class="ctm-action-quote-sub"
+                            v-if="
+                                activeMission.quote?.status === 'rejected' &&
+                                activeMission.reported_issue
+                            "
                         >
-                            Saisir le devis →
+                            ❌ Motif :
+                            <em>« {{ activeMission.reported_issue }} »</em>
+                        </div>
+                        <div
+                            class="ctm-action-quote-sub"
+                            v-else-if="
+                                activeMission.quote?.status === 'rejected'
+                            "
+                        >
+                            ❌ Le client a refusé votre devis. Vous pouvez le
+                            réviser ou abandonner.
+                        </div>
+                        <div class="ctm-action-quote-sub" v-else>
+                            Diagnostiquez la situation et détaillez les pièces
+                            nécessaires.
+                        </div>
+                        <button
+                            class="ctm-btn ctm-btn-orange ctm-btn-full"
+                            @click="openQuoteModal(activeMission)"
+                            style="margin-bottom: 8px"
+                        >
+                            📄
+                            {{
+                                activeMission.quote?.status === "rejected"
+                                    ? "Réviser le devis →"
+                                    : "Saisir le devis →"
+                            }}
+                        </button>
+                        <button
+                            v-if="activeMission.quote?.status === 'rejected'"
+                            class="ctm-btn ctm-btn-ghost ctm-btn-full"
+                            @click="openAbandonModal(activeMission)"
+                            :disabled="actionLoading"
+                        >
+                            🚪 Abandonner la mission
                         </button>
                     </div>
 
-                    <!-- Action : marquer travaux terminés -->
+                    <!-- ── Devis soumis en attente ── -->
                     <div
-                        class="ctr-action-block"
+                        class="ctm-action-block ctm-action-wait"
+                        v-if="
+                            activeMission.status === 'quote_submitted' &&
+                            activeMission.quote?.status !== 'rejected'
+                        "
+                    >
+                        <div class="ctm-action-wait-icon">⏳</div>
+                        <div>
+                            <div class="ctm-action-wait-title">
+                                Devis en attente d'approbation
+                            </div>
+                            <div class="ctm-action-wait-sub">
+                                Le client doit approuver votre devis pour
+                                démarrer les travaux.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Travaux terminés ── -->
+                    <div
+                        class="ctm-action-block"
                         v-if="activeMission.status === 'order_placed'"
                     >
                         <p>
-                            🔨 Marquez les travaux comme terminés lorsque tout
-                            est fini.
+                            🔨 Le client a approuvé votre devis. Marquez les
+                            travaux comme terminés.
                         </p>
                         <button
-                            class="ctr-btn ctr-btn-orange"
-                            style="width: 100%"
+                            class="ctm-btn ctm-btn-orange ctm-btn-full"
                             @click="
                                 updateStatus(activeMission, 'awaiting_confirm')
                             "
                             :disabled="actionLoading"
                         >
-                            <div class="ctr-spinner" v-if="actionLoading"></div>
-                            <span v-else>Travaux terminés ✓</span>
+                            <div class="ctm-spinner" v-if="actionLoading"></div>
+                            <span v-else>✓ Travaux terminés</span>
                         </button>
+                    </div>
+
+                    <!-- ── Att. confirmation ── -->
+                    <div
+                        class="ctm-action-block ctm-action-wait"
+                        v-if="activeMission.status === 'awaiting_confirm'"
+                    >
+                        <div class="ctm-action-wait-icon">⏳</div>
+                        <div>
+                            <div class="ctm-action-wait-title">
+                                En attente du client
+                            </div>
+                            <div class="ctm-action-wait-sub">
+                                Le client doit confirmer la fin des travaux pour
+                                déclencher votre paiement.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Terminée / clôturée ── -->
+                    <div
+                        class="ctm-action-block ctm-action-done"
+                        v-if="
+                            ['completed', 'closed'].includes(
+                                activeMission.status,
+                            )
+                        "
+                    >
+                        <div class="ctm-action-done-icon">🎉</div>
+                        <div>
+                            <div class="ctm-action-done-title">
+                                Mission
+                                {{
+                                    activeMission.status === "closed"
+                                        ? "clôturée"
+                                        : "terminée"
+                                }}
+                            </div>
+                            <div
+                                class="ctm-action-done-sub"
+                                v-if="activeMission.status === 'closed'"
+                            >
+                                Votre paiement de
+                                {{
+                                    formatPrice(
+                                        activeMission.total_amount * 0.9,
+                                    )
+                                }}
+                                a été effectué.
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="ctr-modal-footer">
                     <button
-                        class="ctr-btn ctr-btn-ghost"
+                        class="ctm-btn ctm-btn-ghost"
                         @click="activeMission = null"
                     >
                         Fermer
                     </button>
                     <button
-                        class="ctr-btn ctr-btn-orange"
+                        class="ctm-btn ctm-btn-chat"
                         @click="chatMissionId = activeMission.id"
-                        v-if="
-                            [
-                                'accepted',
-                                'contact_made',
-                                'on_the_way',
-                                'tracking',
-                                'in_progress',
-                                'order_placed',
-                                'awaiting_confirm',
-                            ].includes(activeMission.status)
-                        "
+                        v-if="activeMission.status !== 'pending'"
                     >
-                        💬 Contacter le client
+                        💬 Messages
+                        <span class="ctr-chat-badge" v-if="unreadByMission[activeMission.id] > 0">{{
+                            unreadByMission[activeMission.id]
+                        }}</span>
                     </button>
                 </div>
             </div>
@@ -1088,6 +1157,11 @@
             @unread="onChatUnread($event)"
         />
 
+        <!-- Lightbox photos mission -->
+        <div class="ctr-dash-lightbox" v-if="dashLightbox" @click="dashLightbox = null">
+            <img :src="dashLightbox" />
+        </div>
+
         <!-- WIP MODAL -->
         <div
             class="ctr-wip-overlay"
@@ -1106,6 +1180,297 @@
                 >
                     Compris →
                 </button>
+            </div>
+        </div>
+
+        <!-- ══════════════ MODAL DEVIS ══════════════ -->
+        <div
+            class="ctm-modal-overlay"
+            v-if="quoteModal.visible"
+            @click.self="closeQuoteModal"
+        >
+            <div class="ctm-modal ctm-modal-quote">
+                <!-- Header -->
+                <div class="ctm-modal-header">
+                    <div>
+                        <h3>
+                            {{
+                                quoteModal.isRevision
+                                    ? "Réviser le devis"
+                                    : "Saisir le devis"
+                            }}
+                        </h3>
+                        <div class="ctm-modal-subtitle">
+                            Mission #{{ quoteModal.mission?.id }} ·
+                            {{ quoteModal.mission?.service }}
+                        </div>
+                    </div>
+                    <button class="ctm-modal-close" @click="closeQuoteModal">
+                        &#215;
+                    </button>
+                </div>
+
+                <div class="ctm-modal-body ctm-modal-body-quote">
+                    <!-- Diagnostic -->
+                    <div class="ctm-quote-field">
+                        <label class="ctm-quote-label"
+                            >🔍 Diagnostic
+                            <span class="ctm-optional">(optionnel)</span></label
+                        >
+                        <textarea
+                            class="ctm-quote-textarea"
+                            v-model="quoteModal.diagnosis"
+                            placeholder="Décrivez ce que vous avez constaté sur place…"
+                            rows="3"
+                        ></textarea>
+                    </div>
+
+                    <!-- Lignes pièces/matériaux -->
+                    <div class="ctm-quote-section">
+                        <div class="ctm-quote-section-header">
+                            <span class="ctm-quote-section-title"
+                                >🔩 Pièces & matériaux</span
+                            >
+                            <button
+                                class="ctm-add-line-btn"
+                                @click="addPartLine"
+                            >
+                                + Ajouter une ligne
+                            </button>
+                        </div>
+
+                        <div class="ctm-quote-table-head">
+                            <span class="col-desc">Désignation</span>
+                            <span class="col-qty">Qté</span>
+                            <span class="col-price">Prix unit. (FCFA)</span>
+                            <span class="col-total">Total</span>
+                            <span class="col-del"></span>
+                        </div>
+
+                        <div
+                            v-if="quoteModal.partLines.length === 0"
+                            class="ctm-quote-empty-lines"
+                        >
+                            Aucune pièce ajoutée. Cliquez sur « + Ajouter une
+                            ligne ».
+                        </div>
+
+                        <div
+                            class="ctm-quote-line"
+                            v-for="(line, idx) in quoteModal.partLines"
+                            :key="line._id"
+                        >
+                            <input
+                                class="ctm-quote-input col-desc"
+                                type="text"
+                                v-model="line.description"
+                                placeholder="Ex : Robinet chromé DN15…"
+                            />
+                            <input
+                                class="ctm-quote-input col-qty"
+                                type="number"
+                                v-model.number="line.quantity"
+                                min="0.01"
+                                step="1"
+                                placeholder="1"
+                            />
+                            <input
+                                class="ctm-quote-input col-price"
+                                type="number"
+                                v-model.number="line.unit_price"
+                                min="0"
+                                step="100"
+                                placeholder="0"
+                            />
+                            <div class="col-total ctm-quote-line-total">
+                                {{ formatPrice(lineTotal(line)) }}
+                            </div>
+                            <button
+                                class="ctm-quote-del-btn"
+                                @click="removePartLine(idx)"
+                                title="Supprimer"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Main d'œuvre -->
+                    <div class="ctm-quote-section">
+                        <div class="ctm-quote-section-header">
+                            <span class="ctm-quote-section-title"
+                                >🛠️ Main d'œuvre</span
+                            >
+                        </div>
+                        <div class="ctm-quote-labor-row">
+                            <div class="ctm-quote-field ctm-field-flex">
+                                <label class="ctm-quote-label"
+                                    >Description</label
+                                >
+                                <input
+                                    class="ctm-quote-input"
+                                    type="text"
+                                    v-model="quoteModal.labor.description"
+                                    placeholder="Ex : Pose et raccordement robinet…"
+                                />
+                            </div>
+                            <div class="ctm-quote-field ctm-field-amount">
+                                <label class="ctm-quote-label"
+                                    >Montant (FCFA)</label
+                                >
+                                <input
+                                    class="ctm-quote-input"
+                                    type="number"
+                                    v-model.number="quoteModal.labor.unit_price"
+                                    min="0"
+                                    step="100"
+                                    placeholder="0"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Total récapitulatif -->
+                    <div class="ctm-quote-recap">
+                        <div class="ctm-quote-recap-row">
+                            <span>Pièces & matériaux</span>
+                            <strong>{{ formatPrice(partsSubtotal) }}</strong>
+                        </div>
+                        <div class="ctm-quote-recap-row">
+                            <span>Main d'œuvre</span>
+                            <strong>{{
+                                formatPrice(quoteModal.labor.unit_price || 0)
+                            }}</strong>
+                        </div>
+                        <div class="ctm-quote-recap-total">
+                            <span>Total devis</span>
+                            <strong>{{ formatPrice(quoteTotal) }}</strong>
+                        </div>
+                        <div class="ctm-quote-recap-net">
+                            Votre part (90%) :
+                            <strong>{{ formatPrice(quoteTotal * 0.9) }}</strong>
+                        </div>
+                    </div>
+
+                    <!-- Erreur -->
+                    <div class="ctm-quote-error" v-if="quoteModal.error">
+                        ⚠️ {{ quoteModal.error }}
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="ctm-modal-footer ctm-modal-footer-quote">
+                    <button
+                        class="ctm-btn ctm-btn-ghost"
+                        @click="closeQuoteModal"
+                    >
+                        Annuler
+                    </button>
+                    <button
+                        class="ctm-btn ctm-btn-ghost ctm-btn-draft"
+                        @click="submitQuote('draft')"
+                        :disabled="quoteModal.loading || !quoteIsValid"
+                    >
+                        <div
+                            class="ctm-spinner ctm-spinner-dark"
+                            v-if="quoteModal.loading === 'draft'"
+                        ></div>
+                        <span v-else>💾 Enregistrer brouillon</span>
+                    </button>
+                    <button
+                        class="ctm-btn ctm-btn-orange"
+                        @click="submitQuote('submit')"
+                        :disabled="quoteModal.loading || !quoteIsValid"
+                    >
+                        <div
+                            class="ctm-spinner"
+                            v-if="quoteModal.loading === 'submit'"
+                        ></div>
+                        <span v-else>📤 Soumettre au client</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════ MODAL ABANDON MISSION ══════════════ -->
+        <div
+            class="ctm-modal-overlay"
+            v-if="abandonModal.visible"
+            @click.self="abandonModal.visible = false"
+        >
+            <div class="ctm-modal">
+                <div class="ctm-modal-header">
+                    <h3>🚪 Abandonner la mission</h3>
+                    <button
+                        class="ctm-modal-close"
+                        @click="abandonModal.visible = false"
+                    >
+                        &#215;
+                    </button>
+                </div>
+                <div class="ctm-modal-body">
+                    <p
+                        style="
+                            font-size: 13.5px;
+                            color: var(--gr);
+                            margin-bottom: 14px;
+                            line-height: 1.6;
+                        "
+                    >
+                        Vous confirmez ne plus pouvoir réaliser cette mission
+                        suite au refus du devis. Elle sera signalée à l'équipe
+                        Resotravo.
+                    </p>
+                    <label
+                        class="ctm-form-label"
+                        style="
+                            font-size: 13px;
+                            font-weight: 700;
+                            color: var(--dk);
+                            display: block;
+                            margin-bottom: 6px;
+                        "
+                    >
+                        Motif <span style="color: #dc2626">*</span>
+                    </label>
+                    <textarea
+                        class="ctm-input"
+                        style="
+                            width: 100%;
+                            border: 2px solid var(--grl);
+                            border-radius: 9px;
+                            padding: 9px 13px;
+                            font-size: 13px;
+                            font-family: &quot;Poppins&quot;, sans-serif;
+                            resize: vertical;
+                            box-sizing: border-box;
+                        "
+                        v-model="abandonModal.reason"
+                        rows="3"
+                        placeholder="Ex : Désaccord sur le prix des pièces, hors de mes compétences…"
+                    ></textarea>
+                </div>
+                <div class="ctm-modal-footer">
+                    <button
+                        class="ctm-btn ctm-btn-ghost"
+                        @click="abandonModal.visible = false"
+                    >
+                        Annuler
+                    </button>
+                    <button
+                        class="ctm-btn ctm-btn-red"
+                        @click="confirmAbandon"
+                        :disabled="
+                            !abandonModal.reason.trim() || abandonModal.loading
+                        "
+                    >
+                        <div
+                            class="ctm-spinner"
+                            v-if="abandonModal.loading"
+                        ></div>
+                        <span v-else>🚪 Confirmer l'abandon</span>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -1169,6 +1534,7 @@ export default {
             type: Object,
             default: () => ({
                 missions_index: "/contractor/missions",
+                missions_quote_store: "/contractor/missions/{id}/quote",
                 missions_show: "/contractor/missions/{id}",
                 missions_status: "/contractor/missions/{id}/status",
                 notifications: "/notifications",
@@ -1197,9 +1563,29 @@ export default {
             chatMissionId: null,
             chatUnread: 0,
             unreadByMission: {}, // { missionId: count }  // ID mission dont le chat est ouvert
+            dashLightbox: null,
             toasts: [],
             toastId: 0,
             actionLoading: false,
+
+            // ── Quote modal ──────────────────────────────────────
+            quoteModal: {
+                visible: false,
+                mission: null,
+                isRevision: false,
+                diagnosis: "",
+                partLines: [],
+                labor: { description: "Main d'œuvre", unit_price: 0 },
+                loading: false,
+                error: null,
+                _lineId: 0,
+            },
+            abandonModal: {
+                visible: false,
+                mission: null,
+                reason: "",
+                loading: false,
+            },
             availLoading: false,
             userStatus: "",
 
@@ -1346,29 +1732,27 @@ export default {
         },
 
         filteredMissions() {
-            if (this.tab === "all") return this.missions;
-            const active = [
-                "assigned",
-                "accepted",
-                "contact_made",
-                "on_the_way",
-                "tracking",
-                "in_progress",
-                "quote_submitted",
-                "order_placed",
-                "awaiting_confirm",
-            ];
-            if (this.tab === "active")
-                return this.missions.filter((m) => active.includes(m.status));
-            if (this.tab === "assigned")
-                return this.missions.filter((m) => m.status === "assigned");
-            if (this.tab === "closed")
-                return this.missions.filter((m) =>
-                    ["completed", "closed"].includes(m.status),
-                );
-            if (this.tab === "cancelled")
-                return this.missions.filter((m) => m.status === "cancelled");
-            return this.missions;
+            let list;
+            if (this.tab === "all") {
+                list = this.missions;
+            } else {
+                const active = [
+                    "assigned", "accepted", "contact_made", "on_the_way",
+                    "tracking", "in_progress", "quote_submitted", "order_placed",
+                    "awaiting_confirm",
+                ];
+                if (this.tab === "active")
+                    list = this.missions.filter((m) => active.includes(m.status));
+                else if (this.tab === "assigned")
+                    list = this.missions.filter((m) => m.status === "assigned");
+                else if (this.tab === "closed")
+                    list = this.missions.filter((m) => ["completed", "closed"].includes(m.status));
+                else if (this.tab === "cancelled")
+                    list = this.missions.filter((m) => m.status === "cancelled");
+                else
+                    list = this.missions;
+            }
+            return list.slice(0, 5);
         },
 
         tabLabel() {
@@ -1377,6 +1761,34 @@ export default {
                     .find((t) => t.key === this.tab)
                     ?.label?.toLowerCase() ?? ""
             );
+        },
+
+        // ── Quote computed ────────────────────────────────────────
+        partsSubtotal() {
+            return this.quoteModal.partLines.reduce(
+                (sum, l) =>
+                    sum +
+                    (Number(l.quantity) || 0) * (Number(l.unit_price) || 0),
+                0,
+            );
+        },
+        quoteTotal() {
+            return (
+                this.partsSubtotal +
+                (Number(this.quoteModal.labor.unit_price) || 0)
+            );
+        },
+        quoteIsValid() {
+            const hasValidPart = this.quoteModal.partLines.some(
+                (l) =>
+                    l.description?.trim() &&
+                    l.quantity > 0 &&
+                    l.unit_price >= 0,
+            );
+            const hasLabor =
+                (Number(this.quoteModal.labor.unit_price) || 0) > 0 &&
+                this.quoteModal.labor.description?.trim();
+            return hasValidPart || hasLabor;
         },
     },
 
@@ -1680,7 +2092,6 @@ export default {
                 this.unreadCount = Math.max(0, this.unreadCount - 1);
             }
             this.notifOpen = false;
-            if (n.url) window.location.href = n.url;
         },
 
         async markAllRead() {
@@ -1940,6 +2351,397 @@ export default {
                 delete copy[this.chatMissionId];
                 this.unreadByMission = copy;
             }
+        },
+
+        // ── Abandon mission ───────────────────────────────────────
+
+        // ── Quote modal ───────────────────────────────────────────
+        openQuoteModal(mission) {
+            const existingQuote = mission.quote;
+            const isRevision =
+                existingQuote &&
+                ["submitted", "rejected"].includes(existingQuote.status);
+
+            this.quoteModal = {
+                visible: true,
+                mission: { ...mission },
+                isRevision,
+                diagnosis: existingQuote?.diagnosis ?? "",
+                labor: {
+                    description: "Main d'œuvre",
+                    unit_price:
+                        existingQuote?.items?.find((i) => i.type === "labor")
+                            ?.unit_price ?? 0,
+                },
+                // Pré-remplir les lignes si révision
+                partLines: existingQuote?.items
+                    ? existingQuote.items
+                          .filter((i) => i.type === "part")
+                          .map((i, idx) => ({
+                              _id: idx,
+                              description: i.description,
+                              quantity: Number(i.quantity),
+                              unit_price: Number(i.unit_price),
+                          }))
+                    : [],
+                loading: false,
+                error: null,
+                _lineId: existingQuote?.items
+                    ? existingQuote.items.filter((i) => i.type === "part")
+                          .length
+                    : 0,
+            };
+        },
+
+        closeQuoteModal() {
+            this.quoteModal.visible = false;
+        },
+
+        addPartLine() {
+            this.quoteModal.partLines.push({
+                _id: this.quoteModal._lineId++,
+                description: "",
+                quantity: 1,
+                unit_price: 0,
+            });
+        },
+
+        removePartLine(idx) {
+            this.quoteModal.partLines.splice(idx, 1);
+        },
+
+        lineTotal(line) {
+            return (
+                (Number(line.quantity) || 0) * (Number(line.unit_price) || 0)
+            );
+        },
+
+        async submitQuote(action) {
+            this.quoteModal.error = null;
+            this.quoteModal.loading = action;
+
+            // Construire les items
+            const items = [];
+
+            for (const l of this.quoteModal.partLines) {
+                if (!l.description?.trim()) {
+                    this.quoteModal.error =
+                        "Chaque pièce doit avoir une désignation.";
+                    this.quoteModal.loading = false;
+                    return;
+                }
+                if (!l.quantity || l.quantity <= 0) {
+                    this.quoteModal.error =
+                        "La quantité doit être supérieure à 0.";
+                    this.quoteModal.loading = false;
+                    return;
+                }
+                items.push({
+                    type: "part",
+                    description: l.description.trim(),
+                    quantity: l.quantity,
+                    unit_price: l.unit_price || 0,
+                });
+            }
+
+            if ((Number(this.quoteModal.labor.unit_price) || 0) > 0) {
+                items.push({
+                    type: "labor",
+                    description:
+                        this.quoteModal.labor.description?.trim() ||
+                        "Main d'œuvre",
+                    quantity: 1,
+                    unit_price: Number(this.quoteModal.labor.unit_price),
+                });
+            }
+
+            if (items.length === 0) {
+                this.quoteModal.error =
+                    "Ajoutez au moins une pièce ou un montant de main d'œuvre.";
+                this.quoteModal.loading = false;
+                return;
+            }
+
+            try {
+                const csrf = document.querySelector(
+                    'meta[name="csrf-token"]',
+                )?.content;
+                const url = this.routes.missions_quote_store.replace(
+                    "{id}",
+                    this.quoteModal.mission.id,
+                );
+                const res = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": csrf,
+                        Accept: "application/json",
+                    },
+                    body: JSON.stringify({
+                        action,
+                        diagnosis: this.quoteModal.diagnosis?.trim() || null,
+                        items,
+                    }),
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    this.quoteModal.error =
+                        data.message ?? "Une erreur est survenue.";
+                    return;
+                }
+
+                // Mettre à jour la mission dans la liste et le panel
+                this.updateMissionInList(data.mission);
+                this.activeMission = { ...data.mission };
+
+                this.closeQuoteModal();
+                this.showToast(
+                    action === "submit"
+                        ? "✅ Devis soumis au client !"
+                        : "💾 Brouillon enregistré.",
+                    "success",
+                );
+            } catch {
+                this.quoteModal.error = "Erreur réseau. Veuillez réessayer.";
+            } finally {
+                this.quoteModal.loading = false;
+            }
+        },
+
+        quoteStatusLabel(status) {
+            const map = {
+                draft: "📝 Brouillon",
+                submitted: "⏳ En attente d'approbation",
+                approved: "✅ Approuvé par le client",
+                rejected: "❌ Refusé",
+                revised: "🔄 Révisé",
+            };
+            return map[status] ?? status;
+        },
+
+        // Retourne le statut effectif du devis en tenant compte du statut de la mission.
+        // Quand le client valide, la mission passe à order_placed mais quote.status
+        // peut rester "submitted" — on force "approved" dans ce cas.
+        effectiveQuoteStatus(mission) {
+            const approvedMissionStatuses = [
+                "order_placed",
+                "awaiting_confirm",
+                "completed",
+                "closed",
+            ];
+            if (
+                mission.quote?.status === "submitted" &&
+                approvedMissionStatuses.includes(mission.status)
+            ) {
+                return "approved";
+            }
+            return mission.quote?.status ?? "draft";
+        },
+
+        openAbandonModal(mission) {
+            this.abandonModal = {
+                visible: true,
+                mission,
+                reason: "",
+                loading: false,
+            };
+        },
+        async confirmAbandon() {
+            this.abandonModal.loading = true;
+            try {
+                const csrf = document.querySelector(
+                    'meta[name="csrf-token"]',
+                )?.content;
+                const url = this.routes.missions_status.replace(
+                    "{id}",
+                    this.abandonModal.mission.id,
+                );
+                const res = await fetch(url, {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": csrf,
+                        Accept: "application/json",
+                    },
+                    body: JSON.stringify({
+                        status: "cancelled",
+                        reported_issue: this.abandonModal.reason,
+                    }),
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    this.showToast(data.message ?? "Erreur.", "error");
+                    return;
+                }
+                this.missions = this.missions.filter(
+                    (m) => m.id !== this.abandonModal.mission.id,
+                );
+                this.abandonModal.visible = false;
+                this.activeMission = null;
+                this.showToast(
+                    "Mission abandonnée. L'équipe Resotravo a été notifiée.",
+                    "success",
+                );
+            } catch {
+                this.showToast("Erreur réseau.", "error");
+            } finally {
+                this.abandonModal.loading = false;
+            }
+        },
+
+        // ── Refus ─────────────────────────────────────────────────
+        openRefuseModal(m) {
+            this.refuseModal = {
+                visible: true,
+                mission: m,
+                reason: "",
+                customReason: "",
+                loading: false,
+            };
+        },
+        async confirmRefuse() {
+            const reason =
+                this.refuseModal.reason === "other"
+                    ? this.refuseModal.customReason
+                    : (this.refuseOptions.find(
+                          (o) => o.value === this.refuseModal.reason,
+                      )?.label ?? "");
+            this.refuseModal.loading = true;
+            try {
+                const csrf = document.querySelector(
+                    'meta[name="csrf-token"]',
+                )?.content;
+                const url = this.routes.missions_status.replace(
+                    "{id}",
+                    this.refuseModal.mission.id,
+                );
+                const res = await fetch(url, {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": csrf,
+                        Accept: "application/json",
+                    },
+                    body: JSON.stringify({
+                        status: "proposal_rejected",
+                        reported_issue: reason,
+                    }),
+                });
+                if (!res.ok) {
+                    const d = await res.json();
+                    this.showToast(d.message ?? "Erreur.", "error");
+                    return;
+                }
+                this.missions = this.missions.filter(
+                    (m) => m.id !== this.refuseModal.mission.id,
+                );
+                this.refuseModal.visible = false;
+                this.activeMission = null;
+                this.showToast(
+                    "Mission refusée. Elle sera réattribuée automatiquement.",
+                    "success",
+                );
+            } catch {
+                this.showToast("Erreur réseau.", "error");
+            } finally {
+                this.refuseModal.loading = false;
+            }
+        },
+
+        // ── Chat ──────────────────────────────────────────────────
+        openChat(missionId) {
+            this.chatMissionId = missionId;
+        },
+        onChatClose() {
+            this.chatMissionId = null;
+            this.chatUnread = 0;
+        },
+        onChatUnread(count) {
+            this.chatUnread = count;
+            if (this.chatMissionId) {
+                this.unreadByMission =
+                    count > 0
+                        ? {
+                              ...this.unreadByMission,
+                              [this.chatMissionId]: count,
+                          }
+                        : (() => {
+                              const c = { ...this.unreadByMission };
+                              delete c[this.chatMissionId];
+                              return c;
+                          })();
+            }
+        },
+
+        // ── Notifications ─────────────────────────────────────────
+        async fetchNotifications() {
+            this.notifLoading = true;
+            try {
+                const res = await fetch(this.routes.notifications, {
+                    headers: { Accept: "application/json" },
+                });
+                const data = await res.json();
+                this.notifications = data.notifications ?? [];
+                this.unreadCount = data.unread_count ?? 0;
+            } catch {
+                /* silencieux */
+            } finally {
+                this.notifLoading = false;
+            }
+        },
+        toggleNotif() {
+            this.notifOpen = !this.notifOpen;
+            if (this.notifOpen) this.fetchNotifications();
+        },
+        async openNotif(n) {
+            if (!n.read) {
+                const csrf = document.querySelector(
+                    'meta[name="csrf-token"]',
+                )?.content;
+                await fetch(
+                    this.routes.notifications_read.replace("{id}", n.id),
+                    {
+                        method: "PATCH",
+                        headers: {
+                            "X-CSRF-TOKEN": csrf,
+                            Accept: "application/json",
+                        },
+                    },
+                );
+                n.read = true;
+                this.unreadCount = Math.max(0, this.unreadCount - 1);
+            }
+            this.notifOpen = false;
+        },
+        async markAllRead() {
+            const csrf = document.querySelector(
+                'meta[name="csrf-token"]',
+            )?.content;
+            await fetch(this.routes.notifications_all, {
+                method: "PATCH",
+                headers: { "X-CSRF-TOKEN": csrf, Accept: "application/json" },
+            });
+            this.notifications.forEach((n) => (n.read = true));
+            this.unreadCount = 0;
+        },
+
+        // ── Helpers ───────────────────────────────────────────────
+        updateMissionInList(updated) {
+            const idx = this.missions.findIndex((m) => m.id === updated.id);
+            if (idx !== -1)
+                this.missions.splice(idx, 1, {
+                    ...this.missions[idx],
+                    ...updated,
+                });
+        },
+
+        updateMissionInList(updated) {
+            const idx = this.missions.findIndex((m) => m.id === updated.id);
+            if (idx !== -1)
+                this.missions.splice(idx, 1, {
+                    ...this.missions[idx],
+                    ...updated,
+                });
         },
 
         emitToggleSidebar() {
@@ -3067,6 +3869,54 @@ export default {
 .ctr-detail-row:last-child {
     border-bottom: none;
 }
+.ctr-detail-photos {
+    align-items: flex-start;
+}
+.ctr-dash-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end;
+}
+.ctr-dash-img {
+    width: 72px;
+    height: 72px;
+    object-fit: cover;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: opacity .15s;
+}
+.ctr-dash-img:hover { opacity: .85; }
+.ctr-chat-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    color: #f97316;
+    font-size: 11px;
+    font-weight: 800;
+    border-radius: 99px;
+    padding: 0 6px;
+    min-width: 18px;
+    height: 18px;
+    margin-left: 6px;
+}
+.ctr-dash-lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.88);
+    z-index: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 20px;
+}
+.ctr-dash-lightbox img {
+    max-width: 100%;
+    max-height: 90vh;
+    border-radius: 8px;
+}
 .ctr-detail-row span:first-child {
     color: var(--gr);
     flex-shrink: 0;
@@ -3527,5 +4377,531 @@ export default {
         align-items: flex-end;
         padding: 0;
     }
+}
+
+.ctm-action-quote {
+    border-color: #fed7aa;
+    background: #fff7ed;
+    text-align: center;
+}
+.ctm-action-quote-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+}
+.ctm-action-quote-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--dk);
+    margin-bottom: 4px;
+}
+.ctm-action-quote-sub {
+    font-size: 12.5px;
+    color: var(--gr);
+    margin-bottom: 14px;
+    line-height: 1.5;
+}
+
+.ctm-action-wait {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    border-color: #bfdbfe;
+    background: #eff6ff;
+}
+.ctm-action-wait-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+.ctm-action-wait-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: #1d4ed8;
+}
+.ctm-action-wait-sub {
+    font-size: 12.5px;
+    color: #3b82f6;
+    margin-top: 3px;
+}
+.ctm-action-done {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    border-color: #bbf7d0;
+    background: #f0fdf4;
+}
+.ctm-action-done-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+.ctm-action-done-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: #15803d;
+}
+.ctm-action-done-sub {
+    font-size: 12.5px;
+    color: #16a34a;
+    margin-top: 3px;
+}
+
+.ctm-btn {
+    padding: 9px 18px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 13.5px;
+    cursor: pointer;
+    border: none;
+    font-family: "Poppins", sans-serif;
+    transition: all 0.18s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: center;
+}
+.ctm-btn-orange {
+    background: linear-gradient(135deg, var(--or), var(--or2));
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(249, 115, 22, 0.3);
+}
+.ctm-btn-orange:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+.ctm-btn-green {
+    background: #22c55e;
+    color: #fff;
+}
+.ctm-btn-green:hover:not(:disabled) {
+    background: #16a34a;
+}
+.ctm-btn-red {
+    background: #ef4444;
+    color: #fff;
+}
+.ctm-btn-red:hover:not(:disabled) {
+    background: #dc2626;
+}
+.ctm-btn-ghost {
+    background: var(--grl);
+    color: var(--dk);
+}
+.ctm-btn-ghost:hover {
+    background: #d5c9c0;
+}
+.ctm-btn-draft {
+    border: 1.5px solid var(--or);
+    color: var(--or);
+    background: transparent;
+}
+.ctm-btn-draft:hover:not(:disabled) {
+    background: var(--or3);
+}
+.ctm-btn-chat {
+    background: linear-gradient(135deg, var(--or), var(--or2));
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(249, 115, 22, 0.3);
+    position: relative;
+}
+.ctm-btn-chat:hover {
+    transform: translateY(-1px);
+}
+.ctm-btn-full {
+    width: 100%;
+}
+.ctm-btn-sm {
+    font-size: 12px;
+    padding: 6px 12px;
+}
+.ctm-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+.ctm-chat-badge {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    background: #ef4444;
+    color: #fff;
+    border-radius: 99px;
+    font-size: 10px;
+    font-weight: 800;
+    min-width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+}
+.ctm-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: ctm-spin 0.7s linear infinite;
+}
+.ctm-spinner-dark {
+    border-color: rgba(0, 0, 0, 0.15);
+    border-top-color: var(--or);
+}
+@keyframes ctm-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ── MODAL COMMUN ── */
+.ctm-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(3px);
+    z-index: 300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+.ctm-modal {
+    background: var(--wh);
+    border-radius: 18px;
+    width: 100%;
+    max-width: 460px;
+    max-height: 92vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    animation: ctm-modal-in 0.2s ease;
+}
+@keyframes ctm-modal-in {
+    from {
+        transform: scale(0.97) translateY(10px);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+}
+.ctm-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 18px 22px 14px;
+    border-bottom: 2px solid var(--grl);
+}
+.ctm-modal-header h3 {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--dk);
+}
+.ctm-modal-subtitle {
+    font-size: 12px;
+    color: var(--gr);
+    margin-top: 2px;
+}
+.ctm-modal-close {
+    background: none;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    color: var(--gr);
+    flex-shrink: 0;
+}
+.ctm-modal-body {
+    padding: 18px 22px;
+}
+.ctm-modal-footer {
+    padding: 14px 22px;
+    border-top: 2px solid var(--grl);
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    background: #faf7f4;
+    border-radius: 0 0 18px 18px;
+}
+
+/* ── MODAL DEVIS (overrides + extensions) ── */
+.ctm-modal-quote {
+    max-width: 620px;
+}
+.ctm-modal-body-quote {
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+.ctm-modal-footer-quote {
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.ctm-modal-footer-quote .ctm-btn {
+    flex: 1;
+    min-width: 120px;
+}
+
+.ctm-quote-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.ctm-quote-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gr);
+}
+.ctm-optional {
+    font-weight: 400;
+    color: var(--grm);
+}
+.ctm-quote-textarea {
+    border: 2px solid var(--grl);
+    border-radius: 10px;
+    padding: 10px 13px;
+    font-size: 13px;
+    font-family: "Poppins", sans-serif;
+    color: var(--dk);
+    resize: vertical;
+    transition: border 0.15s;
+}
+.ctm-quote-textarea:focus {
+    outline: none;
+    border-color: var(--or);
+}
+
+.ctm-quote-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.ctm-quote-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.ctm-quote-section-title {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--dk);
+}
+.ctm-add-line-btn {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--or);
+    background: var(--or3);
+    border: 1.5px solid #fed7aa;
+    border-radius: 8px;
+    padding: 5px 12px;
+    cursor: pointer;
+    font-family: "Poppins", sans-serif;
+    transition: all 0.15s;
+}
+.ctm-add-line-btn:hover {
+    background: #ffedd5;
+}
+
+.ctm-quote-table-head {
+    display: grid;
+    grid-template-columns: 1fr 60px 110px 90px 28px;
+    gap: 6px;
+    padding: 0 2px;
+}
+.ctm-quote-table-head span {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--grm);
+}
+
+.ctm-quote-empty-lines {
+    font-size: 13px;
+    color: var(--grm);
+    text-align: center;
+    padding: 14px;
+    background: var(--grl);
+    border-radius: 10px;
+}
+
+.ctm-quote-line {
+    display: grid;
+    grid-template-columns: 1fr 60px 110px 90px 28px;
+    gap: 6px;
+    align-items: center;
+}
+.ctm-quote-input {
+    border: 2px solid var(--grl);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13px;
+    font-family: "Poppins", sans-serif;
+    color: var(--dk);
+    width: 100%;
+    box-sizing: border-box;
+    transition: border 0.15s;
+}
+.ctm-quote-input:focus {
+    outline: none;
+    border-color: var(--or);
+}
+.ctm-quote-line-total {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--dk);
+    text-align: right;
+    white-space: nowrap;
+}
+.ctm-quote-del-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background: #fee2e2;
+    color: #dc2626;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+.ctm-quote-del-btn:hover {
+    background: #fca5a5;
+}
+
+.ctm-quote-labor-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.ctm-field-flex {
+    flex: 1;
+    min-width: 160px;
+}
+.ctm-field-amount {
+    width: 150px;
+}
+
+.ctm-quote-recap {
+    background: linear-gradient(135deg, #fff7ed, #fffbf5);
+    border: 2px solid #fed7aa;
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.ctm-quote-recap-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--gr);
+}
+.ctm-quote-recap-row strong {
+    color: var(--dk);
+    font-weight: 700;
+}
+.ctm-quote-recap-total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--dk);
+    border-top: 2px solid #fed7aa;
+    padding-top: 10px;
+    margin-top: 4px;
+}
+.ctm-quote-recap-net {
+    font-size: 12px;
+    color: var(--gr);
+    text-align: right;
+}
+.ctm-quote-recap-net strong {
+    color: #16a34a;
+}
+
+.ctm-quote-error {
+    background: #fee2e2;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #dc2626;
+    font-weight: 600;
+}
+
+/* ── MODAL REFUS ── */
+.ctm-refuse-info {
+    background: #fef9c3;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #854d0e;
+    margin-bottom: 14px;
+}
+.ctm-refuse-options {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-bottom: 12px;
+}
+.ctm-radio-opt {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--dk);
+    background: var(--grl);
+    padding: 9px 13px;
+    border-radius: 9px;
+    border: 1.5px solid transparent;
+    transition: all 0.15s;
+}
+.ctm-radio-opt:hover {
+    border-color: var(--am);
+}
+.ctm-radio-opt input[type="radio"] {
+    accent-color: var(--or);
+}
+.ctm-input {
+    width: 100%;
+    border: 2px solid var(--grl);
+    border-radius: 9px;
+    padding: 9px 13px;
+    font-size: 13.5px;
+    font-family: "Poppins", sans-serif;
+    color: var(--dk);
+    box-sizing: border-box;
+}
+.ctm-input:focus {
+    outline: none;
+    border-color: var(--or);
+}
+
+/* ── TOASTS ── */
+.ctm-toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 999;
+}
+.ctm-toast {
+    background: var(--dk);
+    color: #fff;
+    padding: 11px 16px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    min-width: 200px;
+}
+.ctm-toast.success {
+    background: #16a34a;
+}
+.ctm-toast.error {
+    background: #dc2626;
 }
 </style>

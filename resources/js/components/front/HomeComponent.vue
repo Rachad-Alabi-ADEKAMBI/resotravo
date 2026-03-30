@@ -69,20 +69,15 @@
                 <img
                     class="hero-img"
                     :src="heroImage"
-                    alt="Artisan professionnel au travail"
+                    alt="Prestataire professionnel au travail"
                     loading="eager"
                     style="
                         object-fit: cover;
-                        object-position: center center;
-                        transform: scale(0.75);
+                        object-position: center 50%;
+                        transform: scale(0.95);
                         transform-origin: center center;
                     "
                 />
-                <div class="hcard hcard1">
-                    <div class="hc-tag">🔧 Intervention en cours</div>
-                    <div class="hc-val">Plombier assigné</div>
-                    <div class="hc-sub">📍 En route · ETA 6 min</div>
-                </div>
                 <div class="hcard hcard2">
                     <div class="hc-stars">★★★★★</div>
                     <div class="hc-val">4.9 / 5</div>
@@ -99,7 +94,7 @@
                 <div class="search-head">
                     <div class="search-head-icon">🔍</div>
                     <h3>Recherche rapide</h3>
-                    <span>— Trouvez le bon artisan maintenant</span>
+                    <span>— Trouvez le prestataire parfait maintenant</span>
                 </div>
                 <div class="search-row">
                     <input
@@ -183,8 +178,8 @@
                 Tous vos besoins, un seul endroit
             </div>
             <div class="sec-sub reveal reveal-d2">
-                Des artisans certifiés dans tous les corps de métier, attribués
-                automatiquement selon votre localisation.
+                Des prestataires certifiés dans tous les corps de métier,
+                attribués automatiquement selon votre localisation.
             </div>
             <div class="services-grid">
                 <a
@@ -468,7 +463,7 @@
     ═══════════════════════════════════════════ -->
         <div class="cta-final" id="register">
             <div class="cta-inner reveal">
-                <h2>Prêt à trouver votre artisan ? 🚀</h2>
+                <h2>Prêt à trouver votre prestataire ? 🚀</h2>
                 <p>
                     Rejoignez des milliers de clients et prestataires sur
                     Resotravo. C'est gratuit et sans engagement.
@@ -621,20 +616,20 @@ export default {
                 {
                     name: "Adjovi Kokou",
                     role: "Particulier · Cotonou",
-                    text: "En moins de 10 minutes après ma demande, le plombier était déjà en route. Travail propre, professionnel. Je recommande vivement !",
+                    text: "En moins de 20 minutes après ma demande, le plombier était déjà en route. Travail propre, professionnel. Je recommande vivement !",
                 },
                 {
                     name: "Bertrand Houngbo",
-                    role: "Chef de projet · SBEE",
+                    role: "Chef de projet · Ouidah",
                     text: "Nous utilisons Resotravo pour nos chantiers. La qualité des prestataires et la rapidité d'attribution sont bluffantes.",
                 },
                 {
-                    name: "Fatoumata Diallo",
+                    name: "Faridath ADEOSSI",
                     role: "Restauratrice · Porto-Novo",
                     text: "Ma climatisation est tombée en plein service. Grâce à Resotravo, un technicien était là en 12 minutes. Impressionnant !",
                 },
                 {
-                    name: "Kofi Mensah",
+                    name: "Cossii ADEBOLA",
                     role: "Propriétaire · Calavi",
                     text: "Le paiement post-travaux m'a totalement rassuré. Excellent service, je suis désormais client fidèle de Resotravo.",
                 },
@@ -659,7 +654,7 @@ export default {
                 },
                 {
                     icon: "⚡",
-                    q: "Combien de temps faut-il pour trouver un artisan ?",
+                    q: "Combien de temps faut-il pour trouver un prestataire ?",
                     a: "Notre algorithme vous met en relation avec le prestataire certifié le plus proche en moins de 5 minutes. À Cotonou, le délai moyen est de 3 minutes.",
                 },
                 {
@@ -840,8 +835,8 @@ export default {
 /* ── Dézoomer l'image hero — les personnages trop grands ── */
 .hero-img {
     object-fit: cover !important;
-    object-position: center center !important;
-    transform: scale(0.72) !important;
+    object-position: center 50% !important;
+    transform: scale(0.95) !important;
     transform-origin: center center !important;
 }
 

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>ResoTravo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #1C1412;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .loader {
+            text-align: center;
+        }
+        .logo-mark {
+            width: 64px; height: 64px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #F97316, #EA580C);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 28px; color: #fff;
+            margin: 0 auto 16px;
+        }
+        .logo-name {
+            font-size: 22px; font-weight: 800; letter-spacing: -.5px;
+        }
+        .logo-name em { font-style: normal; color: #F97316; }
+        .spinner {
+            width: 36px; height: 36px;
+            border: 3px solid rgba(249,115,22,.2);
+            border-top-color: #F97316;
+            border-radius: 50%;
+            margin: 24px auto 0;
+            animation: spin .8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="loader">
+        <div class="logo-mark">R</div>
+        <div class="logo-name">RESO<em>TRAVO</em></div>
+        <div class="spinner"></div>
+    </div>
+</body>
+</html>

@@ -98,6 +98,7 @@ class Mission extends Model
         'latitude',
         'longitude',
         'description',
+        'images',
         'availabilities',
         'location_type',
         'min_distance_m',
@@ -121,6 +122,7 @@ class Mission extends Model
 
     protected $casts = [
         'availabilities' => 'array',
+        'images'         => 'array',
         'dispute_open'   => 'boolean',
         'assigned_at'    => 'datetime',
         'accepted_at'    => 'datetime',
@@ -253,6 +255,7 @@ class Mission extends Model
         match ($newStatus) {
             self::STATUS_ASSIGNED    => $this->assigned_at  = now(),
             self::STATUS_ACCEPTED    => $this->accepted_at  = now(),
+            self::STATUS_ON_THE_WAY  => $this->accepted_at  = $this->accepted_at ?? now(), // préserver accepted_at
             self::STATUS_IN_PROGRESS => $this->arrived_at   = now(),
             self::STATUS_COMPLETED   => $this->completed_at = now(),
             self::STATUS_CLOSED      => $this->paid_at      = now(),

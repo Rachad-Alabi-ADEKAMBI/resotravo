@@ -18,8 +18,26 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="format-detection" content="telephone=no" />
     <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    {{-- Mobile / PWA --}}
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="ResoTravo" />
+    <meta name="theme-color" content="#1C1412" />
+
+    {{-- Capacitor CSP --}}
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'self' capacitor://localhost http://localhost https://resotravo.xo.je;
+                   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+                   font-src 'self' https://fonts.gstatic.com;
+                   script-src 'self' 'unsafe-inline' 'unsafe-eval';
+                   img-src 'self' data: blob: https:;
+                   connect-src 'self' https://resotravo.xo.je capacitor://localhost http://localhost ws://localhost;" />
+
     <title>@yield('title', 'Tableau de bord') — ResoTravo</title>
 
     {{-- Fonts --}}
@@ -146,6 +164,14 @@
             ? route('profile.photo.user', ['userId' => $authUser->id])
             : null;
     @endphp
+    @php
+        $messagesUrl = match($authUser?->role) {
+            'admin'      => route('admin.messages'),
+            'client'     => route('client.messages'),
+            'contractor' => route('contractor.messages'),
+            default      => null,
+        };
+    @endphp
     <div class="ab-main" id="resotravo-app" data-photo="{{ $photoUrl }}">
         @yield('content')
     </div>
@@ -208,6 +234,9 @@
         '.cd-avatar',
         '.pm-avatar',
         '.rv-avatar',
+        '.cp-avatar',
+        '.cac-avatar',
+        '.msg-avatar',
         '.ab-user-av',
     ].join(', ');
 
@@ -240,6 +269,161 @@
     window.addEventListener('ab-sidebar-toggle', function () {
         setTimeout(injectPhotos, 300);
     });
+}());
+</script>
+
+{{-- ── Popup nouveau message ── --}}
+<div id="rt-msg-popup" aria-live="polite">
+    <div id="rt-msg-popup-inner">
+        <div id="rt-msg-popup-head">
+            <span id="rt-msg-popup-icon">💬</span>
+            <span id="rt-msg-popup-title">Nouveau message</span>
+            <button id="rt-msg-popup-close" aria-label="Fermer">✕</button>
+        </div>
+        <div id="rt-msg-popup-body"></div>
+        <div id="rt-msg-popup-foot">
+            @if($messagesUrl)
+            <a id="rt-msg-popup-open" href="{{ $messagesUrl }}">Ouvrir →</a>
+            @endif
+        </div>
+    </div>
+</div>
+
+<style>
+#rt-msg-popup{
+    position:fixed;bottom:24px;right:24px;z-index:9999;
+    transform:translateY(120%);opacity:0;
+    transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .25s ease;
+    pointer-events:none;
+}
+#rt-msg-popup.rt-visible{
+    transform:translateY(0);opacity:1;pointer-events:auto;
+}
+#rt-msg-popup-inner{
+    background:#fff;border-radius:14px;
+    box-shadow:0 8px 32px rgba(0,0,0,.18);
+    padding:14px 16px 12px;min-width:280px;max-width:340px;
+    border-left:4px solid #F97316;
+}
+#rt-msg-popup-head{
+    display:flex;align-items:center;gap:8px;margin-bottom:6px;
+}
+#rt-msg-popup-icon{font-size:18px;flex-shrink:0}
+#rt-msg-popup-title{
+    font-family:'Poppins',sans-serif;font-size:13px;font-weight:700;
+    color:#1C1412;flex:1;
+}
+#rt-msg-popup-close{
+    background:none;border:none;cursor:pointer;font-size:14px;
+    color:#999;padding:2px 4px;line-height:1;
+    border-radius:4px;transition:background .15s;
+}
+#rt-msg-popup-close:hover{background:#f0f0f0;color:#333}
+#rt-msg-popup-body{
+    font-family:'Poppins',sans-serif;font-size:12.5px;color:#555;
+    line-height:1.7;margin-bottom:10px;word-break:break-word;
+}
+#rt-msg-popup-foot{display:flex;justify-content:flex-end}
+#rt-msg-popup-open{
+    display:inline-block;padding:6px 16px;border-radius:8px;
+    background:linear-gradient(135deg,#F97316,#EA580C);
+    color:#fff;font-family:'Poppins',sans-serif;font-size:12px;
+    font-weight:700;text-decoration:none;
+    transition:opacity .15s;
+}
+#rt-msg-popup-open:hover{opacity:.88}
+</style>
+
+<script>
+(function () {
+    var prevTotal  = null;
+    var popupTimer = null;
+    var messagesUrl = @json($messagesUrl);
+
+    /* ── Sidebar badge ── */
+    function updateSidebarBadge(total) {
+        var el = document.getElementById('sidebar-msg-count');
+        if (!el) return;
+        if (total > 0) {
+            el.textContent = ' (' + (total > 99 ? '99+' : total) + ')';
+            el.style.display = 'inline';
+        } else {
+            el.style.display = 'none';
+            el.textContent   = '';
+        }
+    }
+
+    /* ── Échapper le HTML pour éviter les injections ── */
+    function escHtml(s) {
+        var d = document.createElement('div');
+        d.textContent = String(s ?? '');
+        return d.innerHTML;
+    }
+
+    /* ── Popup ── */
+    function showPopup(latest) {
+        var popup   = document.getElementById('rt-msg-popup');
+        var body    = document.getElementById('rt-msg-popup-body');
+        var openBtn = document.getElementById('rt-msg-popup-open');
+        if (!popup || !body || !latest) return;
+
+        body.innerHTML =
+            '<strong style="color:#1C1412">De\u00a0:</strong> ' + escHtml(latest.sender_name) +
+            '<br><span style="color:#8A7D78">Mission\u00a0:</span> ' + escHtml(latest.mission_service);
+
+        /* Mettre à jour le lien vers la conversation exacte */
+        if (openBtn && latest.conversation_id) {
+            openBtn.href = messagesUrl + '?conversation=' + latest.conversation_id;
+        }
+
+        popup.classList.add('rt-visible');
+
+        clearTimeout(popupTimer);
+        popupTimer = setTimeout(hidePopup, 8000);
+    }
+
+    function hidePopup() {
+        var popup = document.getElementById('rt-msg-popup');
+        if (popup) popup.classList.remove('rt-visible');
+    }
+
+    var closeBtn = document.getElementById('rt-msg-popup-close');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function () {
+            hidePopup();
+            clearTimeout(popupTimer);
+        });
+    }
+
+    /* ── Polling ── */
+    function poll() {
+        fetch('/unread-messages', {
+            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (data) {
+            if (!data) return;
+
+            var total = data.total || 0;
+
+            updateSidebarBadge(total);
+
+            /* Diffuser aux composants Vue */
+            window.dispatchEvent(new CustomEvent('rt-unread-update', { detail: data }));
+
+            /* Afficher popup seulement si nouveau(x) message(s) */
+            if (prevTotal !== null && total > prevTotal && data.latest) {
+                showPopup(data.latest);
+            }
+
+            prevTotal = total;
+        })
+        .catch(function () {});
+    }
+
+    /* Premier appel après montage Vue (2 s), puis toutes les 15 s */
+    setTimeout(poll, 2000);
+    setInterval(poll, 15000);
 }());
 </script>
 

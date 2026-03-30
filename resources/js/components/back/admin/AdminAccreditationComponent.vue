@@ -630,7 +630,6 @@ export default {
                 this.unreadCount = Math.max(0, this.unreadCount - 1);
             }
             this.notifOpen = false;
-            if (n.url) window.location.href = n.url;
         },
 
         async markAllRead() {
