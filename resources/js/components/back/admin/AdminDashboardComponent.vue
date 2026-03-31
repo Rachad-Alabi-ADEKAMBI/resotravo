@@ -886,8 +886,8 @@
                                     msg.sender_role === 'client'
                                         ? 'adb-msg-client'
                                         : msg.sender_role === 'contractor'
-                                          ? 'adb-msg-contractor'
-                                          : 'adb-msg-admin'
+                                        ? 'adb-msg-contractor'
+                                        : 'adb-msg-admin'
                                 "
                             >
                                 <div class="adb-msg-avatar">
@@ -904,9 +904,9 @@
                                                 msg.sender_role === "client"
                                                     ? "Client"
                                                     : msg.sender_role ===
-                                                        "contractor"
-                                                      ? "Prestataire"
-                                                      : "Admin"
+                                                      "contractor"
+                                                    ? "Prestataire"
+                                                    : "Admin"
                                             }}
                                         </span>
                                         <span class="adb-msg-time">{{
@@ -1076,28 +1076,28 @@ export default {
                     dossiers,
                 ] = await Promise.all([
                     fetch(this.routes.missions_index, { headers: h }).then(
-                        (r) => r.json(),
+                        (r) => r.json()
                     ),
                     fetch(this.routes.contractors_index, { headers: h }).then(
-                        (r) => r.json(),
+                        (r) => r.json()
                     ),
                     fetch(this.routes.clients_index, { headers: h }).then((r) =>
-                        r.json(),
+                        r.json()
                     ),
                     fetch(this.routes.talents_index, { headers: h }).then((r) =>
-                        r.json(),
+                        r.json()
                     ),
                     fetch(this.routes.disputes_index, { headers: h }).then(
-                        (r) => r.json(),
+                        (r) => r.json()
                     ),
                     fetch(this.routes.tickets_index, { headers: h }).then((r) =>
-                        r.json(),
+                        r.json()
                     ),
                     fetch(this.routes.tenders_index, { headers: h }).then((r) =>
-                        r.json(),
+                        r.json()
                     ),
                     fetch(this.routes.validation_index, { headers: h }).then(
-                        (r) => r.json(),
+                        (r) => r.json()
                     ),
                 ]);
 
@@ -1113,7 +1113,7 @@ export default {
                 // ── Missions ──
                 this.stats.missions_total = missionsArr.length;
                 this.stats.missions_pending = missionsArr.filter(
-                    (m) => m.status === "pending",
+                    (m) => m.status === "pending"
                 ).length;
                 this.stats.missions_active = missionsArr.filter(
                     (m) =>
@@ -1122,33 +1122,36 @@ export default {
                             "completed",
                             "closed",
                             "cancelled",
-                        ].includes(m.status),
+                        ].includes(m.status)
                 ).length;
                 this.stats.missions_completed = missionsArr.filter((m) =>
-                    ["completed", "closed"].includes(m.status),
+                    ["completed", "closed"].includes(m.status)
                 ).length;
                 this.stats.missions_cancelled = missionsArr.filter(
-                    (m) => m.status === "cancelled",
+                    (m) => m.status === "cancelled"
                 ).length;
-                this.stats.revenue_total = missionsArr.reduce(
-                    (s, m) => s + (parseFloat(m.commission) || 0),
-                    0,
-                );
+                this.stats.revenue_total = missionsArr.reduce((s, m) => {
+                    const commission =
+                        parseFloat(m.commission) ||
+                        parseFloat(m.total_amount) * 0.1 ||
+                        0;
+                    return s + commission;
+                }, 0);
                 this.recentMissions = missionsArr.slice(0, 6);
 
                 // ── Prestataires ──
                 this.stats.contractors_total = contractorsArr.length;
                 this.stats.contractors_approved = contractorsArr.filter(
-                    (c) => c.status === "approved",
+                    (c) => c.status === "approved"
                 ).length;
                 this.stats.contractors_pending = contractorsArr.filter(
-                    (c) => c.status === "pending",
+                    (c) => c.status === "pending"
                 ).length;
                 this.stats.contractors_available = contractorsArr.filter(
-                    (c) => c.available,
+                    (c) => c.available
                 ).length;
                 this.stats.contractors_suspended = contractorsArr.filter(
-                    (c) => c.status === "suspended",
+                    (c) => c.status === "suspended"
                 ).length;
 
                 // ── Clients ──
@@ -1172,12 +1175,12 @@ export default {
                 // ── Appels d'offres ──
                 this.stats.tenders_total = tendersArr.length;
                 this.stats.tenders_pending = tendersArr.filter(
-                    (t) => t.status === "pending",
+                    (t) => t.status === "pending"
                 ).length;
 
                 // ── Litiges ──
                 this.stats.disputes_open = disputesArr.filter((d) =>
-                    ["open", "in_progress"].includes(d.status),
+                    ["open", "in_progress"].includes(d.status)
                 ).length;
                 this.recentDisputes = disputesArr
                     .filter(
@@ -1186,13 +1189,13 @@ export default {
                                 "resolved_client",
                                 "resolved_contractor",
                                 "closed",
-                            ].includes(d.status),
+                            ].includes(d.status)
                     )
                     .slice(0, 4);
 
                 // ── Tickets Allo Conseils ──
                 this.stats.tickets_pending = ticketsArr.filter(
-                    (t) => t.status === "pending_human",
+                    (t) => t.status === "pending_human"
                 ).length;
                 this.recentTickets = ticketsArr
                     .filter((t) => !["resolved", "closed"].includes(t.status))
@@ -1201,7 +1204,7 @@ export default {
                 console.error("Dashboard fetch error:", e);
                 this.showToast(
                     "Erreur lors du chargement des données.",
-                    "error",
+                    "error"
                 );
             } finally {
                 this.loading = false;
@@ -1344,7 +1347,7 @@ export default {
                 const url =
                     (this.routes.mission_detail ?? "").replace(
                         ":id",
-                        mission.id,
+                        mission.id
                     ) || this.routes.missions_index + "/" + mission.id;
                 const res = await fetch(url, {
                     headers: { Accept: "application/json" },
@@ -1372,7 +1375,7 @@ export default {
             window.dispatchEvent(
                 new CustomEvent("ab-sidebar-toggle", {
                     detail: { open: this.sidebarOpen },
-                }),
+                })
             );
         },
     },
@@ -1382,7 +1385,7 @@ export default {
         this.fetchNotifications();
         this.notifInterval = setInterval(
             () => this.fetchNotifications(),
-            30000,
+            30000
         );
         document.addEventListener("click", this.handleClickOutside);
         window.addEventListener("ab-sidebar-close", () => {

@@ -244,13 +244,13 @@
                                     class="msg-mission-chip"
                                     :class="
                                         missionChipClass(
-                                            activeConv.mission_status,
+                                            activeConv.mission_status
                                         )
                                     "
                                 >
                                     {{
                                         missionStatusLabel(
-                                            activeConv.mission_status,
+                                            activeConv.mission_status
                                         )
                                     }}
                                 </span>
@@ -275,11 +275,6 @@
                         <div class="msg-chat-loading" v-if="chatLoading">
                             <div class="msg-spinner"></div>
                             <span>Chargement…</span>
-                            <div v-if="debugInfo" style="margin-top:10px;font-size:11px;color:#888;word-break:break-all;max-width:400px;text-align:left;background:#f5f5f5;padding:8px;border-radius:6px;">
-                                <b>URL:</b> {{ debugInfo.url }}<br>
-                                <b>Status:</b> {{ debugInfo.status ?? '(en attente…)' }}<br>
-                                <span v-if="debugInfo.preview"><b>Réponse:</b> {{ debugInfo.preview }}</span>
-                            </div>
                         </div>
 
                         <div class="msg-chat-error" v-else-if="chatError">
@@ -377,10 +372,17 @@
                                         <!-- Audio -->
                                         <div
                                             class="msg-audio-wrap"
-                                            v-if="m.type === 'audio' && m.attachment_url"
+                                            v-if="
+                                                m.type === 'audio' &&
+                                                m.attachment_url
+                                            "
                                         >
                                             <span>🎵</span>
-                                            <audio controls :src="m.attachment_url" preload="metadata"></audio>
+                                            <audio
+                                                controls
+                                                :src="m.attachment_url"
+                                                preload="metadata"
+                                            ></audio>
                                         </div>
                                         <!-- Fichier -->
                                         <a
@@ -433,7 +435,10 @@
                                 v-if="attachPreview.isImage"
                                 :src="attachPreview.url"
                             />
-                            <div v-else-if="attachPreview.isAudio" class="msg-preview-file">
+                            <div
+                                v-else-if="attachPreview.isAudio"
+                                class="msg-preview-file"
+                            >
                                 🎵 {{ attachPreview.name }}
                             </div>
                             <div v-else class="msg-preview-file">
@@ -554,9 +559,6 @@ export default {
 
             // Photo de profil
             photoUrl: null,
-
-            // Debug
-            debugInfo: null,
         };
     },
 
@@ -580,7 +582,7 @@ export default {
         totalUnread() {
             return this.conversations.reduce(
                 (s, c) => s + (c.unread_count ?? 0),
-                0,
+                0
             );
         },
         filteredConvs() {
@@ -590,7 +592,7 @@ export default {
                 (c) =>
                     c.other_name?.toLowerCase().includes(q) ||
                     c.mission_service?.toLowerCase().includes(q) ||
-                    c.last_message?.toLowerCase().includes(q),
+                    c.last_message?.toLowerCase().includes(q)
             );
         },
         groupedMessages() {
@@ -632,7 +634,7 @@ export default {
                 // Ouvrir directement si openConversationId passé
                 if (this.openConversationId) {
                     const c = this.conversations.find(
-                        (c) => c.id === this.openConversationId,
+                        (c) => c.id === this.openConversationId
                     );
                     if (c) this.openConversation(c);
                 }
@@ -660,52 +662,43 @@ export default {
             try {
                 const url = this.routes.conversations_messages.replace(
                     "{id}",
-                    conv.id,
+                    conv.id
                 );
-                this.debugInfo = { url, status: null, preview: null };
-                console.log("[MessagesComponent] fetchMessages URL:", url);
                 const res = await fetch(url, {
                     headers: { Accept: "application/json" },
                     signal: abort.signal,
                 });
                 console.log(
                     "[MessagesComponent] fetchMessages status:",
-                    res.status,
+                    res.status
                 );
 
                 // Lire le texte brut d'abord pour diagnostiquer sans bloquer
                 const rawText = await res.text();
-                this.debugInfo = { url, status: res.status, preview: rawText.slice(0, 150) };
-                console.log(
-                    "[MessagesComponent] raw response (100 chars):",
-                    rawText.slice(0, 100),
-                );
-
                 let data;
                 try {
                     data = JSON.parse(rawText);
                 } catch {
                     console.error(
                         "[MessagesComponent] Réponse non-JSON reçue — probablement une redirection ou erreur HTML. Début:",
-                        rawText.slice(0, 200),
+                        rawText.slice(0, 200)
                     );
                     throw new Error(
                         "Le serveur a retourné une page HTML au lieu de JSON (statut " +
                             res.status +
-                            "). Vérifiez la route et l'authentification.",
+                            "). Vérifiez la route et l'authentification."
                     );
                 }
 
                 if (!res.ok)
                     throw new Error(
-                        "HTTP " + res.status + " : " + (data?.message ?? ""),
+                        "HTTP " + res.status + " : " + (data?.message ?? "")
                     );
                 console.log("[MessagesComponent] fetchMessages data:", data);
                 const msgs = (data.messages ?? [])
                     .slice()
                     .sort((a, b) => a.id - b.id);
                 this.messages = msgs;
-                this.debugInfo = null;
                 this.lastMsgId = msgs.at(-1)?.id ?? 0;
 
                 // Marquer comme lu
@@ -716,14 +709,14 @@ export default {
             } catch (e) {
                 if (e.name === "AbortError") {
                     console.error(
-                        "[MessagesComponent] Timeout : le serveur n'a pas répondu en 10s",
+                        "[MessagesComponent] Timeout : le serveur n'a pas répondu en 10s"
                     );
                     this.chatError =
                         "⏱️ Le serveur ne répond pas. Vérifiez que la route admin est correcte.";
                 } else {
                     console.error(
                         "[MessagesComponent] openConversation error:",
-                        e.message,
+                        e.message
                     );
                     this.chatError =
                         e.message || "Impossible de charger les messages.";
@@ -752,7 +745,7 @@ export default {
                 const url =
                     this.routes.conversations_messages.replace(
                         "{id}",
-                        this.activeConv.id,
+                        this.activeConv.id
                     ) + `?after_id=${this.lastMsgId}`;
                 const res = await fetch(url, {
                     headers: { Accept: "application/json" },
@@ -762,7 +755,7 @@ export default {
                 if (data.messages?.length > 0) {
                     const existing = new Set(this.messages.map((m) => m.id));
                     const newMsgs = data.messages.filter(
-                        (m) => !existing.has(m.id),
+                        (m) => !existing.has(m.id)
                     );
                     if (newMsgs.length > 0) {
                         this.messages.push(...newMsgs);
@@ -790,11 +783,11 @@ export default {
 
             try {
                 const csrf = document.querySelector(
-                    'meta[name="csrf-token"]',
+                    'meta[name="csrf-token"]'
                 )?.content;
                 const url = this.routes.conversations_send.replace(
                     "{id}",
-                    this.activeConv.id,
+                    this.activeConv.id
                 );
                 const res = await fetch(url, {
                     method: "POST",
@@ -811,7 +804,7 @@ export default {
                 this.lastMsgId = data.message.id;
                 // Mettre à jour le dernier message dans la liste
                 const c = this.conversations.find(
-                    (c) => c.id === this.activeConv.id,
+                    (c) => c.id === this.activeConv.id
                 );
                 if (c) {
                     c.last_message = body;
@@ -832,11 +825,11 @@ export default {
             this.sending = true;
             try {
                 const csrf = document.querySelector(
-                    'meta[name="csrf-token"]',
+                    'meta[name="csrf-token"]'
                 )?.content;
                 const url = this.routes.conversations_attach.replace(
                     "{id}",
-                    this.activeConv.id,
+                    this.activeConv.id
                 );
                 const form = new FormData();
                 form.append("file", this.pendingFile);
@@ -885,7 +878,7 @@ export default {
         async markRead(convId) {
             try {
                 const csrf = document.querySelector(
-                    'meta[name="csrf-token"]',
+                    'meta[name="csrf-token"]'
                 )?.content;
                 await fetch(
                     this.routes.conversations_read.replace("{id}", convId),
@@ -895,7 +888,7 @@ export default {
                             "X-CSRF-TOKEN": csrf,
                             Accept: "application/json",
                         },
-                    },
+                    }
                 );
             } catch {
                 /* silencieux */
@@ -981,7 +974,7 @@ export default {
             window.dispatchEvent(
                 new CustomEvent("ab-sidebar-toggle", {
                     detail: { open: this.sidebarOpen },
-                }),
+                })
             );
         },
 
@@ -1007,7 +1000,7 @@ export default {
         },
         async markAllRead() {
             const csrf = document.querySelector(
-                'meta[name="csrf-token"]',
+                'meta[name="csrf-token"]'
             )?.content;
             try {
                 await fetch(this.routes.notifications_all, {

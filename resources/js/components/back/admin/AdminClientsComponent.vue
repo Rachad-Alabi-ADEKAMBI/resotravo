@@ -439,7 +439,7 @@
                                     ><strong>{{
                                         activeClient.total_spent
                                             ? formatPrice(
-                                                  activeClient.total_spent,
+                                                  activeClient.total_spent
                                               )
                                             : "—"
                                     }}</strong>
@@ -713,14 +713,14 @@ export default {
                 {
                     icon: "🏢",
                     value: this.clients.filter(
-                        (c) => c.account_type === "company",
+                        (c) => c.account_type === "company"
                     ).length,
                     label: "Entreprises",
                 },
                 {
                     icon: "👥",
                     value: this.clients.filter(
-                        (c) => c.account_type === "individual",
+                        (c) => c.account_type === "individual"
                     ).length,
                     label: "Particuliers",
                 },
@@ -755,7 +755,7 @@ export default {
                         c.name?.toLowerCase().includes(q) ||
                         c.email?.toLowerCase().includes(q) ||
                         c.phone?.toLowerCase().includes(q) ||
-                        c.city?.toLowerCase().includes(q),
+                        c.city?.toLowerCase().includes(q)
                 );
             }
 
@@ -880,7 +880,7 @@ export default {
             if (key === "all") return this.clients.length;
             if (key === "individual")
                 return this.clients.filter(
-                    (c) => c.account_type === "individual",
+                    (c) => c.account_type === "individual"
                 ).length;
             if (key === "company")
                 return this.clients.filter((c) => c.account_type === "company")
@@ -1021,7 +1021,7 @@ export default {
             window.dispatchEvent(
                 new CustomEvent("ab-sidebar-toggle", {
                     detail: { open: this.sidebarOpen },
-                }),
+                })
             );
         },
     },
@@ -1031,7 +1031,7 @@ export default {
         this.fetchNotifications();
         this.notifInterval = setInterval(
             () => this.fetchNotifications(),
-            30000,
+            30000
         );
         document.addEventListener("click", this.handleClickOutside);
         window.addEventListener("ab-sidebar-close", () => {
@@ -1063,6 +1063,7 @@ export default {
     color: var(--dk);
     background: #f8f4f0;
     min-height: 100vh;
+    overflow-x: hidden;
 }
 .amis-topbar {
     background: var(--wh);
@@ -1094,8 +1095,13 @@ export default {
 .amis-topbar-right {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
     flex-shrink: 0;
+}
+@media (min-width: 480px) {
+    .amis-topbar-right {
+        gap: 10px;
+    }
 }
 .amis-page-title {
     font-size: 15px;
@@ -1156,6 +1162,12 @@ export default {
     font-size: 12.5px;
     font-weight: 700;
     color: var(--gr);
+    display: none;
+}
+@media (min-width: 480px) {
+    .amis-count-pill {
+        display: inline-block;
+    }
 }
 .amis-notif-wrap {
     position: relative;
@@ -1311,25 +1323,48 @@ export default {
     color: var(--gr);
     margin-top: 3px;
 }
+/* ── FILTRES ── */
 .amis-filters-bar {
     display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
+    flex-direction: column;
+    gap: 8px;
     background: var(--wh);
     border: 1.5px solid var(--grl);
     border-radius: 12px;
-    padding: 12px 16px;
+    padding: 12px;
     margin-bottom: 14px;
 }
+@media (min-width: 600px) {
+    .amis-filters-bar {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        padding: 12px 16px;
+        gap: 10px;
+    }
+}
 .amis-filters-left {
-    flex: 1;
-    min-width: 200px;
+    width: 100%;
+}
+@media (min-width: 600px) {
+    .amis-filters-left {
+        flex: 1;
+        min-width: 180px;
+    }
 }
 .amis-filters-right {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 8px;
-    align-items: center;
+    width: 100%;
+}
+@media (min-width: 600px) {
+    .amis-filters-right {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        width: auto;
+    }
 }
 .amis-search-wrap {
     display: flex;
@@ -1350,7 +1385,7 @@ export default {
     background: none;
     outline: none;
     font-family: "Poppins", sans-serif;
-    font-size: 13.5px;
+    font-size: 13px;
     color: var(--dk);
     width: 100%;
     padding: 9px 0;
@@ -1359,41 +1394,65 @@ export default {
     border: 1.5px solid var(--grl);
     background: #f8f4f0;
     border-radius: 8px;
-    padding: 8px 12px;
+    padding: 7px 8px;
     font-family: "Poppins", sans-serif;
-    font-size: 13px;
+    font-size: 12px;
     color: var(--dk);
     outline: none;
     cursor: pointer;
+    width: 100%;
+    min-width: 0;
+}
+@media (min-width: 600px) {
+    .amis-select {
+        font-size: 13px;
+        padding: 8px 12px;
+        width: auto;
+    }
 }
 .amis-select:focus {
     border-color: var(--or);
 }
+/* ── TABS ── */
 .amis-tabs {
-    display: flex;
-    gap: 0;
-    overflow-x: auto;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
     background: var(--wh);
     border: 1.5px solid var(--grl);
     border-radius: 12px;
     padding: 4px;
     margin-bottom: 20px;
 }
+@media (max-width: 480px) {
+    .amis-tabs {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
 .amis-tab {
-    padding: 8px 16px;
+    padding: 7px 6px;
     background: none;
     border: none;
     border-radius: 8px;
     font-family: "Poppins", sans-serif;
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 600;
     color: var(--gr);
     cursor: pointer;
     white-space: nowrap;
     display: flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    gap: 4px;
     transition: all 0.18s;
+    text-align: center;
+    overflow: hidden;
+}
+@media (min-width: 600px) {
+    .amis-tab {
+        font-size: 13px;
+        padding: 8px 12px;
+    }
 }
 .amis-tab:hover {
     color: var(--dk);
@@ -1405,9 +1464,16 @@ export default {
 .amis-tab-count {
     background: var(--grl);
     border-radius: 99px;
-    padding: 1px 7px;
-    font-size: 11px;
+    padding: 1px 6px;
+    font-size: 10px;
     font-weight: 700;
+    flex-shrink: 0;
+}
+@media (min-width: 600px) {
+    .amis-tab-count {
+        font-size: 11px;
+        padding: 1px 7px;
+    }
 }
 .amis-tab.active .amis-tab-count {
     background: var(--or);

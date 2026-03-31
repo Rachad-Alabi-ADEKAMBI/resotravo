@@ -3941,4 +3941,219 @@ export default {
         transform: rotate(360deg);
     }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   MOBILE FIXES — 350 px et plus, zéro débordement horizontal
+══════════════════════════════════════════════════════════════ */
+
+/* Verrou global : rien ne peut dépasser la largeur de l'écran */
+.cd-wrap {
+    overflow-x: hidden;
+    max-width: 100vw;
+}
+.cd-wrap *,
+.cd-wrap *::before,
+.cd-wrap *::after {
+    box-sizing: border-box;
+    min-width: 0; /* autorise les flex-items à rétrécir sous leur contenu */
+}
+
+/* ── TOPBAR ─────────────────────────────────────────────────── */
+@media (max-width: 599px) {
+    .cd-topbar {
+        padding: 0 10px;
+        gap: 6px;
+        height: 56px;
+    }
+    .cd-topbar-left {
+        gap: 8px;
+    }
+    .cd-topbar-right {
+        gap: 6px;
+        flex-shrink: 0;
+    }
+    /* Titre tronqué */
+    .cd-page-title {
+        font-size: 13px;
+        max-width: 120px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    /* Bouton "＋ Nouvelle mission" → icône ronde seulement */
+    .cd-topbar-right .cd-btn.cd-btn-orange {
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
+        padding: 0;
+        border-radius: 50%;
+        font-size: 0; /* cache le texte */
+        overflow: hidden;
+    }
+    .cd-topbar-right .cd-btn.cd-btn-orange::before {
+        content: "+";
+        font-size: 22px;
+        font-weight: 700;
+        line-height: 1;
+        color: #fff;
+    }
+    /* Avatar légèrement plus petit */
+    .cd-avatar {
+        width: 30px;
+        height: 30px;
+        font-size: 11px;
+    }
+}
+
+/* ── CONTENU ────────────────────────────────────────────────── */
+@media (max-width: 599px) {
+    .cd-content {
+        padding: 12px 10px;
+        gap: 12px;
+        width: 100%;
+    }
+}
+
+/* ── BANNIÈRE PENDING ───────────────────────────────────────── */
+.cd-banner-pending {
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+.cd-banner-pending-title,
+.cd-banner-pending-sub {
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+@media (max-width: 599px) {
+    .cd-banner-pending {
+        flex-direction: column;
+        padding: 12px;
+        gap: 10px;
+    }
+    .cd-banner-pending-left {
+        gap: 10px;
+        width: 100%;
+    }
+    .cd-banner-pending-icon {
+        font-size: 22px;
+        flex-shrink: 0;
+    }
+    .cd-banner-pending-title {
+        font-size: 12.5px;
+        line-height: 1.4;
+    }
+    .cd-banner-pending-sub {
+        font-size: 11.5px;
+        line-height: 1.5;
+    }
+    .cd-banner-progress-wrap {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+        margin-top: 8px;
+    }
+    .cd-banner-progress-track {
+        max-width: 100%;
+        width: 100%;
+    }
+    .cd-banner-btn {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+        font-size: 13px;
+        padding: 10px 14px;
+    }
+}
+
+/* ── BANNIÈRE VÉRIFIÉE ──────────────────────────────────────── */
+@media (max-width: 599px) {
+    .cd-banner-verified {
+        padding: 12px;
+        gap: 10px;
+    }
+    .cd-verified-title {
+        font-size: 13px;
+    }
+    .cd-verified-sub {
+        font-size: 11.5px;
+    }
+}
+
+/* ── KPIs ───────────────────────────────────────────────────── */
+@media (max-width: 599px) {
+    .cd-kpis {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+    .cd-kpi {
+        padding: 12px 10px;
+        border-radius: 12px;
+    }
+    .cd-kpi-icon {
+        font-size: 18px;
+        margin-bottom: 4px;
+    }
+    .cd-kpi-val {
+        font-size: 22px;
+    }
+    .cd-kpi-label {
+        font-size: 11px;
+    }
+}
+
+/* ── LISTE MISSIONS ─────────────────────────────────────────── */
+@media (max-width: 599px) {
+    .cd-mission-list {
+        padding: 6px 8px 10px;
+    }
+    .cd-mission-item {
+        padding: 10px 8px;
+        gap: 8px;
+    }
+    .cd-mission-title {
+        font-size: 12.5px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        /* largeur calculée par rapport à la colonne gauche disponible */
+        max-width: calc(100vw - 180px);
+    }
+    .cd-mission-meta {
+        font-size: 11px;
+    }
+    .cd-mission-icon {
+        font-size: 18px;
+    }
+}
+
+/* ── CARDS ──────────────────────────────────────────────────── */
+@media (max-width: 599px) {
+    .cd-card-header {
+        padding: 12px 14px 0;
+    }
+    .cd-card-header h3 {
+        font-size: 13px;
+    }
+}
+
+/* ── TABS ───────────────────────────────────────────────────── */
+@media (max-width: 599px) {
+    .cd-tabs {
+        padding: 10px 12px 0;
+        gap: 4px;
+    }
+    .cd-tab {
+        font-size: 11.5px;
+        padding: 4px 9px;
+    }
+}
+
+/* ── NOTIFICATIONS dropdown ─────────────────────────────────── */
+@media (max-width: 599px) {
+    .cd-notif-dropdown {
+        right: -60px; /* re-centre si elle dépassait à droite */
+        max-width: calc(100vw - 20px);
+        left: auto;
+    }
+}
 </style>

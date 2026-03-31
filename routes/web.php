@@ -214,11 +214,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/unread-messages', [MessageController::class, 'unreadSummary'])->name('unread-messages');
 
     // ── Messagerie — pages dédiées (split view) ─────────────────
-    Route::get('/client/messages', function () {
+    Route::get('/client/messages', function (Illuminate\Http\Request $request) {
         $user = Auth::user();
         return view('pages.back.client.messages', [
-            'active' => 'messages',
-            'user'   => $user,
+            'active'             => 'messages',
+            'user'               => $user,
+            'openConversationId' => (int) $request->query('conversation', 0) ?: null,
             'routes' => [
                 'conversations_index'    => '/conversations',
                 'conversations_messages' => '/conversations/{id}/messages',
@@ -232,11 +233,12 @@ Route::middleware('auth')->group(function () {
         ]);
     })->middleware('role:client')->name('client.messages');
 
-    Route::get('/contractor/messages', function () {
+    Route::get('/contractor/messages', function (Illuminate\Http\Request $request) {
         $user = Auth::user();
         return view('pages.back.contractor.messages', [
-            'active' => 'messages',
-            'user'   => $user,
+            'active'             => 'messages',
+            'user'               => $user,
+            'openConversationId' => (int) $request->query('conversation', 0) ?: null,
             'routes' => [
                 'conversations_index'    => '/conversations',
                 'conversations_messages' => '/conversations/{id}/messages',

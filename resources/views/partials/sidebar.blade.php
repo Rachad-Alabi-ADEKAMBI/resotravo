@@ -156,12 +156,12 @@
 
         {{-- Navigation — toujours visible --}}
         <div class="ab-nav-section">
-            <div class="ab-section-lbl">Mon espace</div>
+            <div class="ab-section-lbl">Espace</div>
             <a class="ab-nav-item {{ $active === 'dashboard' ? 'active' : '' }}" href="{{ route('client.dashboard') }}">
                 <span class="ab-nav-icon">🏠</span><span>Tableau de bord</span>
             </a>
             <a class="ab-nav-item {{ $active === 'missions' ? 'active' : '' }}" href="{{ route('client.missions.page') }}">
-                <span class="ab-nav-icon">📋</span><span>Mes missions</span>
+                <span class="ab-nav-icon">📋</span><span>Commandes</span>
             </a>
         </div>
 

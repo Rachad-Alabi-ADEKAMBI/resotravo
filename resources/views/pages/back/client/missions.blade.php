@@ -1,7 +1,7 @@
 {{-- resources/views/pages/back/client/missions.blade.php --}}
 @extends('layouts.back')
 
-@section('title', 'Mes missions — Resotravo')
+@section('title', 'Mes commandes — Resotravo')
 
 @php $active = 'missions'; @endphp
 

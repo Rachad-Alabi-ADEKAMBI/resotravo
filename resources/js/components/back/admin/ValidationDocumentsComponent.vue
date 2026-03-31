@@ -11,7 +11,7 @@
                     <span></span><span></span><span></span>
                 </button>
                 <div>
-                    <div class="av-page-title">Validation des dossiers</div>
+                    <div class="av-page-title">Dossiers</div>
                     <div class="av-page-sub">
                         {{ dossiers.length }} dossier(s) au total
                     </div>

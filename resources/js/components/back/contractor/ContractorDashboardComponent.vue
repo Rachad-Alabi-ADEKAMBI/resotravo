@@ -643,7 +643,12 @@
                         ><strong>{{ activeMission.description }}</strong>
                     </div>
                     <!-- Photos de la mission -->
-                    <div class="ctr-detail-row ctr-detail-photos" v-if="activeMission.images && activeMission.images.length">
+                    <div
+                        class="ctr-detail-row ctr-detail-photos"
+                        v-if="
+                            activeMission.images && activeMission.images.length
+                        "
+                    >
                         <span>Photos</span>
                         <div class="ctr-dash-images">
                             <img
@@ -717,7 +722,7 @@
                         class="ctm-action-block"
                         v-if="
                             ['accepted', 'contact_made'].includes(
-                                activeMission.status,
+                                activeMission.status
                             )
                         "
                     >
@@ -740,7 +745,7 @@
                         class="ctm-action-block"
                         v-if="
                             ['on_the_way', 'tracking'].includes(
-                                activeMission.status,
+                                activeMission.status
                             )
                         "
                     >
@@ -880,7 +885,7 @@
                         class="ctm-action-block ctm-action-done"
                         v-if="
                             ['completed', 'closed'].includes(
-                                activeMission.status,
+                                activeMission.status
                             )
                         "
                     >
@@ -901,7 +906,7 @@
                                 Votre paiement de
                                 {{
                                     formatPrice(
-                                        activeMission.total_amount * 0.9,
+                                        activeMission.total_amount * 0.9
                                     )
                                 }}
                                 a été effectué.
@@ -922,9 +927,11 @@
                         v-if="activeMission.status !== 'pending'"
                     >
                         💬 Messages
-                        <span class="ctr-chat-badge" v-if="unreadByMission[activeMission.id] > 0">{{
-                            unreadByMission[activeMission.id]
-                        }}</span>
+                        <span
+                            class="ctr-chat-badge"
+                            v-if="unreadByMission[activeMission.id] > 0"
+                            >{{ unreadByMission[activeMission.id] }}</span
+                        >
                     </button>
                 </div>
             </div>
@@ -1091,7 +1098,7 @@
                                 :key="d.value"
                                 :class="{
                                     active: scheduleModal.working_days.includes(
-                                        d.value,
+                                        d.value
                                     ),
                                 }"
                             >
@@ -1158,7 +1165,11 @@
         />
 
         <!-- Lightbox photos mission -->
-        <div class="ctr-dash-lightbox" v-if="dashLightbox" @click="dashLightbox = null">
+        <div
+            class="ctr-dash-lightbox"
+            v-if="dashLightbox"
+            @click="dashLightbox = null"
+        >
             <img :src="dashLightbox" />
         </div>
 
@@ -1441,7 +1452,7 @@
                             border-radius: 9px;
                             padding: 9px 13px;
                             font-size: 13px;
-                            font-family: &quot;Poppins&quot;, sans-serif;
+                            font-family: 'Poppins', sans-serif;
                             resize: vertical;
                             box-sizing: border-box;
                         "
@@ -1700,25 +1711,34 @@ export default {
                 "order_placed",
                 "awaiting_confirm",
             ];
+            const completed = ["completed", "closed"];
+            // Calculer dynamiquement depuis la liste réelle des missions
+            const totalMissions = this.missions.filter(
+                (m) => m.status !== "cancelled"
+            ).length;
+            const completedMissions = this.missions.filter((m) =>
+                completed.includes(m.status)
+            ).length;
+            const activeMissions = this.missions.filter((m) =>
+                active.includes(m.status)
+            ).length;
             return [
                 {
                     icon: "📋",
                     label: "Missions totales",
-                    value: c.total_missions,
+                    value: totalMissions,
                     color: "",
                 },
                 {
                     icon: "✅",
                     label: "Terminées",
-                    value: c.completed_missions,
+                    value: completedMissions,
                     color: "green",
                 },
                 {
                     icon: "🔄",
                     label: "En cours",
-                    value: this.missions.filter((m) =>
-                        active.includes(m.status),
-                    ).length,
+                    value: activeMissions,
                     color: "orange",
                 },
                 {
@@ -1737,20 +1757,31 @@ export default {
                 list = this.missions;
             } else {
                 const active = [
-                    "assigned", "accepted", "contact_made", "on_the_way",
-                    "tracking", "in_progress", "quote_submitted", "order_placed",
+                    "assigned",
+                    "accepted",
+                    "contact_made",
+                    "on_the_way",
+                    "tracking",
+                    "in_progress",
+                    "quote_submitted",
+                    "order_placed",
                     "awaiting_confirm",
                 ];
                 if (this.tab === "active")
-                    list = this.missions.filter((m) => active.includes(m.status));
+                    list = this.missions.filter((m) =>
+                        active.includes(m.status)
+                    );
                 else if (this.tab === "assigned")
                     list = this.missions.filter((m) => m.status === "assigned");
                 else if (this.tab === "closed")
-                    list = this.missions.filter((m) => ["completed", "closed"].includes(m.status));
+                    list = this.missions.filter((m) =>
+                        ["completed", "closed"].includes(m.status)
+                    );
                 else if (this.tab === "cancelled")
-                    list = this.missions.filter((m) => m.status === "cancelled");
-                else
-                    list = this.missions;
+                    list = this.missions.filter(
+                        (m) => m.status === "cancelled"
+                    );
+                else list = this.missions;
             }
             return list.slice(0, 5);
         },
@@ -1769,7 +1800,7 @@ export default {
                 (sum, l) =>
                     sum +
                     (Number(l.quantity) || 0) * (Number(l.unit_price) || 0),
-                0,
+                0
             );
         },
         quoteTotal() {
@@ -1781,9 +1812,7 @@ export default {
         quoteIsValid() {
             const hasValidPart = this.quoteModal.partLines.some(
                 (l) =>
-                    l.description?.trim() &&
-                    l.quantity > 0 &&
-                    l.unit_price >= 0,
+                    l.description?.trim() && l.quantity > 0 && l.unit_price >= 0
             );
             const hasLabor =
                 (Number(this.quoteModal.labor.unit_price) || 0) > 0 &&
@@ -1803,7 +1832,7 @@ export default {
                 });
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
-                this.missions = Array.isArray(data) ? data : (data.data ?? []);
+                this.missions = Array.isArray(data) ? data : data.data ?? [];
             } catch {
                 this.missionsError = "Impossible de charger les missions.";
             } finally {
@@ -1815,11 +1844,11 @@ export default {
             this.actionLoading = true;
             try {
                 const csrf = document.querySelector(
-                    'meta[name="csrf-token"]',
+                    'meta[name="csrf-token"]'
                 )?.content;
                 const url = this.routes.missions_status.replace(
                     "{id}",
-                    mission.id,
+                    mission.id
                 );
                 const res = await fetch(url, {
                     method: "PATCH",
@@ -1861,18 +1890,18 @@ export default {
             const reason =
                 this.refuseModal.reason === "other"
                     ? this.refuseModal.customReason
-                    : (this.refuseOptions.find(
-                          (o) => o.value === this.refuseModal.reason,
-                      )?.label ?? this.refuseModal.reason);
+                    : this.refuseOptions.find(
+                          (o) => o.value === this.refuseModal.reason
+                      )?.label ?? this.refuseModal.reason;
 
             this.refuseModal.loading = true;
             try {
                 const csrf = document.querySelector(
-                    'meta[name="csrf-token"]',
+                    'meta[name="csrf-token"]'
                 )?.content;
                 const url = this.routes.missions_status.replace(
                     "{id}",
-                    this.refuseModal.mission.id,
+                    this.refuseModal.mission.id
                 );
                 const res = await fetch(url, {
                     method: "PATCH",
@@ -1893,13 +1922,13 @@ export default {
                 }
                 // Retirer la mission de la liste — elle n'est plus visible pour ce prestataire
                 this.missions = this.missions.filter(
-                    (m) => m.id !== this.refuseModal.mission.id,
+                    (m) => m.id !== this.refuseModal.mission.id
                 );
                 this.refuseModal.visible = false;
                 this.activeMission = null;
                 this.showToast(
                     "Mission refusée. Elle sera réattribuée automatiquement.",
-                    "success",
+                    "success"
                 );
             } catch {
                 this.showToast("Erreur réseau.", "error");
@@ -1929,7 +1958,7 @@ export default {
             this.scheduleModal.loading = true;
             try {
                 const csrf = document.querySelector(
-                    'meta[name="csrf-token"]',
+                    'meta[name="csrf-token"]'
                 )?.content;
                 const payload = {
                     available: this.scheduleModal.available,
@@ -1941,7 +1970,7 @@ export default {
                 console.log("[Horaires] URL    :", this.routes.availability);
                 console.log(
                     "[Horaires] Payload:",
-                    JSON.stringify(payload, null, 2),
+                    JSON.stringify(payload, null, 2)
                 );
                 const res = await fetch(this.routes.availability, {
                     method: "PATCH",
@@ -1958,7 +1987,7 @@ export default {
                     if (data.errors) {
                         console.error(
                             "[Horaires] Erreurs validation:",
-                            data.errors,
+                            data.errors
                         );
                         const msg = Object.entries(data.errors)
                             .map(([k, v]) => k + ": " + v.join(", "))
@@ -1967,7 +1996,7 @@ export default {
                     } else {
                         this.showToast(
                             data.message ?? "Erreur " + res.status,
-                            "error",
+                            "error"
                         );
                     }
                     return;
@@ -1983,7 +2012,7 @@ export default {
                 this.scheduleModal.visible = false;
                 this.showToast(
                     "✅ Horaires mis à jour avec succès.",
-                    "success",
+                    "success"
                 );
             } catch (e) {
                 console.error("[Horaires] Erreur JS:", e);
@@ -1999,7 +2028,7 @@ export default {
             this.availLoading = true;
             try {
                 const csrf = document.querySelector(
-                    'meta[name="csrf-token"]',
+                    'meta[name="csrf-token"]'
                 )?.content;
                 const res = await fetch(this.routes.availability, {
                     method: "PATCH",
@@ -2015,13 +2044,13 @@ export default {
                     "[Toggle dispo] HTTP",
                     res.status,
                     "— Réponse:",
-                    data,
+                    data
                 );
                 if (!res.ok) {
                     if (data.errors) {
                         console.error(
                             "[Toggle dispo] Erreurs validation:",
-                            data.errors,
+                            data.errors
                         );
                         const msg = Object.entries(data.errors)
                             .map(([k, v]) => k + ": " + v.join(", "))
@@ -2030,7 +2059,7 @@ export default {
                     } else {
                         this.showToast(
                             data.message ?? "Erreur " + res.status,
-                            "error",
+                            "error"
                         );
                     }
                     return;
@@ -2040,7 +2069,7 @@ export default {
                     newVal
                         ? "Vous êtes maintenant disponible."
                         : "Vous êtes maintenant indisponible.",
-                    "success",
+                    "success"
                 );
             } catch (e) {
                 console.error("[Toggle dispo] Erreur JS:", e);
@@ -2075,11 +2104,11 @@ export default {
         async openNotif(n) {
             if (!n.read) {
                 const csrf = document.querySelector(
-                    'meta[name="csrf-token"]',
+                    'meta[name="csrf-token"]'
                 )?.content;
                 const url = this.routes.notifications_read.replace(
                     "{id}",
-                    n.id,
+                    n.id
                 );
                 await fetch(url, {
                     method: "PATCH",
@@ -2096,7 +2125,7 @@ export default {
 
         async markAllRead() {
             const csrf = document.querySelector(
-                'meta[name="csrf-token"]',
+                'meta[name="csrf-token"]'
             )?.content;
             await fetch(this.routes.notifications_all, {
                 method: "PATCH",
@@ -2113,7 +2142,7 @@ export default {
             if (file.size > 5 * 1024 * 1024) {
                 this.showToast(
                     "Fichier trop volumineux. Maximum 5 Mo.",
-                    "error",
+                    "error"
                 );
                 event.target.value = "";
                 return;
@@ -2125,7 +2154,7 @@ export default {
             formData.append("type", doc.type);
             try {
                 const csrf = document.querySelector(
-                    'meta[name="csrf-token"]',
+                    'meta[name="csrf-token"]'
                 )?.content;
                 const res = await fetch(this.routes.documents_upload, {
                     method: "POST",
@@ -2143,7 +2172,7 @@ export default {
                 doc.uploading = false;
                 this.showToast(
                     `${doc.label} déposé. En attente de vérification admin.`,
-                    "success",
+                    "success"
                 );
                 await this.refreshDocProgress();
             } catch (err) {
@@ -2152,7 +2181,7 @@ export default {
                 event.target.value = "";
                 this.showToast(
                     err.message ?? "Erreur lors de l'upload.",
-                    "error",
+                    "error"
                 );
             }
         },
@@ -2172,7 +2201,7 @@ export default {
                     }
                 });
                 const approved = this.localDocuments.filter(
-                    (d) => d.status === "approved",
+                    (d) => d.status === "approved"
                 ).length;
                 const total = this.localDocuments.length;
                 this.localDocProgress = {
@@ -2200,7 +2229,7 @@ export default {
                     this.userStatus = "approved";
                     this.showToast(
                         "🎉 Votre profil est maintenant certifié !",
-                        "success",
+                        "success"
                     );
                 }
             } catch {
@@ -2230,7 +2259,7 @@ export default {
                     .length;
             if (key === "closed")
                 return this.missions.filter((m) =>
-                    ["completed", "closed"].includes(m.status),
+                    ["completed", "closed"].includes(m.status)
                 ).length;
             if (key === "cancelled")
                 return this.missions.filter((m) => m.status === "cancelled")
@@ -2464,11 +2493,11 @@ export default {
 
             try {
                 const csrf = document.querySelector(
-                    'meta[name="csrf-token"]',
+                    'meta[name="csrf-token"]'
                 )?.content;
                 const url = this.routes.missions_quote_store.replace(
                     "{id}",
-                    this.quoteModal.mission.id,
+                    this.quoteModal.mission.id
                 );
                 const res = await fetch(url, {
                     method: "POST",
@@ -2499,7 +2528,7 @@ export default {
                     action === "submit"
                         ? "✅ Devis soumis au client !"
                         : "💾 Brouillon enregistré.",
-                    "success",
+                    "success"
                 );
             } catch {
                 this.quoteModal.error = "Erreur réseau. Veuillez réessayer.";
@@ -2550,11 +2579,11 @@ export default {
             this.abandonModal.loading = true;
             try {
                 const csrf = document.querySelector(
-                    'meta[name="csrf-token"]',
+                    'meta[name="csrf-token"]'
                 )?.content;
                 const url = this.routes.missions_status.replace(
                     "{id}",
-                    this.abandonModal.mission.id,
+                    this.abandonModal.mission.id
                 );
                 const res = await fetch(url, {
                     method: "PATCH",
@@ -2574,13 +2603,13 @@ export default {
                     return;
                 }
                 this.missions = this.missions.filter(
-                    (m) => m.id !== this.abandonModal.mission.id,
+                    (m) => m.id !== this.abandonModal.mission.id
                 );
                 this.abandonModal.visible = false;
                 this.activeMission = null;
                 this.showToast(
                     "Mission abandonnée. L'équipe Resotravo a été notifiée.",
-                    "success",
+                    "success"
                 );
             } catch {
                 this.showToast("Erreur réseau.", "error");
@@ -2603,17 +2632,17 @@ export default {
             const reason =
                 this.refuseModal.reason === "other"
                     ? this.refuseModal.customReason
-                    : (this.refuseOptions.find(
-                          (o) => o.value === this.refuseModal.reason,
-                      )?.label ?? "");
+                    : this.refuseOptions.find(
+                          (o) => o.value === this.refuseModal.reason
+                      )?.label ?? "";
             this.refuseModal.loading = true;
             try {
                 const csrf = document.querySelector(
-                    'meta[name="csrf-token"]',
+                    'meta[name="csrf-token"]'
                 )?.content;
                 const url = this.routes.missions_status.replace(
                     "{id}",
-                    this.refuseModal.mission.id,
+                    this.refuseModal.mission.id
                 );
                 const res = await fetch(url, {
                     method: "PATCH",
@@ -2633,13 +2662,13 @@ export default {
                     return;
                 }
                 this.missions = this.missions.filter(
-                    (m) => m.id !== this.refuseModal.mission.id,
+                    (m) => m.id !== this.refuseModal.mission.id
                 );
                 this.refuseModal.visible = false;
                 this.activeMission = null;
                 this.showToast(
                     "Mission refusée. Elle sera réattribuée automatiquement.",
-                    "success",
+                    "success"
                 );
             } catch {
                 this.showToast("Erreur réseau.", "error");
@@ -2696,7 +2725,7 @@ export default {
         async openNotif(n) {
             if (!n.read) {
                 const csrf = document.querySelector(
-                    'meta[name="csrf-token"]',
+                    'meta[name="csrf-token"]'
                 )?.content;
                 await fetch(
                     this.routes.notifications_read.replace("{id}", n.id),
@@ -2706,7 +2735,7 @@ export default {
                             "X-CSRF-TOKEN": csrf,
                             Accept: "application/json",
                         },
-                    },
+                    }
                 );
                 n.read = true;
                 this.unreadCount = Math.max(0, this.unreadCount - 1);
@@ -2715,7 +2744,7 @@ export default {
         },
         async markAllRead() {
             const csrf = document.querySelector(
-                'meta[name="csrf-token"]',
+                'meta[name="csrf-token"]'
             )?.content;
             await fetch(this.routes.notifications_all, {
                 method: "PATCH",
@@ -2749,7 +2778,7 @@ export default {
             window.dispatchEvent(
                 new CustomEvent("ab-sidebar-toggle", {
                     detail: { open: this.sidebarOpen },
-                }),
+                })
             );
         },
 
@@ -2830,7 +2859,7 @@ export default {
         this.fetchNotifications();
         this.notifInterval = setInterval(
             () => this.fetchNotifications(),
-            30000,
+            30000
         );
         document.addEventListener("click", this.handleClickOutside);
         window.addEventListener("ab-sidebar-close", () => {
@@ -3884,9 +3913,11 @@ export default {
     object-fit: cover;
     border-radius: 8px;
     cursor: pointer;
-    transition: opacity .15s;
+    transition: opacity 0.15s;
 }
-.ctr-dash-img:hover { opacity: .85; }
+.ctr-dash-img:hover {
+    opacity: 0.85;
+}
 .ctr-chat-badge {
     display: inline-flex;
     align-items: center;
@@ -3904,7 +3935,7 @@ export default {
 .ctr-dash-lightbox {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,.88);
+    background: rgba(0, 0, 0, 0.88);
     z-index: 600;
     display: flex;
     align-items: center;

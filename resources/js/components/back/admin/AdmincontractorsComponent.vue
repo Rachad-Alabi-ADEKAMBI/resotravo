@@ -285,7 +285,7 @@
                         <span class="ac-doc-lbl">
                             {{
                                 (c.documents || []).filter(
-                                    (d) => d.status === "approved",
+                                    (d) => d.status === "approved"
                                 ).length
                             }}/{{ (c.documents || []).length }} docs validés
                         </span>
@@ -484,7 +484,7 @@
                                     <span>Accréditation</span
                                     ><strong>{{
                                         accredLabel(
-                                            activeContractor.accreditation,
+                                            activeContractor.accreditation
                                         )
                                     }}</strong>
                                 </div>
@@ -531,7 +531,7 @@
                                     ><strong>{{
                                         activeContractor.average_rating
                                             ? activeContractor.average_rating.toFixed(
-                                                  2,
+                                                  2
                                               ) + " / 5"
                                             : "—"
                                     }}</strong>
@@ -700,7 +700,7 @@
                                         class="amis-btn amis-btn-orange"
                                         v-if="
                                             ['rejected', 'suspended'].includes(
-                                                activeContractor.status,
+                                                activeContractor.status
                                             )
                                         "
                                         @click="quickApprove(activeContractor)"
@@ -1072,7 +1072,7 @@ export default {
         availableSpecialties() {
             return [
                 ...new Set(
-                    this.contractors.map((c) => c.specialty).filter(Boolean),
+                    this.contractors.map((c) => c.specialty).filter(Boolean)
                 ),
             ].sort();
         },
@@ -1083,21 +1083,21 @@ export default {
                 {
                     icon: "⏳",
                     value: this.contractors.filter(
-                        (c) => c.status === "pending",
+                        (c) => c.status === "pending"
                     ).length,
                     label: "En attente",
                 },
                 {
                     icon: "✅",
                     value: this.contractors.filter(
-                        (c) => c.status === "approved",
+                        (c) => c.status === "approved"
                     ).length,
                     label: "Approuvés",
                 },
                 {
                     icon: "🟢",
                     value: this.contractors.filter(
-                        (c) => c.available && c.status === "approved",
+                        (c) => c.available && c.status === "approved"
                     ).length,
                     label: "Disponibles",
                 },
@@ -1115,14 +1115,13 @@ export default {
 
             if (this.filterAccreditation)
                 list = list.filter(
-                    (c) => c.accreditation === this.filterAccreditation,
+                    (c) => c.accreditation === this.filterAccreditation
                 );
 
             if (this.filterAvailable !== "")
                 list = list.filter(
                     (c) =>
-                        String(c.available ? "1" : "0") ===
-                        this.filterAvailable,
+                        String(c.available ? "1" : "0") === this.filterAvailable
                 );
 
             if (this.search.trim()) {
@@ -1133,7 +1132,7 @@ export default {
                         c.last_name?.toLowerCase().includes(q) ||
                         c.specialty?.toLowerCase().includes(q) ||
                         c.city?.toLowerCase().includes(q) ||
-                        c.email?.toLowerCase().includes(q),
+                        c.email?.toLowerCase().includes(q)
                 );
             }
 
@@ -1196,7 +1195,7 @@ export default {
                 await this.updateStatus(c, "approved");
                 this.showToast(
                     `✅ ${c.first_name} ${c.last_name} approuvé.`,
-                    "success",
+                    "success"
                 );
                 if (this.activeContractor?.id === c.id)
                     this.activeContractor.status = "approved";
@@ -1222,7 +1221,7 @@ export default {
             try {
                 await this.updateStatus(
                     this.rejectModal.contractor,
-                    "rejected",
+                    "rejected"
                 );
                 this.showToast("Prestataire refusé.", "error");
                 this.rejectModal.visible = false;
@@ -1252,7 +1251,7 @@ export default {
             try {
                 await this.updateStatus(
                     this.suspendModal.contractor,
-                    "suspended",
+                    "suspended"
                 );
                 this.showToast("Prestataire suspendu.", "error");
                 this.suspendModal.visible = false;
@@ -1274,7 +1273,7 @@ export default {
                 ?.getAttribute("content");
             const url = this.routes.contractors_status.replace(
                 "{contractor}",
-                c.contractor_id ?? c.id,
+                c.contractor_id ?? c.id
             );
             const res = await fetch(url, {
                 method: "PATCH",
@@ -1302,7 +1301,7 @@ export default {
                 const url = this.routes.contractors_accreditation.replace(
                     "{contractor}",
                     this.activeContractor.contractor_id ??
-                        this.activeContractor.id,
+                        this.activeContractor.id
                 );
                 const res = await fetch(url, {
                     method: "PATCH",
@@ -1316,7 +1315,7 @@ export default {
                 if (!res.ok) throw new Error("Erreur");
                 this.activeContractor.accreditation = this.accredEdit;
                 const idx = this.contractors.findIndex(
-                    (x) => x.id === this.activeContractor.id,
+                    (x) => x.id === this.activeContractor.id
                 );
                 if (idx !== -1)
                     this.contractors[idx].accreditation = this.accredEdit;
@@ -1361,7 +1360,7 @@ export default {
                     ?.getAttribute("content");
                 const url = this.routes.missions_propose.replace(
                     "{mission}",
-                    this.missionModal.selectedId,
+                    this.missionModal.selectedId
                 );
                 const res = await fetch(url, {
                     method: "POST",
@@ -1380,13 +1379,13 @@ export default {
                 if (!res.ok) throw new Error();
                 this.showToast(
                     "📤 Proposition envoyée avec succès !",
-                    "success",
+                    "success"
                 );
                 this.missionModal.visible = false;
             } catch {
                 this.showToast(
                     "Erreur lors de l'envoi de la proposition.",
-                    "error",
+                    "error"
                 );
             } finally {
                 this.missionModal.sending = false;
@@ -1544,7 +1543,7 @@ export default {
             window.dispatchEvent(
                 new CustomEvent("ab-sidebar-toggle", {
                     detail: { open: this.sidebarOpen },
-                }),
+                })
             );
         },
     },
@@ -1554,7 +1553,7 @@ export default {
         this.fetchNotifications();
         this.notifInterval = setInterval(
             () => this.fetchNotifications(),
-            30000,
+            30000
         );
         document.addEventListener("click", this.handleClickOutside);
         window.addEventListener("ab-sidebar-close", () => {
@@ -1586,6 +1585,7 @@ export default {
     color: var(--dk);
     background: #f8f4f0;
     min-height: 100vh;
+    overflow-x: hidden;
 }
 
 /* ── TOPBAR ── */
@@ -1619,8 +1619,13 @@ export default {
 .amis-topbar-right {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
     flex-shrink: 0;
+}
+@media (min-width: 480px) {
+    .amis-topbar-right {
+        gap: 10px;
+    }
 }
 .amis-page-title {
     font-size: 15px;
@@ -1681,6 +1686,12 @@ export default {
     font-size: 12.5px;
     font-weight: 700;
     color: var(--gr);
+    display: none;
+}
+@media (min-width: 480px) {
+    .amis-count-pill {
+        display: inline-block;
+    }
 }
 
 /* ── NOTIFICATIONS ── */
@@ -1813,6 +1824,11 @@ export default {
     gap: 12px;
     margin-bottom: 20px;
 }
+@media (max-width: 360px) {
+    .at-stats-row {
+        grid-template-columns: 1fr;
+    }
+}
 @media (min-width: 600px) {
     .at-stats-row {
         grid-template-columns: repeat(4, 1fr);
@@ -1846,23 +1862,45 @@ export default {
 /* ── FILTRES ── */
 .amis-filters-bar {
     display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
+    flex-direction: column;
+    gap: 8px;
     background: var(--wh);
     border: 1.5px solid var(--grl);
     border-radius: 12px;
-    padding: 12px 16px;
+    padding: 12px;
     margin-bottom: 14px;
 }
+@media (min-width: 600px) {
+    .amis-filters-bar {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        padding: 12px 16px;
+        gap: 10px;
+    }
+}
 .amis-filters-left {
-    flex: 1;
-    min-width: 200px;
+    width: 100%;
+}
+@media (min-width: 600px) {
+    .amis-filters-left {
+        flex: 1;
+        min-width: 180px;
+    }
 }
 .amis-filters-right {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 8px;
-    align-items: center;
+    width: 100%;
+}
+@media (min-width: 600px) {
+    .amis-filters-right {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        width: auto;
+    }
 }
 .amis-search-wrap {
     display: flex;
@@ -1883,7 +1921,7 @@ export default {
     background: none;
     outline: none;
     font-family: "Poppins", sans-serif;
-    font-size: 13.5px;
+    font-size: 13px;
     color: var(--dk);
     width: 100%;
     padding: 9px 0;
@@ -1892,12 +1930,21 @@ export default {
     border: 1.5px solid var(--grl);
     background: #f8f4f0;
     border-radius: 8px;
-    padding: 8px 12px;
+    padding: 7px 8px;
     font-family: "Poppins", sans-serif;
-    font-size: 13px;
+    font-size: 12px;
     color: var(--dk);
     outline: none;
     cursor: pointer;
+    width: 100%;
+    min-width: 0;
+}
+@media (min-width: 600px) {
+    .amis-select {
+        font-size: 13px;
+        padding: 8px 12px;
+        width: auto;
+    }
 }
 .amis-select:focus {
     border-color: var(--or);
@@ -1905,30 +1952,44 @@ export default {
 
 /* ── TABS ── */
 .amis-tabs {
-    display: flex;
-    gap: 0;
-    overflow-x: auto;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
     background: var(--wh);
     border: 1.5px solid var(--grl);
     border-radius: 12px;
     padding: 4px;
     margin-bottom: 20px;
 }
+@media (max-width: 480px) {
+    .amis-tabs {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
 .amis-tab {
-    padding: 8px 16px;
+    padding: 7px 6px;
     background: none;
     border: none;
     border-radius: 8px;
     font-family: "Poppins", sans-serif;
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 600;
     color: var(--gr);
     cursor: pointer;
     white-space: nowrap;
     display: flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    gap: 4px;
     transition: all 0.18s;
+    text-align: center;
+    overflow: hidden;
+}
+@media (min-width: 600px) {
+    .amis-tab {
+        font-size: 13px;
+        padding: 8px 12px;
+    }
 }
 .amis-tab:hover {
     color: var(--dk);
@@ -1940,9 +2001,16 @@ export default {
 .amis-tab-count {
     background: var(--grl);
     border-radius: 99px;
-    padding: 1px 7px;
-    font-size: 11px;
+    padding: 1px 6px;
+    font-size: 10px;
     font-weight: 700;
+    flex-shrink: 0;
+}
+@media (min-width: 600px) {
+    .amis-tab-count {
+        font-size: 11px;
+        padding: 1px 7px;
+    }
 }
 .amis-tab.active .amis-tab-count {
     background: var(--or);

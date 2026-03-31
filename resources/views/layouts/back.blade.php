@@ -73,7 +73,8 @@
             font-size: 16px;
             background: #f8f4f0;
             color: var(--dk);
-            overflow-x: hidden;
+            /* ✅ overflow-x: clip ne casse pas position:fixed (contrairement à hidden) */
+            overflow-x: clip;
             -webkit-font-smoothing: antialiased;
             line-height: 1.65;
         }
@@ -95,7 +96,11 @@
             min-height: 100vh;
             margin-left: var(--sidebar-w);
             transition: margin-left .3s cubic-bezier(.4,0,.2,1);
-            overflow-x: hidden;
+            /* ✅ CORRECTION CLÉ : overflow-x: clip au lieu de hidden
+               overflow:hidden crée un nouveau contexte de positionnement qui
+               empêche position:fixed de fonctionner correctement sur mobile.
+               overflow:clip a le même effet visuel SANS casser position:fixed */
+            overflow-x: clip;
         }
         @media(max-width: 899px) {
             .ab-main { margin-left: 0 }
@@ -125,15 +130,20 @@
             transition: left .3s cubic-bezier(.4,0,.2,1), box-shadow .3s;
             box-shadow: 0 2px 16px rgba(0,0,0,.06);
         }
+        /* ✅ Sur mobile : topbar pleine largeur et bien fixée */
         @media(max-width: 899px) {
-            .ab-topbar { left: 0 }
+            .ab-topbar {
+                left: 0;
+                right: 0;
+                width: 100%;
+                position: fixed;
+                top: 0;
+                z-index: 150;
+            }
         }
 
         /* ── SIDEBAR FIXE ── */
-        /* La sidebar doit être fixed pour rester visible au scroll */
-        /* (à appliquer dans partials/sidebar.blade.php si ce n'est pas déjà le cas) */
-        /* #ab-sidebar { position: fixed; top: 0; left: 0; height: 100vh; overflow-y: auto; } */
-
+        /* La sidebar est déjà fixed dans partials/sidebar.blade.php */
 
         .ab-avatar-photo {
             width: 36px;

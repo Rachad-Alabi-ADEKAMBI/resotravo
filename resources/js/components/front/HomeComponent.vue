@@ -702,7 +702,9 @@ export default {
                 return;
             }
             this.showToast(
-                `🔍 Recherche : "${this.searchService}" — ${this.searchLocation || "partout au Bénin"}`,
+                `🔍 Recherche : "${this.searchService}" — ${
+                    this.searchLocation || "partout au Bénin"
+                }`
             );
         },
 
@@ -736,11 +738,11 @@ export default {
                             }
                         });
                     },
-                    { threshold: 0.08, rootMargin: "0px 0px -30px 0px" },
+                    { threshold: 0.08, rootMargin: "0px 0px -30px 0px" }
                 );
                 document
                     .querySelectorAll(
-                        ".reveal:not(.revealed), .reveal-left:not(.revealed), .reveal-right:not(.revealed)",
+                        ".reveal:not(.revealed), .reveal-left:not(.revealed), .reveal-right:not(.revealed)"
                     )
                     .forEach((el) => io.observe(el));
             }, 150);
@@ -766,7 +768,7 @@ export default {
                             }
                         });
                     },
-                    { threshold: 0.12 },
+                    { threshold: 0.12 }
                 );
 
                 steps.forEach((el) => {
@@ -812,7 +814,7 @@ export default {
                         io.unobserve(el);
                     });
                 },
-                { threshold: 0.5 },
+                { threshold: 0.5 }
             );
             document
                 .querySelectorAll(".sbi-num")
@@ -823,7 +825,7 @@ export default {
 </script>
 
 <style>
-/* ── Supprimer le trait décoratif sous "qualifié & certifié" ── */
+/* ── Suppression du trait sous "qualifié & certifié" ── */
 .hl {
     text-decoration: none !important;
     border-bottom: none !important;
@@ -831,8 +833,12 @@ export default {
     background-image: none !important;
     -webkit-text-decoration: none !important;
 }
+.hl::after,
+.hl::before {
+    display: none !important;
+}
 
-/* ── Dézoomer l'image hero — les personnages trop grands ── */
+/* ── Dézoomer l'image hero ── */
 .hero-img {
     object-fit: cover !important;
     object-position: center 50% !important;
@@ -840,15 +846,366 @@ export default {
     transform-origin: center center !important;
 }
 
-/* ── Suppression du trait sous "qualifié & certifié" ── */
-.hl {
-    text-decoration: none !important;
-    border-bottom: none !important;
-    box-shadow: none !important;
-    background-image: none !important;
+/* ═══════════════════════════════════════════════════════
+   RESPONSIVE MOBILE — max-width: 768px
+═══════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    /* ── Base : empêcher tout débordement horizontal ── */
+    * {
+        box-sizing: border-box;
+    }
+    html,
+    body {
+        overflow-x: hidden;
+        max-width: 100vw;
+    }
+
+    /* ── HERO ── */
+    .hero {
+        flex-direction: column !important;
+        grid-template-columns: 1fr !important;
+        padding: 60px 16px 32px !important;
+        min-height: unset !important;
+        text-align: center;
+    }
+    .hero-inner {
+        max-width: 100% !important;
+        width: 100% !important;
+        align-items: center !important;
+        display: flex;
+        flex-direction: column;
+    }
+    .hero-visual {
+        display: none !important;
+    }
+    .hero h1,
+    .au1 {
+        font-size: clamp(1.6rem, 7vw, 2.4rem) !important;
+        line-height: 1.25 !important;
+    }
+    .hero-desc,
+    .au2 {
+        font-size: 0.92rem !important;
+        padding: 0 4px;
+    }
+    .hero-btns,
+    .au3 {
+        flex-direction: column !important;
+        gap: 10px !important;
+        width: 100% !important;
+        align-items: stretch !important;
+    }
+    .hero-btns .btn {
+        width: 100% !important;
+        text-align: center !important;
+        font-size: 0.95rem !important;
+    }
+    .hero-stats,
+    .au4 {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+        width: 100% !important;
+    }
+    .hstat {
+        flex-direction: column !important;
+        text-align: center !important;
+        padding: 10px 6px !important;
+    }
+    .hstat .num {
+        font-size: 1.3rem !important;
+    }
+    .hstat .lbl {
+        font-size: 0.72rem !important;
+    }
+    .hero-badge {
+        font-size: 0.78rem !important;
+        padding: 6px 12px !important;
+    }
+
+    /* ── RECHERCHE RAPIDE ── */
+    .search-wrap {
+        padding: 0 12px !important;
+    }
+    .search-box {
+        padding: 18px 14px !important;
+        border-radius: 14px !important;
+    }
+    .search-head {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 4px !important;
+    }
+    .search-head h3 {
+        font-size: 1rem !important;
+    }
+    .search-head span {
+        font-size: 0.78rem !important;
+    }
+    .search-row {
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+    .search-input {
+        width: 100% !important;
+        font-size: 0.88rem !important;
+    }
+    .search-row .btn {
+        width: 100% !important;
+        text-align: center !important;
+    }
+    .search-tags {
+        gap: 6px !important;
+        flex-wrap: wrap !important;
+    }
+    .stag {
+        font-size: 0.78rem !important;
+        padding: 5px 10px !important;
+    }
+
+    /* ── STATS BAND ── */
+    .stats-band {
+        padding: 20px 12px !important;
+    }
+    .stats-inner {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 12px !important;
+    }
+    .sbi {
+        gap: 8px !important;
+    }
+    .sbi-icon {
+        font-size: 1.4rem !important;
+    }
+    .sbi-num {
+        font-size: 1.2rem !important;
+    }
+    .sbi-lbl {
+        font-size: 0.72rem !important;
+    }
+
+    /* ── SECTIONS communes ── */
+    .sec {
+        padding: 40px 16px !important;
+    }
+    .sec-title {
+        font-size: clamp(1.3rem, 6vw, 2rem) !important;
+        line-height: 1.3 !important;
+    }
+    .sec-sub {
+        font-size: 0.88rem !important;
+    }
+
+    /* ── SERVICES GRID ── */
+    .services-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+    }
+    .scard {
+        padding: 16px 10px !important;
+    }
+    .scard-icon {
+        font-size: 1.6rem !important;
+    }
+    .scard h4 {
+        font-size: 0.85rem !important;
+    }
+    .scard p {
+        font-size: 0.75rem !important;
+    }
+
+    /* ── STEPS (Comment ça marche) ── */
+    .steps-grid {
+        grid-template-columns: 1fr !important;
+        gap: 14px !important;
+    }
+    .step {
+        padding: 18px 14px !important;
+        text-align: center;
+    }
+    .step h4 {
+        font-size: 0.95rem !important;
+    }
+    .step p {
+        font-size: 0.82rem !important;
+    }
+
+    /* ── SPLIT SECTIONS ── */
+    .split {
+        flex-direction: column !important;
+        grid-template-columns: 1fr !important;
+    }
+    .split-img {
+        width: 100% !important;
+        height: 220px !important;
+        object-fit: cover !important;
+    }
+    .split-content {
+        padding: 28px 16px !important;
+        width: 100% !important;
+    }
+    .split-content .sec-title {
+        font-size: 1.4rem !important;
+    }
+    .checklist {
+        padding-left: 0 !important;
+    }
+    .checklist li {
+        font-size: 0.85rem !important;
+        gap: 8px !important;
+    }
+    .split-content .btn {
+        width: 100% !important;
+        text-align: center !important;
+    }
+
+    /* ── TRUST GRID ── */
+    .trust-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+    }
+    .tcard {
+        padding: 16px 10px !important;
+    }
+    .tcard-ico {
+        font-size: 1.5rem !important;
+    }
+    .tcard h4 {
+        font-size: 0.85rem !important;
+    }
+    .tcard p {
+        font-size: 0.75rem !important;
+    }
+
+    /* ── TÉMOIGNAGES ── */
+    .test-grid {
+        grid-template-columns: 1fr !important;
+        gap: 14px !important;
+    }
+    .testcard {
+        padding: 18px 14px !important;
+    }
+    .t-text {
+        font-size: 0.85rem !important;
+    }
+
+    /* ── APP BANNER ── */
+    .app-banner {
+        padding: 28px 16px !important;
+    }
+    .app-banner-inner {
+        flex-direction: column !important;
+        gap: 18px !important;
+        text-align: center;
+        align-items: center !important;
+    }
+    .app-banner-inner h3 {
+        font-size: 1.1rem !important;
+    }
+    .app-banner-inner p {
+        font-size: 0.85rem !important;
+    }
+    .app-badges {
+        flex-direction: row !important;
+        gap: 10px !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+    }
+    .abadge {
+        padding: 10px 14px !important;
+        font-size: 0.85rem !important;
+    }
+
+    /* ── FAQ ── */
+    .faq-layout {
+        flex-direction: column !important;
+        grid-template-columns: 1fr !important;
+        gap: 24px !important;
+    }
+    .faq-left {
+        width: 100% !important;
+    }
+    .faq-list {
+        width: 100% !important;
+    }
+    .faq-q {
+        font-size: 0.88rem !important;
+        padding: 14px 12px !important;
+    }
+    .faq-a {
+        font-size: 0.83rem !important;
+        padding: 0 12px !important;
+    }
+
+    /* ── PARTENAIRES ── */
+    .partners {
+        padding: 20px 12px !important;
+    }
+    .prow {
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+        justify-content: center !important;
+    }
+    .pname {
+        font-size: 0.8rem !important;
+        padding: 6px 10px !important;
+    }
+
+    /* ── CTA FINAL ── */
+    .cta-final {
+        padding: 40px 16px !important;
+        text-align: center !important;
+    }
+    .cta-inner h2 {
+        font-size: 1.4rem !important;
+    }
+    .cta-inner p {
+        font-size: 0.88rem !important;
+    }
+    .cta-btns {
+        flex-direction: column !important;
+        gap: 10px !important;
+        align-items: stretch !important;
+    }
+    .cta-btns .btn {
+        width: 100% !important;
+        text-align: center !important;
+    }
+
+    /* ── TOAST ── */
+    .toast {
+        left: 12px !important;
+        right: 12px !important;
+        bottom: 16px !important;
+        font-size: 0.85rem !important;
+        text-align: center !important;
+    }
+
+    /* ── BOUTONS globaux ── */
+    .btn-lg {
+        padding: 12px 18px !important;
+        font-size: 0.9rem !important;
+    }
 }
-.hl::after,
-.hl::before {
-    display: none !important;
+
+/* ═══════════════════════════════════════════════════════
+   TRÈS PETIT ÉCRAN — max-width: 400px
+═══════════════════════════════════════════════════════ */
+@media (max-width: 400px) {
+    .hero h1,
+    .au1 {
+        font-size: 1.45rem !important;
+    }
+    .services-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .trust-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .hero-stats,
+    .au4 {
+        grid-template-columns: 1fr 1fr !important;
+    }
 }
 </style>

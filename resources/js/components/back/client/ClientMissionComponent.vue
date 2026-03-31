@@ -11,7 +11,7 @@
                     <span></span><span></span><span></span>
                 </button>
                 <div>
-                    <div class="clm-page-title">Mes missions</div>
+                    <div class="clm-page-title">Commandes</div>
                     <div class="clm-page-sub">
                         {{ greeting }}, <strong>{{ user.name }}</strong>
                     </div>

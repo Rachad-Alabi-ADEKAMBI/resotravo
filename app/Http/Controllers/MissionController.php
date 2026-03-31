@@ -236,6 +236,16 @@ class MissionController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
+        // Calculer la commission et mettre a jour les compteurs prestataire a la cloture
+        if ($mission->status === Mission::STATUS_CLOSED) {
+            $mission->calculateCommission();
+
+            if ($mission->contractor) {
+                $mission->contractor->increment('total_missions');
+                $mission->contractor->increment('completed_missions');
+            }
+        }
+
         if (!empty($data['reported_issue'])) {
             $mission->update([
                 'reported_issue' => $data['reported_issue'],
