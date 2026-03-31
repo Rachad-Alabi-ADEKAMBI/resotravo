@@ -204,8 +204,8 @@
                             style="
                                 background: linear-gradient(
                                     135deg,
-                                    #ef4444,
-                                    #dc2626
+                                    #6366f1,
+                                    #4f46e5
                                 );
                             "
                         >
@@ -414,7 +414,7 @@
                             <div class="adb-mini-stat">
                                 <span
                                     class="adb-mini-dot"
-                                    style="background: #ef4444"
+                                    style="background: #6366f1"
                                 ></span>
                                 <span class="adb-mini-val">{{
                                     stats.missions_cancelled
@@ -424,9 +424,12 @@
                         </div>
                         <div class="adb-list" v-if="recentMissions.length > 0">
                             <div
-                                class="adb-list-item"
+                                class="adb-list-item adb-list-item-clickable"
                                 v-for="m in recentMissions"
                                 :key="m.id"
+                                @click="openMission(m)"
+                                role="button"
+                                tabindex="0"
                             >
                                 <div class="adb-list-icon">📋</div>
                                 <div class="adb-list-body">
@@ -437,11 +440,14 @@
                                         {{ m.client_name }} · {{ m.created_at }}
                                     </div>
                                 </div>
-                                <span
-                                    class="adb-status-chip"
-                                    :class="missionStatusClass(m.status)"
-                                    >{{ m.status_label }}</span
-                                >
+                                <div class="adb-list-item-right">
+                                    <span
+                                        class="adb-status-chip"
+                                        :class="missionStatusClass(m.status)"
+                                        >{{ m.status_label }}</span
+                                    >
+                                    <span class="adb-list-arrow">›</span>
+                                </div>
                             </div>
                         </div>
                         <div class="adb-empty" v-else>
@@ -493,7 +499,7 @@
                             <div class="adb-mini-stat">
                                 <span
                                     class="adb-mini-dot"
-                                    style="background: #ef4444"
+                                    style="background: #6366f1"
                                 ></span>
                                 <span class="adb-mini-val">{{
                                     stats.contractors_suspended
@@ -708,6 +714,239 @@
             </template>
         </div>
 
+        <!-- ══════════════ MODAL MISSION ══════════════ -->
+        <div
+            class="adb-modal-overlay"
+            v-if="missionModal"
+            @click.self="closeMissionModal"
+        >
+            <div class="adb-modal">
+                <!-- Header -->
+                <div class="adb-modal-header">
+                    <div class="adb-modal-header-left">
+                        <div class="adb-modal-icon">📋</div>
+                        <div>
+                            <div class="adb-modal-title">
+                                {{ selectedMission?.service ?? "—" }}
+                            </div>
+                            <div class="adb-modal-sub">
+                                Mission #{{ selectedMission?.id }}
+                            </div>
+                        </div>
+                    </div>
+                    <button class="adb-modal-close" @click="closeMissionModal">
+                        ✕
+                    </button>
+                </div>
+
+                <!-- Loader -->
+                <div class="adb-modal-loading" v-if="missionModalLoading">
+                    <div class="adb-modal-spinner"></div>
+                    <span>Chargement des détails...</span>
+                </div>
+
+                <div class="adb-modal-body" v-else-if="selectedMission">
+                    <!-- Statut + badge -->
+                    <div class="adb-modal-status-bar">
+                        <span
+                            class="adb-status-chip adb-chip-lg"
+                            :class="missionStatusClass(selectedMission.status)"
+                            >{{
+                                selectedMission.status_label ??
+                                selectedMission.status
+                            }}</span
+                        >
+                        <span class="adb-modal-id">
+                            {{ selectedMission.created_at }}
+                        </span>
+                    </div>
+
+                    <!-- Infos principales -->
+                    <div class="adb-modal-grid">
+                        <div class="adb-modal-field">
+                            <div class="adb-modal-field-label">👤 Client</div>
+                            <div class="adb-modal-field-val">
+                                {{ selectedMission.client_name ?? "—" }}
+                            </div>
+                        </div>
+                        <div class="adb-modal-field">
+                            <div class="adb-modal-field-label">
+                                👷 Prestataire
+                            </div>
+                            <div class="adb-modal-field-val">
+                                {{
+                                    selectedMission.contractor_name ??
+                                    "Non attribué"
+                                }}
+                            </div>
+                        </div>
+                        <div
+                            class="adb-modal-field"
+                            v-if="selectedMission.address"
+                        >
+                            <div class="adb-modal-field-label">📍 Adresse</div>
+                            <div class="adb-modal-field-val">
+                                {{ selectedMission.address }}
+                            </div>
+                        </div>
+                        <div
+                            class="adb-modal-field"
+                            v-if="selectedMission.total_amount"
+                        >
+                            <div class="adb-modal-field-label">💰 Montant</div>
+                            <div class="adb-modal-field-val adb-modal-price">
+                                {{ formatPrice(selectedMission.total_amount) }}
+                            </div>
+                        </div>
+                        <div
+                            class="adb-modal-field"
+                            v-if="selectedMission.commission"
+                        >
+                            <div class="adb-modal-field-label">
+                                📊 Commission
+                            </div>
+                            <div class="adb-modal-field-val adb-modal-price">
+                                {{ formatPrice(selectedMission.commission) }}
+                            </div>
+                        </div>
+                        <div
+                            class="adb-modal-field"
+                            v-if="selectedMission.specialty"
+                        >
+                            <div class="adb-modal-field-label">
+                                🔧 Spécialité
+                            </div>
+                            <div class="adb-modal-field-val">
+                                {{ selectedMission.specialty }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div
+                        class="adb-modal-desc"
+                        v-if="selectedMission.description"
+                    >
+                        <div class="adb-modal-desc-label">📝 Description</div>
+                        <div class="adb-modal-desc-text">
+                            {{ selectedMission.description }}
+                        </div>
+                    </div>
+
+                    <!-- Historique statuts -->
+                    <div
+                        class="adb-modal-section"
+                        v-if="
+                            selectedMission.timeline &&
+                            selectedMission.timeline.length
+                        "
+                    >
+                        <div class="adb-modal-section-title">🕐 Historique</div>
+                        <div class="adb-timeline">
+                            <div
+                                class="adb-timeline-item"
+                                v-for="(step, i) in selectedMission.timeline"
+                                :key="i"
+                            >
+                                <div
+                                    class="adb-timeline-dot"
+                                    :class="i === 0 ? 'active' : ''"
+                                ></div>
+                                <div class="adb-timeline-body">
+                                    <div class="adb-timeline-label">
+                                        {{ step.label }}
+                                    </div>
+                                    <div class="adb-timeline-date">
+                                        {{ step.date }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Messages entre client et prestataire -->
+                    <div class="adb-modal-section">
+                        <div class="adb-modal-section-title">
+                            💬 Messages
+                            <span
+                                class="adb-msg-count"
+                                v-if="missionMessages.length > 0"
+                                >{{ missionMessages.length }}</span
+                            >
+                        </div>
+                        <div
+                            class="adb-messages"
+                            v-if="missionMessages.length > 0"
+                        >
+                            <div
+                                class="adb-message"
+                                v-for="msg in missionMessages"
+                                :key="msg.id"
+                                :class="
+                                    msg.sender_role === 'client'
+                                        ? 'adb-msg-client'
+                                        : msg.sender_role === 'contractor'
+                                          ? 'adb-msg-contractor'
+                                          : 'adb-msg-admin'
+                                "
+                            >
+                                <div class="adb-msg-avatar">
+                                    {{ initials(msg.sender_name ?? "?") }}
+                                </div>
+                                <div class="adb-msg-bubble">
+                                    <div class="adb-msg-meta">
+                                        <strong>{{ msg.sender_name }}</strong>
+                                        <span
+                                            class="adb-msg-role-badge"
+                                            :class="'role-' + msg.sender_role"
+                                        >
+                                            {{
+                                                msg.sender_role === "client"
+                                                    ? "Client"
+                                                    : msg.sender_role ===
+                                                        "contractor"
+                                                      ? "Prestataire"
+                                                      : "Admin"
+                                            }}
+                                        </span>
+                                        <span class="adb-msg-time">{{
+                                            msg.sent_at
+                                        }}</span>
+                                    </div>
+                                    <div class="adb-msg-text">
+                                        {{ msg.body }}
+                                    </div>
+                                    <div
+                                        class="adb-msg-img-wrap"
+                                        v-if="msg.images && msg.images.length"
+                                    >
+                                        <img
+                                            v-for="(url, i) in msg.images"
+                                            :key="i"
+                                            :src="url"
+                                            class="adb-msg-img"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="adb-empty" v-else>
+                            Aucun message pour cette mission
+                        </div>
+                    </div>
+
+                    <!-- Actions admin -->
+                    <div class="adb-modal-actions">
+                        <a
+                            class="adb-btn adb-btn-primary"
+                            :href="routes.missions_page"
+                            >Voir dans les missions →</a
+                        >
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- ══════════════ TOASTS ══════════════ -->
         <div class="amis-toast-container">
             <div
@@ -778,6 +1017,12 @@ export default {
             notifInterval: null,
             toasts: [],
             toastId: 0,
+
+            // Modal détail mission
+            missionModal: false,
+            selectedMission: null,
+            missionMessages: [],
+            missionModalLoading: false,
         };
     },
 
@@ -1089,6 +1334,39 @@ export default {
                 this.toasts = this.toasts.filter((t) => t.id !== id);
             }, 4000);
         },
+        async openMission(mission) {
+            this.selectedMission = { ...mission };
+            this.missionModal = true;
+            this.missionModalLoading = true;
+            this.missionMessages = [];
+            try {
+                // Tente de charger le détail complet de la mission
+                const url =
+                    (this.routes.mission_detail ?? "").replace(
+                        ":id",
+                        mission.id,
+                    ) || this.routes.missions_index + "/" + mission.id;
+                const res = await fetch(url, {
+                    headers: { Accept: "application/json" },
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    this.selectedMission = data.mission ?? data;
+                    this.missionMessages = data.messages ?? [];
+                }
+            } catch {
+                // Garde les données basiques déjà chargées
+            } finally {
+                this.missionModalLoading = false;
+            }
+        },
+
+        closeMissionModal() {
+            this.missionModal = false;
+            this.selectedMission = null;
+            this.missionMessages = [];
+        },
+
         emitToggleSidebar() {
             this.sidebarOpen = !this.sidebarOpen;
             window.dispatchEvent(
@@ -1248,7 +1526,7 @@ export default {
     position: absolute;
     top: 0;
     right: 0;
-    background: #ef4444;
+    background: #6366f1;
     color: #fff;
     font-size: 10px;
     font-weight: 700;
@@ -1375,34 +1653,49 @@ export default {
 }
 
 /* ── KPI row ── */
+/* ── KPI row — mobile first ── */
 .adb-kpi-row {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
     margin-bottom: 20px;
 }
-@media (max-width: 1200px) {
+@media (min-width: 600px) {
+    .adb-kpi-row {
+        gap: 12px;
+    }
+}
+@media (min-width: 900px) {
     .adb-kpi-row {
         grid-template-columns: repeat(4, 1fr);
     }
 }
-@media (max-width: 800px) {
+@media (min-width: 1200px) {
     .adb-kpi-row {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(4, 1fr);
     }
 }
 .adb-kpi {
     background: var(--wh);
     border: 1.5px solid var(--grl);
-    border-radius: 14px;
-    padding: 16px;
+    border-radius: 12px;
+    padding: 12px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     text-decoration: none;
     color: var(--dk);
     transition: all 0.2s;
     cursor: pointer;
+    min-width: 0;
+    overflow: hidden;
+}
+@media (min-width: 600px) {
+    .adb-kpi {
+        border-radius: 14px;
+        padding: 16px;
+        gap: 12px;
+    }
 }
 .adb-kpi:hover {
     border-color: var(--or);
@@ -1418,38 +1711,65 @@ export default {
     box-shadow: none;
 }
 .adb-kpi-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
+    font-size: 17px;
     flex-shrink: 0;
+}
+@media (min-width: 600px) {
+    .adb-kpi-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        font-size: 20px;
+    }
 }
 .adb-kpi-body {
     flex: 1;
     min-width: 0;
 }
 .adb-kpi-val {
-    font-size: 22px;
+    font-size: 18px;
     font-weight: 900;
     color: var(--dk);
     line-height: 1;
-}
-.adb-kpi-lbl {
-    font-size: 11px;
-    color: var(--gr);
-    margin-top: 3px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
+@media (min-width: 600px) {
+    .adb-kpi-val {
+        font-size: 22px;
+    }
+}
+.adb-kpi-lbl {
+    font-size: 10px;
+    color: var(--gr);
+    margin-top: 3px;
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.3;
+}
+@media (min-width: 600px) {
+    .adb-kpi-lbl {
+        font-size: 11px;
+    }
+}
 .adb-kpi-arrow {
-    font-size: 16px;
+    font-size: 14px;
     color: var(--gr);
     flex-shrink: 0;
     transition: transform 0.2s;
+    display: none;
+}
+@media (min-width: 480px) {
+    .adb-kpi-arrow {
+        display: block;
+    }
 }
 .adb-kpi:hover .adb-kpi-arrow {
     transform: translateX(3px);
@@ -1473,8 +1793,8 @@ export default {
     flex-wrap: wrap;
 }
 .adb-alert-red {
-    background: #fef2f2;
-    border-color: #fecaca;
+    background: #eef2ff;
+    border-color: #c7d2fe;
 }
 .adb-alert-orange {
     background: #fff7ed;
@@ -1617,8 +1937,29 @@ export default {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 8px 0;
+    padding: 10px 0;
     border-bottom: 1px solid var(--grl);
+}
+.adb-list-item-clickable {
+    cursor: pointer;
+    border-radius: 8px;
+    padding: 10px 8px;
+    margin: 0 -8px;
+    transition: background 0.15s;
+}
+.adb-list-item-clickable:hover {
+    background: var(--or3);
+}
+.adb-list-item-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+.adb-list-arrow {
+    font-size: 18px;
+    color: var(--gr);
+    line-height: 1;
 }
 .adb-list-item:last-child {
     border-bottom: none;
@@ -1689,8 +2030,8 @@ export default {
     color: #166534;
 }
 .adb-chip-danger {
-    background: #fee2e2;
-    color: #991b1b;
+    background: #ede9fe;
+    color: #4c1d95;
 }
 .adb-chip-neutral {
     background: #f3f4f6;
@@ -1751,7 +2092,7 @@ export default {
     flex-shrink: 0;
 }
 .adb-shortcut-badge {
-    background: #ef4444;
+    background: #6366f1;
     color: #fff;
     border-radius: 99px;
     font-size: 10px;
@@ -1762,6 +2103,418 @@ export default {
 }
 .adb-badge-blue {
     background: #3b82f6;
+}
+
+/* ── Modal mission ── */
+.adb-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 1000;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 0;
+    overflow-y: auto;
+}
+@media (min-width: 600px) {
+    .adb-modal-overlay {
+        align-items: center;
+        padding: 24px 16px;
+    }
+}
+.adb-modal {
+    background: var(--wh);
+    border-radius: 0;
+    width: 100%;
+    min-height: 100dvh;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.25);
+    animation: modalSlideUp 0.25s ease;
+}
+@media (min-width: 600px) {
+    .adb-modal {
+        border-radius: 20px;
+        max-width: 640px;
+        min-height: unset;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+}
+@keyframes modalSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(40px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.adb-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px;
+    border-bottom: 1.5px solid var(--grl);
+    position: sticky;
+    top: 0;
+    background: var(--wh);
+    z-index: 2;
+    gap: 12px;
+}
+.adb-modal-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+.adb-modal-icon {
+    font-size: 26px;
+    flex-shrink: 0;
+}
+.adb-modal-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--dk);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}
+@media (min-width: 400px) {
+    .adb-modal-title {
+        max-width: 260px;
+    }
+}
+.adb-modal-sub {
+    font-size: 11.5px;
+    color: var(--gr);
+    margin-top: 2px;
+}
+.adb-modal-close {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1.5px solid var(--grl);
+    background: var(--wh);
+    font-size: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gr);
+    flex-shrink: 0;
+    transition: all 0.15s;
+}
+.adb-modal-close:hover {
+    background: #f3f4f6;
+    color: var(--dk);
+}
+.adb-modal-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 60px 20px;
+    color: var(--gr);
+    font-size: 13.5px;
+}
+.adb-modal-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--grl);
+    border-top-color: var(--or);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+.adb-modal-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.adb-modal-status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.adb-chip-lg {
+    font-size: 12px;
+    padding: 5px 14px;
+    border-radius: 99px;
+}
+.adb-modal-id {
+    font-size: 12px;
+    color: var(--gr);
+}
+.adb-modal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+@media (max-width: 420px) {
+    .adb-modal-grid {
+        grid-template-columns: 1fr;
+    }
+}
+.adb-modal-field {
+    background: #f9fafb;
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+.adb-modal-field-label {
+    font-size: 11px;
+    color: var(--gr);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+}
+.adb-modal-field-val {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--dk);
+}
+.adb-modal-price {
+    color: var(--or);
+}
+.adb-modal-desc {
+    background: #f9fafb;
+    border-radius: 10px;
+    padding: 12px;
+}
+.adb-modal-desc-label {
+    font-size: 11px;
+    color: var(--gr);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+}
+.adb-modal-desc-text {
+    font-size: 13.5px;
+    color: var(--dk);
+    line-height: 1.6;
+}
+.adb-modal-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.adb-modal-section-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--gr);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.adb-msg-count {
+    background: #6366f1;
+    color: #fff;
+    border-radius: 99px;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 7px;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+/* Timeline */
+.adb-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding-left: 4px;
+}
+.adb-timeline-item {
+    display: flex;
+    gap: 12px;
+    position: relative;
+    padding-bottom: 14px;
+}
+.adb-timeline-item:last-child {
+    padding-bottom: 0;
+}
+.adb-timeline-item:not(:last-child)::before {
+    content: "";
+    position: absolute;
+    left: 6px;
+    top: 14px;
+    bottom: 0;
+    width: 2px;
+    background: var(--grl);
+}
+.adb-timeline-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--grl);
+    flex-shrink: 0;
+    margin-top: 2px;
+    border: 2px solid var(--grl);
+}
+.adb-timeline-dot.active {
+    background: var(--or);
+    border-color: var(--or);
+}
+.adb-timeline-body {
+    flex: 1;
+}
+.adb-timeline-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--dk);
+}
+.adb-timeline-date {
+    font-size: 11px;
+    color: var(--gr);
+    margin-top: 2px;
+}
+
+/* Messages */
+.adb-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 340px;
+    overflow-y: auto;
+    padding: 4px 0;
+}
+.adb-message {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+.adb-msg-client {
+    flex-direction: row;
+}
+.adb-msg-contractor {
+    flex-direction: row-reverse;
+}
+.adb-msg-admin {
+    flex-direction: row;
+}
+.adb-msg-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 800;
+    color: #fff;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+}
+.adb-msg-client .adb-msg-avatar {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+.adb-msg-contractor .adb-msg-avatar {
+    background: linear-gradient(135deg, #f97316, #ea580c);
+}
+.adb-msg-bubble {
+    max-width: 78%;
+    background: #f3f4f6;
+    border-radius: 14px;
+    padding: 10px 13px;
+}
+.adb-msg-contractor .adb-msg-bubble {
+    background: #fff7ed;
+}
+.adb-msg-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 5px;
+}
+.adb-msg-meta strong {
+    font-size: 12px;
+    color: var(--dk);
+}
+.adb-msg-role-badge {
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 4px;
+    padding: 1px 6px;
+}
+.role-client {
+    background: #dcfce7;
+    color: #166534;
+}
+.role-contractor {
+    background: #fff7ed;
+    color: #9a3412;
+}
+.role-admin {
+    background: #ede9fe;
+    color: #4c1d95;
+}
+.adb-msg-time {
+    font-size: 10.5px;
+    color: var(--grm);
+    margin-left: auto;
+}
+.adb-msg-text {
+    font-size: 13px;
+    color: var(--dk);
+    line-height: 1.55;
+}
+.adb-msg-img-wrap {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+.adb-msg-img {
+    width: 72px;
+    height: 72px;
+    object-fit: cover;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.adb-modal-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding-top: 4px;
+    border-top: 1px solid var(--grl);
+}
+.adb-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 700;
+    padding: 10px 18px;
+    text-decoration: none;
+    transition: all 0.18s;
+    cursor: pointer;
+    border: none;
+    font-family: "Poppins", sans-serif;
+}
+.adb-btn-primary {
+    background: var(--or);
+    color: #fff;
+}
+.adb-btn-primary:hover {
+    background: var(--or2);
 }
 
 /* ── Toasts ── */

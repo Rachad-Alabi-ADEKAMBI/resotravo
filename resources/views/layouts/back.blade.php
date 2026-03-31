@@ -29,14 +29,6 @@
     <meta name="apple-mobile-web-app-title" content="ResoTravo" />
     <meta name="theme-color" content="#1C1412" />
 
-    {{-- Capacitor CSP --}}
-    <meta http-equiv="Content-Security-Policy"
-          content="default-src 'self' capacitor://localhost http://localhost https://resotravo.xo.je;
-                   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-                   font-src 'self' https://fonts.gstatic.com;
-                   script-src 'self' 'unsafe-inline' 'unsafe-eval';
-                   img-src 'self' data: blob: https:;
-                   connect-src 'self' https://resotravo.xo.je capacitor://localhost http://localhost ws://localhost;" />
 
     <title>@yield('title', 'Tableau de bord') — ResoTravo</title>
 
@@ -70,6 +62,8 @@
 
             /* Sidebar */
             --sidebar-w: 250px;
+            /* Topbar back-office */
+            --topbar-h: 64px;
         }
 
         /* ── BASE ── */
@@ -113,7 +107,34 @@
             .ad-burger { display: flex !important }
         }
 
-        /* ── Avatar photo de profil ── */
+        /* ── TOPBAR FIXE (back-office) ── */
+        .ab-topbar {
+            position: fixed;
+            top: 0;
+            left: var(--sidebar-w);
+            right: 0;
+            height: var(--topbar-h);
+            z-index: 150;
+            background: rgba(255,255,255,.97);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--grl);
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            transition: left .3s cubic-bezier(.4,0,.2,1), box-shadow .3s;
+            box-shadow: 0 2px 16px rgba(0,0,0,.06);
+        }
+        @media(max-width: 899px) {
+            .ab-topbar { left: 0 }
+        }
+
+        /* ── SIDEBAR FIXE ── */
+        /* La sidebar doit être fixed pour rester visible au scroll */
+        /* (à appliquer dans partials/sidebar.blade.php si ce n'est pas déjà le cas) */
+        /* #ab-sidebar { position: fixed; top: 0; left: 0; height: 100vh; overflow-y: auto; } */
+
+
         .ab-avatar-photo {
             width: 36px;
             height: 36px;

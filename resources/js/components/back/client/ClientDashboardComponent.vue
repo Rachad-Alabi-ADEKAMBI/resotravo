@@ -78,10 +78,7 @@
                     </div>
                 </div>
                 <div class="cd-avatar">{{ client.initials }}</div>
-                <button
-                    class="cd-btn cd-btn-orange"
-                    @click="openNewMission"
-                >
+                <button class="cd-btn cd-btn-orange" @click="openNewMission">
                     ＋ Nouvelle mission
                 </button>
             </div>
@@ -96,7 +93,9 @@
                 <span class="cd-verified-icon">✅</span>
                 <div>
                     <div class="cd-verified-title">Identité vérifiée</div>
-                    <div class="cd-verified-sub">Votre compte bénéficie du badge de confiance Resotravo.</div>
+                    <div class="cd-verified-sub">
+                        Votre compte bénéficie du badge de confiance Resotravo.
+                    </div>
                 </div>
             </div>
 
@@ -106,7 +105,9 @@
                     <div class="cd-banner-pending-icon">
                         {{
                             isApproved
-                                ? (clientProfile.completed_missions >= 5 ? "✅" : "🏅")
+                                ? clientProfile.completed_missions >= 5
+                                    ? "✅"
+                                    : "🏅"
                                 : docProgress.percentage === 0
                                   ? "📋"
                                   : docProgress.percentage < 100
@@ -118,19 +119,28 @@
                         <div class="cd-banner-pending-title">
                             {{
                                 isApproved
-                                    ? "Plus que " + Math.max(0, 5 - (clientProfile.completed_missions ?? 0)) + " mission(s) pour obtenir le badge Identité vérifiée"
+                                    ? "Plus que " +
+                                      Math.max(
+                                          0,
+                                          5 -
+                                              (clientProfile.completed_missions ??
+                                                  0),
+                                      ) +
+                                      " mission(s) pour obtenir le badge Identité vérifiée"
                                     : docProgress.percentage < 100
-                                        ? "Obtenez le badge « Identité vérifiée »"
-                                        : "Dossier en cours de vérification"
+                                      ? "Obtenez le badge « Identité vérifiée »"
+                                      : "Dossier en cours de vérification"
                             }}
                         </div>
                         <div class="cd-banner-pending-sub">
                             {{
                                 isApproved
-                                    ? "Vous avez " + (clientProfile.completed_missions ?? 0) + "/5 missions terminées. Continuez à publier des missions !"
+                                    ? "Vous avez " +
+                                      (clientProfile.completed_missions ?? 0) +
+                                      "/5 missions terminées. Continuez à publier des missions !"
                                     : docProgress.percentage < 100
-                                        ? "Déposez votre pièce d'identité et une photo de profil, puis complétez 5 missions pour obtenir le badge."
-                                        : "Vos documents ont été reçus. La validation prend généralement moins de 24h."
+                                      ? "Déposez votre pièce d'identité et une photo de profil, puis complétez 5 missions pour obtenir le badge."
+                                      : "Vos documents ont été reçus. La validation prend généralement moins de 24h."
                             }}
                         </div>
                         <!-- Progression documents si pas encore soumis -->
@@ -138,11 +148,16 @@
                             <div class="cd-banner-progress-track">
                                 <div
                                     class="cd-banner-progress-fill"
-                                    :style="{ width: docProgress.percentage + '%' }"
+                                    :style="{
+                                        width: docProgress.percentage + '%',
+                                    }"
                                 ></div>
                             </div>
                             <span class="cd-banner-progress-label">
-                                {{ docProgress.approved }}/{{ docProgress.total }} documents validés
+                                {{ docProgress.approved }}/{{
+                                    docProgress.total
+                                }}
+                                documents validés
                             </span>
                         </div>
                         <!-- Progression missions si documents OK -->
@@ -150,11 +165,21 @@
                             <div class="cd-banner-progress-track">
                                 <div
                                     class="cd-banner-progress-fill cd-banner-progress-missions"
-                                    :style="{ width: Math.min(100, ((clientProfile.completed_missions ?? 0) / 5) * 100) + '%' }"
+                                    :style="{
+                                        width:
+                                            Math.min(
+                                                100,
+                                                ((clientProfile.completed_missions ??
+                                                    0) /
+                                                    5) *
+                                                    100,
+                                            ) + '%',
+                                    }"
                                 ></div>
                             </div>
                             <span class="cd-banner-progress-label">
-                                {{ clientProfile.completed_missions ?? 0 }}/5 missions terminées
+                                {{ clientProfile.completed_missions ?? 0 }}/5
+                                missions terminées
                             </span>
                         </div>
                     </div>
@@ -280,13 +305,20 @@
                             class="cd-mission-item"
                             v-for="m in filteredMissions"
                             :key="m.id"
+                            :class="{ 'has-unread': unreadByMission[m.id] }"
                             @click="openMission(m)"
                         >
+                            <!-- Bande unread -->
+                            <div
+                                class="cd-unread-stripe"
+                                v-if="unreadByMission[m.id]"
+                            ></div>
+
                             <div class="cd-mission-left">
                                 <div class="cd-mission-icon">
                                     {{ serviceIcon(m.service) }}
                                 </div>
-                                <div>
+                                <div class="cd-mission-info">
                                     <div class="cd-mission-title">
                                         {{ m.service }}
                                     </div>
@@ -298,6 +330,18 @@
                                         }}
                                         · {{ formatDate(m.created_at) }}
                                     </div>
+                                    <!-- Badge non lu inline sous le titre -->
+                                    <div
+                                        class="cd-msg-unread"
+                                        v-if="unreadByMission[m.id]"
+                                    >
+                                        💬 {{ unreadByMission[m.id] }} message{{
+                                            unreadByMission[m.id] > 1 ? "s" : ""
+                                        }}
+                                        non lu{{
+                                            unreadByMission[m.id] > 1 ? "s" : ""
+                                        }}
+                                    </div>
                                 </div>
                             </div>
                             <div class="cd-mission-right">
@@ -307,24 +351,28 @@
                                 >
                                     {{ labelOf(m) }}
                                 </span>
-                                <div class="cd-mission-price">
-                                    {{
-                                        m.total_amount
-                                            ? formatPrice(m.total_amount)
-                                            : "—"
-                                    }}
-                                </div>
                                 <div
-                                    class="cd-msg-unread"
-                                    v-if="unreadByMission[m.id]"
+                                    class="cd-mission-price"
+                                    v-if="m.total_amount"
                                 >
-                                    💬
-                                    <span
-                                        >{{ unreadByMission[m.id] }} non lu{{
-                                            unreadByMission[m.id] > 1 ? "s" : ""
-                                        }}</span
-                                    >
+                                    {{ formatPrice(m.total_amount) }}
                                 </div>
+                                <!-- Bouton Lire message — stoppe la propagation pour ouvrir direct le chat -->
+                                <button
+                                    class="cd-read-msg-btn"
+                                    v-if="unreadByMission[m.id]"
+                                    @click.stop="chatMissionId = m.id"
+                                    :title="
+                                        'Ouvrir la conversation — ' +
+                                        unreadByMission[m.id] +
+                                        ' non lu(s)'
+                                    "
+                                >
+                                    <span class="cd-read-msg-dot">{{
+                                        unreadByMission[m.id]
+                                    }}</span>
+                                    Lire
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -375,10 +423,153 @@
                             </span>
                         </div>
                     </div>
-
                 </div>
             </div>
 
+            <!-- ── Section Documents ── -->
+            <div class="cd-card cd-docs-card" ref="docsSection">
+                <div class="cd-card-header">
+                    <h3>📂 Mes documents</h3>
+                    <div class="cd-doc-header-right">
+                        <span
+                            class="cd-doc-summary"
+                            :class="{
+                                complete: docProgress.percentage === 100,
+                            }"
+                        >
+                            {{ docProgress.approved }}/{{ docProgress.total }}
+                            validés
+                        </span>
+                        <span
+                            class="cd-certified-pill"
+                            v-if="isIdentityVerified"
+                        >
+                            ✅ Identité vérifiée
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Tous validés -->
+                <div class="cd-docs-certified" v-if="isIdentityVerified">
+                    <div class="cd-docs-certified-icon">✅</div>
+                    <div>
+                        <div class="cd-docs-certified-title">
+                            Vos documents ont été validés par Resotravo !
+                        </div>
+                        <div class="cd-docs-certified-sub">
+                            Votre identité est vérifiée. Continuez à publier des
+                            missions pour obtenir le badge.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info badge si pas encore validé -->
+                <div class="cd-docs-badge-info" v-if="!isIdentityVerified">
+                    ℹ️ Déposez votre pièce d'identité et une photo de profil
+                    pour obtenir le badge <strong>Identité vérifiée</strong>.
+                </div>
+
+                <!-- Barre de progression -->
+                <div class="cd-docs-progress-bar" v-if="!isIdentityVerified">
+                    <div class="cd-docs-pb-track">
+                        <div
+                            class="cd-docs-pb-fill"
+                            :style="{ width: docProgress.percentage + '%' }"
+                        ></div>
+                    </div>
+                    <div class="cd-docs-pb-label">
+                        {{ docProgress.percentage }}% validé par l'admin
+                    </div>
+                </div>
+
+                <!-- Liste des documents -->
+                <div class="cd-docs-list">
+                    <div
+                        class="cd-doc-item"
+                        v-for="doc in localDocuments"
+                        :key="doc.type"
+                        :class="doc.status"
+                    >
+                        <div class="cd-doc-icon">{{ doc.icon }}</div>
+                        <div class="cd-doc-info">
+                            <div class="cd-doc-name">{{ doc.label }}</div>
+                            <div
+                                class="cd-doc-status-label"
+                                :class="doc.status"
+                            >
+                                {{ docStatusLabel(doc.status) }}
+                            </div>
+                            <div
+                                class="cd-doc-reject-reason"
+                                v-if="
+                                    doc.status === 'rejected' &&
+                                    doc.reject_reason
+                                "
+                            >
+                                Motif : {{ doc.reject_reason }}
+                            </div>
+                            <div class="cd-doc-filename" v-if="doc.filename">
+                                📎 {{ doc.filename }}
+                            </div>
+                        </div>
+                        <div class="cd-doc-actions">
+                            <!-- Déposer ou remplacer si manquant/refusé -->
+                            <label
+                                class="cd-btn cd-btn-orange cd-btn-sm cd-upload-label"
+                                v-if="
+                                    doc.status === 'missing' ||
+                                    doc.status === 'rejected'
+                                "
+                                :class="{ loading: doc.uploading }"
+                            >
+                                <div
+                                    class="cd-mini-spinner"
+                                    v-if="doc.uploading"
+                                ></div>
+                                <span v-else>{{
+                                    doc.status === "missing"
+                                        ? "+ Déposer"
+                                        : "↻ Remplacer"
+                                }}</span>
+                                <input
+                                    type="file"
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    style="display: none"
+                                    @change="uploadDocument(doc, $event)"
+                                    :disabled="doc.uploading"
+                                />
+                            </label>
+                            <!-- Remplacer si en attente ou approuvé -->
+                            <label
+                                class="cd-btn cd-btn-ghost cd-btn-sm cd-upload-label"
+                                v-if="
+                                    doc.status === 'pending' ||
+                                    doc.status === 'approved'
+                                "
+                                :class="{ loading: doc.uploading }"
+                            >
+                                <div
+                                    class="cd-mini-spinner cd-mini-spinner-dark"
+                                    v-if="doc.uploading"
+                                ></div>
+                                <span v-else>↻</span>
+                                <input
+                                    type="file"
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    style="display: none"
+                                    @change="uploadDocument(doc, $event)"
+                                    :disabled="doc.uploading"
+                                />
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cd-docs-note">
+                    ℹ️ Formats acceptés : PDF, JPG, PNG — 5 Mo max par document.
+                    Délai de vérification : <strong>24-48h</strong>.
+                </div>
+            </div>
         </div>
 
         <!-- ══════════════════════════════════
@@ -438,7 +629,12 @@
                         <strong>{{ activeMission.description }}</strong>
                     </div>
                     <!-- Photos de la mission -->
-                    <div class="cd-detail-row cd-detail-photos" v-if="activeMission.images && activeMission.images.length">
+                    <div
+                        class="cd-detail-row cd-detail-photos"
+                        v-if="
+                            activeMission.images && activeMission.images.length
+                        "
+                    >
                         <span>Photos</span>
                         <div class="cd-dash-images">
                             <img
@@ -567,9 +763,11 @@
                         v-if="activeMission.status !== 'pending'"
                     >
                         💬 Messages
-                        <span class="cd-chat-badge" v-if="unreadByMission[activeMission.id] > 0">{{
-                            unreadByMission[activeMission.id]
-                        }}</span>
+                        <span
+                            class="cd-chat-badge"
+                            v-if="unreadByMission[activeMission.id] > 0"
+                            >{{ unreadByMission[activeMission.id] }}</span
+                        >
                     </button>
                 </div>
             </div>
@@ -810,7 +1008,11 @@
         />
 
         <!-- Lightbox photos mission -->
-        <div class="cd-dash-lightbox" v-if="dashLightbox" @click="dashLightbox = null">
+        <div
+            class="cd-dash-lightbox"
+            v-if="dashLightbox"
+            @click="dashLightbox = null"
+        >
             <img :src="dashLightbox" />
         </div>
 
@@ -966,6 +1168,39 @@
                         <span v-else>✓ Confirmer le paiement</span>
                     </button>
                 </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════
+             CHAT MODAL (ouvert depuis liste ou détail mission)
+        ══════════════════════════════════ -->
+        <mission-chat-modal
+            v-if="chatMissionId"
+            :mission-id="chatMissionId"
+            :current-user-id="user.id ?? 0"
+            :routes="routes"
+            @close="onChatClose"
+            @unread="onChatUnread($event)"
+        />
+
+        <!-- Lightbox images -->
+        <div
+            class="cd-lightbox"
+            v-if="dashLightbox"
+            @click="dashLightbox = null"
+        >
+            <img :src="dashLightbox" />
+        </div>
+
+        <!-- TOASTS -->
+        <div class="cd-toast-container">
+            <div
+                class="cd-toast"
+                v-for="t in toasts"
+                :key="t.id"
+                :class="t.type"
+            >
+                {{ t.message }}
             </div>
         </div>
     </div>
@@ -1174,10 +1409,14 @@ export default {
             return this.userStatus === "approved";
         },
         isIdentityVerified() {
-            return this.isApproved && (this.clientProfile?.completed_missions ?? 0) >= 5;
+            return (
+                this.isApproved &&
+                (this.clientProfile?.completed_missions ?? 0) >= 5
+            );
         },
         docProgress() {
             return (
+                this.localDocProgress ??
                 this.docProgressData ?? { approved: 0, total: 2, percentage: 0 }
             );
         },
@@ -1239,20 +1478,31 @@ export default {
                 list = this.missions;
             } else {
                 const activeStatuses = [
-                    "assigned", "accepted", "contact_made", "on_the_way",
-                    "tracking", "in_progress", "quote_submitted", "order_placed",
+                    "assigned",
+                    "accepted",
+                    "contact_made",
+                    "on_the_way",
+                    "tracking",
+                    "in_progress",
+                    "quote_submitted",
+                    "order_placed",
                     "awaiting_confirm",
                 ];
                 if (this.tab === "active")
-                    list = this.missions.filter((m) => activeStatuses.includes(m.status));
+                    list = this.missions.filter((m) =>
+                        activeStatuses.includes(m.status),
+                    );
                 else if (this.tab === "pending")
                     list = this.missions.filter((m) => m.status === "pending");
                 else if (this.tab === "closed")
-                    list = this.missions.filter((m) => ["completed", "closed"].includes(m.status));
+                    list = this.missions.filter((m) =>
+                        ["completed", "closed"].includes(m.status),
+                    );
                 else if (this.tab === "cancelled")
-                    list = this.missions.filter((m) => m.status === "cancelled");
-                else
-                    list = this.missions;
+                    list = this.missions.filter(
+                        (m) => m.status === "cancelled",
+                    );
+                else list = this.missions;
             }
             return list.slice(0, 5);
         },
@@ -1758,10 +2008,145 @@ export default {
                 this.toasts = this.toasts.filter((t) => t.id !== id);
             }, 3500);
         },
+
+        docStatusLabel(s) {
+            return (
+                {
+                    approved: "✅ Validé",
+                    pending: "⏳ En attente de validation",
+                    rejected: "❌ Refusé",
+                    missing: "— Non déposé",
+                }[s] ?? s
+            );
+        },
+
+        async uploadDocument(doc, event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (file.size > 5 * 1024 * 1024) {
+                this.showToast(
+                    "Fichier trop volumineux. Maximum 5 Mo.",
+                    "error",
+                );
+                event.target.value = "";
+                return;
+            }
+            doc.uploading = true;
+            doc.filename = file.name;
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("type", doc.type);
+            try {
+                const csrf = document.querySelector(
+                    'meta[name="csrf-token"]',
+                )?.content;
+                const res = await fetch(this.routes.documents_upload, {
+                    method: "POST",
+                    headers: {
+                        "X-CSRF-TOKEN": csrf,
+                        Accept: "application/json",
+                    },
+                    body: formData,
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.message ?? "Erreur upload.");
+                }
+                doc.status = "pending";
+                doc.uploading = false;
+                this.showToast(
+                    `${doc.label} déposé. En attente de vérification admin.`,
+                    "success",
+                );
+                await this.refreshDocProgress();
+            } catch (err) {
+                doc.uploading = false;
+                doc.filename = null;
+                event.target.value = "";
+                this.showToast(
+                    err.message ?? "Erreur lors de l'upload.",
+                    "error",
+                );
+            }
+        },
+
+        async refreshDocProgress() {
+            try {
+                const res = await fetch(this.routes.documents_index, {
+                    headers: { Accept: "application/json" },
+                });
+                const data = await res.json();
+                // L'API retourne { documents: [...], progress: {...} }
+                const docs = data.documents ?? [];
+                this.localDocuments.forEach((localDoc) => {
+                    const srv = docs.find((d) => d.type === localDoc.type);
+                    if (srv) {
+                        localDoc.status = srv.status;
+                        localDoc.reject_reason = srv.reject_reason;
+                        localDoc.filename = srv.filename;
+                    }
+                });
+                // Utiliser la progression retournée par le serveur
+                if (data.progress) {
+                    this.localDocProgress = data.progress;
+                } else {
+                    const approved = this.localDocuments.filter(
+                        (d) => d.status === "approved",
+                    ).length;
+                    const total = this.localDocuments.length;
+                    this.localDocProgress = {
+                        approved,
+                        total,
+                        percentage:
+                            total > 0
+                                ? Math.round((approved / total) * 100)
+                                : 0,
+                    };
+                }
+            } catch {
+                /* silencieux */
+            }
+        },
+
+        onGlobalUnreadUpdate(evt) {
+            const byMission = evt.detail?.by_mission ?? {};
+            if (this.chatMissionId) {
+                const updated = { ...byMission };
+                delete updated[this.chatMissionId];
+                this.unreadByMission = updated;
+            } else {
+                this.unreadByMission = byMission;
+            }
+        },
     },
 
     mounted() {
         this.newMissionForm.address = this.clientProfile.address ?? "";
+
+        // Init documents client
+        const defaultDocs = [
+            {
+                type: "cni",
+                label: "Pièce d'identité valide (CNI / Passeport)",
+                icon: "🪪",
+                status: "missing",
+                uploading: false,
+                filename: null,
+                reject_reason: null,
+            },
+            {
+                type: "photo_profil",
+                label: "Photo de profil",
+                icon: "📸",
+                status: "missing",
+                uploading: false,
+                filename: null,
+                reject_reason: null,
+            },
+        ];
+        this.localDocuments = defaultDocs;
+        this.localDocProgress = { ...this.docProgressData };
+        this.refreshDocProgress();
 
         this.fetchMissions();
         this.fetchNotifications();
@@ -1778,11 +2163,18 @@ export default {
         window.addEventListener("ab-sidebar-close", () => {
             this.sidebarOpen = false;
         });
+
+        // Écouter les mises à jour de messages non lus (même event que MissionComponent)
+        window.addEventListener("rt-unread-update", this.onGlobalUnreadUpdate);
     },
 
     beforeUnmount() {
         clearInterval(this.notifInterval);
         document.removeEventListener("click", this.handleClickOutside);
+        window.removeEventListener(
+            "rt-unread-update",
+            this.onGlobalUnreadUpdate,
+        );
     },
 };
 </script>
@@ -2109,20 +2501,26 @@ export default {
 }
 .cd-mission-item {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     padding: 12px 10px;
-    border-radius: 10px;
+    border-radius: 12px;
     cursor: pointer;
-    transition: background 0.15s;
+    transition:
+        background 0.15s,
+        border-color 0.15s;
     gap: 10px;
+    border: 1.5px solid transparent;
+    /* mobile: min touch target */
+    min-height: 56px;
+    position: relative;
 }
 .cd-mission-item:hover {
     background: #faf7f5;
 }
 .cd-mission-left {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 12px;
     min-width: 0;
     flex: 1;
@@ -2643,13 +3041,15 @@ export default {
     object-fit: cover;
     border-radius: 8px;
     cursor: pointer;
-    transition: opacity .15s;
+    transition: opacity 0.15s;
 }
-.cd-dash-img:hover { opacity: .85; }
+.cd-dash-img:hover {
+    opacity: 0.85;
+}
 .cd-dash-lightbox {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,.88);
+    background: rgba(0, 0, 0, 0.88);
     z-index: 600;
     display: flex;
     align-items: center;
@@ -3021,6 +3421,67 @@ export default {
     border-radius: 99px;
     padding: 2px 8px;
     margin-top: 4px;
+    width: fit-content;
+}
+
+/* ── Bande unread gauche ── */
+.cd-unread-stripe {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, #f97316, #ea580c);
+    border-radius: 4px 0 0 4px;
+}
+.cd-mission-item.has-unread {
+    background: #fffbf7;
+    border-color: #fed7aa;
+}
+
+/* ── Info col dans mission-left ── */
+.cd-mission-info {
+    min-width: 0;
+    flex: 1;
+}
+
+/* ── Bouton Lire message ── */
+.cd-read-msg-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, #f97316, #ea580c);
+    border: none;
+    border-radius: 99px;
+    padding: 4px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition:
+        opacity 0.18s,
+        transform 0.12s;
+    margin-top: 4px;
+    box-shadow: 0 2px 6px rgba(249, 115, 22, 0.35);
+    font-family: "Poppins", sans-serif;
+}
+.cd-read-msg-btn:hover {
+    opacity: 0.88;
+    transform: scale(1.04);
+}
+.cd-read-msg-dot {
+    background: #fff;
+    color: #f97316;
+    border-radius: 99px;
+    font-size: 10px;
+    font-weight: 800;
+    min-width: 17px;
+    height: 17px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 3px;
 }
 .cd-chat-btn-notif {
     position: relative;
@@ -3225,5 +3686,259 @@ export default {
     border-radius: 8px;
     padding: 10px 14px;
     line-height: 1.5;
+}
+
+/* ── Lightbox ── */
+.cd-lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: zoom-out;
+}
+.cd-lightbox img {
+    max-width: 92vw;
+    max-height: 88vh;
+    border-radius: 10px;
+    object-fit: contain;
+}
+
+/* ── Toasts ── */
+.cd-toast-container {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 9999;
+    pointer-events: none;
+}
+.cd-toast {
+    background: var(--dk);
+    color: #fff;
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 13.5px;
+    font-weight: 600;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+    animation: cd-toast-in 0.3s ease;
+    white-space: nowrap;
+}
+.cd-toast.success {
+    background: #16a34a;
+}
+.cd-toast.error {
+    background: #dc2626;
+}
+@keyframes cd-toast-in {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SECTION DOCUMENTS CLIENT
+══════════════════════════════════════════════════════════════ */
+.cd-docs-card {
+    margin-top: 20px;
+}
+.cd-doc-header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.cd-doc-summary {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--gr);
+    background: var(--grl);
+    padding: 4px 10px;
+    border-radius: 99px;
+}
+.cd-doc-summary.complete {
+    background: #dcfce7;
+    color: #16a34a;
+}
+.cd-certified-pill {
+    background: linear-gradient(135deg, #16a34a, #15803d);
+    color: #fff;
+    border-radius: 99px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 700;
+}
+.cd-docs-certified {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: #f0fdf4;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    border: 1.5px solid #bbf7d0;
+}
+.cd-docs-certified-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+}
+.cd-docs-certified-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: #15803d;
+}
+.cd-docs-certified-sub {
+    font-size: 12.5px;
+    color: #166534;
+    margin-top: 3px;
+}
+
+.cd-docs-badge-info {
+    background: #fef9c3;
+    border: 1.5px solid #fde047;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 12.5px;
+    color: #854d0e;
+    margin-bottom: 12px;
+}
+.cd-docs-progress-bar {
+    margin-bottom: 14px;
+}
+.cd-docs-pb-track {
+    height: 8px;
+    background: var(--grl);
+    border-radius: 99px;
+    overflow: hidden;
+}
+.cd-docs-pb-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--or), var(--or2));
+    border-radius: 99px;
+    transition: width 0.4s;
+}
+.cd-docs-pb-label {
+    font-size: 11.5px;
+    color: var(--gr);
+    margin-top: 5px;
+    text-align: right;
+}
+.cd-docs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 6px;
+}
+.cd-doc-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1.5px solid var(--grl);
+    background: var(--wh);
+    transition:
+        border-color 0.15s,
+        background 0.15s;
+}
+.cd-doc-item.approved {
+    border-color: #bbf7d0;
+    background: #f0fdf4;
+}
+.cd-doc-item.rejected {
+    border-color: #fca5a5;
+    background: #fff1f2;
+}
+.cd-doc-item.pending {
+    border-color: #fde68a;
+    background: #fffbeb;
+}
+.cd-doc-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+}
+.cd-doc-info {
+    flex: 1;
+    min-width: 0;
+}
+.cd-doc-name {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--dk);
+}
+.cd-doc-status-label {
+    font-size: 12px;
+    margin-top: 2px;
+}
+.cd-doc-status-label.approved {
+    color: #16a34a;
+}
+.cd-doc-status-label.pending {
+    color: #d97706;
+}
+.cd-doc-status-label.rejected {
+    color: #dc2626;
+}
+.cd-doc-status-label.missing {
+    color: var(--gr);
+}
+.cd-doc-reject-reason {
+    font-size: 11.5px;
+    color: #dc2626;
+    margin-top: 3px;
+}
+.cd-doc-filename {
+    font-size: 11.5px;
+    color: var(--grm);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.cd-doc-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+.cd-docs-note {
+    font-size: 12px;
+    color: var(--grm);
+    margin-top: 12px;
+    background: var(--grl);
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+.cd-upload-label {
+    cursor: pointer;
+}
+.cd-upload-label.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+.cd-mini-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: cd-spin 0.7s linear infinite;
+}
+.cd-mini-spinner-dark {
+    border-color: rgba(0, 0, 0, 0.15);
+    border-top-color: var(--or);
+}
+@keyframes cd-spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 </style>

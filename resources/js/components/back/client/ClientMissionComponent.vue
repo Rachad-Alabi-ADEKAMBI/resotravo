@@ -155,8 +155,15 @@
                     class="clm-item"
                     v-for="m in pagedMissions"
                     :key="m.id"
+                    :class="{ 'has-unread': unreadByMission[m.id] }"
                     @click="openMission(m)"
                 >
+                    <!-- Bande unread gauche -->
+                    <div
+                        class="clm-unread-stripe"
+                        v-if="unreadByMission[m.id]"
+                    ></div>
+
                     <div class="clm-item-icon">
                         {{ serviceIcon(m.service) }}
                     </div>
@@ -201,6 +208,22 @@
                         <div class="clm-item-price" v-if="m.total_amount">
                             {{ formatPrice(m.total_amount) }}
                         </div>
+                        <!-- Bouton Lire message — ouvre direct le chat sans ouvrir le panel -->
+                        <button
+                            class="clm-read-msg-btn"
+                            v-if="unreadByMission[m.id]"
+                            @click.stop="openChat(m.id)"
+                            :title="
+                                'Ouvrir la conversation — ' +
+                                unreadByMission[m.id] +
+                                ' non lu(s)'
+                            "
+                        >
+                            <span class="clm-read-msg-dot">{{
+                                unreadByMission[m.id]
+                            }}</span>
+                            Lire
+                        </button>
                     </div>
                 </div>
             </div>
@@ -358,11 +381,19 @@
                                         activeMission.description ?? "—"
                                     }}</strong>
                                 </div>
-                                <div class="clm-row clm-row-images" v-if="activeMission.images && activeMission.images.length">
+                                <div
+                                    class="clm-row clm-row-images"
+                                    v-if="
+                                        activeMission.images &&
+                                        activeMission.images.length
+                                    "
+                                >
                                     <span>Photos</span>
                                     <div class="clm-mission-images">
                                         <img
-                                            v-for="(url, i) in activeMission.images"
+                                            v-for="(
+                                                url, i
+                                            ) in activeMission.images"
                                             :key="i"
                                             :src="url"
                                             @click="missionLightbox = url"
@@ -968,12 +999,15 @@
                     <div class="clm-field">
                         <label>Photos (optionnel, max 5 × 10 Mo)</label>
                         <div class="clm-img-upload-row">
-                            <label class="clm-img-add-btn" title="Ajouter des photos">
+                            <label
+                                class="clm-img-add-btn"
+                                title="Ajouter des photos"
+                            >
                                 <input
                                     type="file"
                                     multiple
                                     accept="image/*"
-                                    style="display:none"
+                                    style="display: none"
                                     ref="imgInput"
                                     @change="onImagesSelect"
                                 />
@@ -985,7 +1019,12 @@
                                 :key="i"
                             >
                                 <img :src="img.url" :alt="img.name" />
-                                <button class="clm-img-remove" @click.prevent="removeImage(i)">✕</button>
+                                <button
+                                    class="clm-img-remove"
+                                    @click.prevent="removeImage(i)"
+                                >
+                                    ✕
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1174,7 +1213,11 @@
         />
 
         <!-- Lightbox images mission -->
-        <div class="clm-lightbox" v-if="missionLightbox" @click="missionLightbox = null">
+        <div
+            class="clm-lightbox"
+            v-if="missionLightbox"
+            @click="missionLightbox = null"
+        >
             <img :src="missionLightbox" />
         </div>
 
@@ -2463,7 +2506,10 @@ export default {
     beforeUnmount() {
         clearInterval(this.notifInterval);
         document.removeEventListener("click", this.handleClickOutside);
-        window.removeEventListener("rt-unread-update", this.onGlobalUnreadUpdate);
+        window.removeEventListener(
+            "rt-unread-update",
+            this.onGlobalUnreadUpdate,
+        );
     },
 };
 </script>
@@ -2851,10 +2897,26 @@ export default {
     cursor: pointer;
     border: 2px solid transparent;
     transition: all 0.18s;
+    position: relative;
+    overflow: hidden;
 }
 .clm-item:hover {
     border-color: var(--am);
     transform: translateY(-1px);
+}
+.clm-item.has-unread {
+    background: #fffbf7;
+    border-color: #fed7aa;
+}
+/* Bande orange à gauche pour messages non lus */
+.clm-unread-stripe {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, #f97316, #ea580c);
+    border-radius: 4px 0 0 4px;
 }
 .clm-item-icon {
     font-size: 26px;
@@ -2901,6 +2963,43 @@ export default {
     font-size: 13px;
     font-weight: 700;
     color: var(--dk);
+}
+/* Bouton Lire message */
+.clm-read-msg-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, #f97316, #ea580c);
+    border: none;
+    border-radius: 99px;
+    padding: 4px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition:
+        opacity 0.18s,
+        transform 0.12s;
+    box-shadow: 0 2px 6px rgba(249, 115, 22, 0.35);
+    font-family: "Poppins", sans-serif;
+}
+.clm-read-msg-btn:hover {
+    opacity: 0.88;
+    transform: scale(1.04);
+}
+.clm-read-msg-dot {
+    background: #fff;
+    color: #f97316;
+    border-radius: 99px;
+    font-size: 10px;
+    font-weight: 800;
+    min-width: 17px;
+    height: 17px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 3px;
 }
 .clm-type-chip {
     font-size: 11px;
@@ -3897,7 +3996,9 @@ export default {
     font-size: 12.5px;
     font-weight: 700;
     color: #8a7d78;
-    transition: border-color 0.15s, color 0.15s;
+    transition:
+        border-color 0.15s,
+        color 0.15s;
     flex-shrink: 0;
 }
 .clm-img-add-btn:hover {
@@ -3924,7 +4025,7 @@ export default {
     right: 3px;
     width: 18px;
     height: 18px;
-    background: rgba(0,0,0,0.6);
+    background: rgba(0, 0, 0, 0.6);
     border: none;
     border-radius: 50%;
     color: #fff;
@@ -3960,7 +4061,7 @@ export default {
 .clm-lightbox {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.85);
+    background: rgba(0, 0, 0, 0.85);
     z-index: 500;
     display: flex;
     align-items: center;

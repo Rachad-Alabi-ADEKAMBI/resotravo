@@ -1,0 +1,286 @@
+═══════════════════════════════════════════════════════════════════════════════
+  RESOTRAVO — GUIDE MOBILE COMPLET (APK Android)
+  Généré le 30/03/2026
+═══════════════════════════════════════════════════════════════════════════════
+
+TABLE DES MATIÈRES
+──────────────────
+  1. Prérequis (à installer une seule fois)
+  2. Configuration initiale (à faire une seule fois)
+  3. Première installation sur ton téléphone
+  4. Mettre à jour l'app (nouvelles fonctionnalités)
+  5. Changer l'URL du serveur
+  6. Générer un APK Release (sans Android Studio)
+  7. Dépannage fréquent
+
+
+═══════════════════════════════════════════════════════════════════════════════
+  1. PRÉREQUIS — À INSTALLER UNE SEULE FOIS
+═══════════════════════════════════════════════════════════════════════════════
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │  a) Android Studio                                                      │
+  │     → https://developer.android.com/studio                             │
+  │     → Télécharge et installe la version stable                         │
+  │     → Lors du premier lancement, laisse-le télécharger le SDK Android  │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │  b) Java JDK 17+ (inclus dans Android Studio)                          │
+  │     → Normalement déjà inclus avec Android Studio                      │
+  │     → Vérifie avec : java -version  (dans un terminal)                 │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │  c) Activer le mode développeur sur ton téléphone Android               │
+  │     → Paramètres → À propos du téléphone                               │
+  │     → Appuie 7 fois sur "Numéro de build"                              │
+  │     → Retourne dans Paramètres → Options développeur                   │
+  │     → Active "Débogage USB"                                             │
+  │     → Connecte ton téléphone en USB à ton PC                           │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════
+  2. CONFIGURATION INITIALE — À FAIRE UNE SEULE FOIS
+═══════════════════════════════════════════════════════════════════════════════
+
+  IMPORTANT : Ton téléphone et ton PC doivent être sur le même réseau WiFi.
+
+  Ton IP LAN actuelle : 192.168.1.199
+  (si elle change, voir section 5)
+
+  ÉTAPE A — Vérifier l'URL dans capacitor.config.ts
+  ──────────────────────────────────────────────────
+  Ouvre le fichier :  c:\xampp\htdocs\resotravo\capacitor.config.ts
+
+  Tu dois voir cette ligne :
+      url: 'http://10.0.2.2/resotravo/public',
+
+  Pour un téléphone PHYSIQUE, change-la en :
+      url: 'http://192.168.1.199/resotravo/public',
+
+  Pour un ÉMULATEUR Android Studio, garde :
+      url: 'http://10.0.2.2/resotravo/public',
+
+  ÉTAPE B — S'assurer que XAMPP est accessible depuis le réseau
+  ──────────────────────────────────────────────────────────────
+  Dans XAMPP → Config Apache → httpd.conf, vérifie que tu as :
+      Listen 0.0.0.0:80
+  (pas uniquement Listen 127.0.0.1:80)
+
+  Ou plus simple : dans ton pare-feu Windows, autorise Apache (httpd.exe).
+
+
+═══════════════════════════════════════════════════════════════════════════════
+  3. PREMIÈRE INSTALLATION SUR TON TÉLÉPHONE (générer et installer l'APK)
+═══════════════════════════════════════════════════════════════════════════════
+
+  ── MÉTHODE 1 : Via Android Studio (recommandée) ──────────────────────────
+
+  ÉTAPE 1 — Lance XAMPP
+    → Démarre Apache et MySQL dans XAMPP Control Panel
+
+  ÉTAPE 2 — Synchronise Capacitor
+    → Ouvre un terminal dans c:\xampp\htdocs\resotravo\
+    → Tape : npx cap sync android
+    → Attends que ça se termine
+
+  ÉTAPE 3 — Ouvre Android Studio
+    → Tape : npx cap open android
+    → Android Studio s'ouvre avec le projet
+
+  ÉTAPE 4 — Connecte ton téléphone
+    → Branche ton téléphone en USB
+    → Sur ton téléphone : accepte la demande "Autoriser le débogage USB"
+    → Dans Android Studio, tu vois ton téléphone dans la barre du haut
+
+  ÉTAPE 5 — Lance l'app
+    → Clique sur le bouton ▶ Run (triangle vert) en haut
+    → Android Studio compile et installe l'APK sur ton téléphone
+    → L'app s'ouvre automatiquement !
+
+  ── MÉTHODE 2 : APK debug depuis Android Studio ───────────────────────────
+
+  Si tu veux un fichier .apk à partager :
+
+  Dans Android Studio :
+    → Menu Build → Build Bundle(s) / APK(s) → Build APK(s)
+    → Attends la compilation
+    → Clique sur "locate" dans la notification en bas
+    → Le fichier APK se trouve dans :
+      android\app\build\outputs\apk\debug\app-debug.apk
+
+  Transfère ce fichier sur ton téléphone (clé USB, Google Drive, email...)
+  et installe-le (autorise "Sources inconnues" dans les paramètres).
+
+
+═══════════════════════════════════════════════════════════════════════════════
+  4. METTRE À JOUR L'APP (nouvelles fonctionnalités du site)
+═══════════════════════════════════════════════════════════════════════════════
+
+  Bonne nouvelle : comme l'app charge le site web depuis le serveur,
+  la plupart des mises à jour ne nécessitent PAS de recompiler l'APK !
+
+  ── CAS 1 : Mise à jour du site web uniquement (Laravel / Vue) ───────────
+  (nouvelles pages, corrections de bugs, nouveau design, nouvelles fonctions)
+
+    → Pas besoin de recompiler l'APK.
+    → L'app mobile charge automatiquement la dernière version du site.
+    → Il suffit de redémarrer l'app sur le téléphone.
+
+  ── CAS 2 : Mise à jour des plugins natifs Capacitor ─────────────────────
+  (nouveau plugin, changement dans capacitor.config.ts, AndroidManifest.xml)
+
+    1. Ouvre un terminal dans c:\xampp\htdocs\resotravo\
+    2. Tape :  npm install   (si tu as ajouté des packages)
+    3. Tape :  npx cap sync android
+    4. Retourne dans Android Studio
+    5. Menu Build → Build APK(s)
+    6. Réinstalle le nouvel APK sur le téléphone
+
+  ── CAS 3 : Changement du numéro de version ──────────────────────────────
+  (pour distinguer les versions installées)
+
+    Ouvre :  android\app\build.gradle
+    Modifie :
+        versionCode 1      ← incrémente de 1 à chaque release (1, 2, 3...)
+        versionName "1.0"  ← version lisible (1.0, 1.1, 2.0...)
+    Ensuite recompile l'APK (méthode 2 ci-dessus).
+
+  ── SCRIPT RAPIDE (sync + Android Studio) ────────────────────────────────
+    → Double-clique sur :  cap-build.bat
+    → Ce script fait le sync et ouvre Android Studio automatiquement
+
+
+═══════════════════════════════════════════════════════════════════════════════
+  5. CHANGER L'URL DU SERVEUR
+═══════════════════════════════════════════════════════════════════════════════
+
+  ── Développement local (WiFi maison / bureau) ────────────────────────────
+
+    Trouve ton IP actuelle :
+    → Ouvre un terminal → tape : ipconfig
+    → Note l'adresse IPv4 sous "Wi-Fi" (ex: 192.168.1.199)
+
+    Ouvre :  capacitor.config.ts
+    Modifie la ligne url :
+        url: 'http://192.168.1.199/resotravo/public',
+
+    Puis sync :  npx cap sync android
+    Puis recompile l'APK.
+
+  ── Production (serveur en ligne) ─────────────────────────────────────────
+
+    Ouvre :  capacitor.config.ts
+    Remplace les lignes dev par :
+        url: 'https://www.resotravo.com',  ← ton domaine
+        cleartext: false,                   ← désactive HTTP
+
+    Supprime ou commente :
+        // androidScheme: 'http',
+
+    Puis sync + recompile l'APK.
+
+
+═══════════════════════════════════════════════════════════════════════════════
+  6. GÉNÉRER UN APK RELEASE (signé, pour publier sur Play Store ou partager)
+═══════════════════════════════════════════════════════════════════════════════
+
+  ÉTAPE 1 — Créer une clé de signature (une seule fois)
+
+    Dans Android Studio :
+    → Build → Generate Signed Bundle / APK
+    → Choisir APK → Next
+    → Clique "Create new..."
+    → Remplis les infos (Key store path, password, alias...)
+    → GARDE PRÉCIEUSEMENT ce fichier .jks et les mots de passe !
+      Sans eux tu ne pourras plus mettre à jour l'app sur le Play Store.
+
+  ÉTAPE 2 — Générer l'APK signé
+
+    → Dans le même assistant, sélectionne "release"
+    → Finish → Attends la compilation
+    → L'APK se trouve dans :
+      android\app\release\app-release.apk
+
+  NOTE : Un APK release est plus petit, plus rapide, et peut être publié
+         sur le Google Play Store ou partagé directement.
+
+
+═══════════════════════════════════════════════════════════════════════════════
+  7. DÉPANNAGE FRÉQUENT
+═══════════════════════════════════════════════════════════════════════════════
+
+  ❌ L'app s'ouvre mais affiche une page blanche
+  ──────────────────────────────────────────────
+  → XAMPP n'est pas démarré → Lance Apache dans XAMPP Control Panel
+  → L'IP a changé → Vérifie ton IP (ipconfig) et mets à jour capacitor.config.ts
+  → Le pare-feu bloque → Autorise Apache dans le pare-feu Windows
+  → Test : ouvre un navigateur sur ton téléphone et tape
+    http://192.168.1.199/resotravo/public
+    Si ça marche dans le navigateur, ça doit marcher dans l'app.
+
+  ❌ "ERR_CLEARTEXT_NOT_PERMITTED"
+  ─────────────────────────────────
+  → Tu utilises HTTP mais le manifest ne l'autorise pas.
+  → Vérifie que android:usesCleartextTraffic="true" est dans AndroidManifest.xml
+  → Vérifie que network_security_config.xml contient ton IP.
+
+  ❌ L'app ne s'installe pas (INSTALL_FAILED_UPDATE_INCOMPATIBLE)
+  ───────────────────────────────────────────────────────────────
+  → Désinstalle l'ancienne version depuis le téléphone
+  → Réinstalle le nouvel APK
+
+  ❌ "Gradle sync failed" dans Android Studio
+  ────────────────────────────────────────────
+  → File → Sync Project with Gradle Files
+  → Si ça persiste : Build → Clean Project → puis Rebuild Project
+
+  ❌ Le téléphone n'apparaît pas dans Android Studio
+  ───────────────────────────────────────────────────
+  → Débranche et rebranche le câble USB
+  → Accepte la popup "Autoriser le débogage USB" sur le téléphone
+  → Essaie un autre câble (certains ne transmettent que la charge)
+  → Dans Options développeur du téléphone : désactive/réactive "Débogage USB"
+
+  ❌ "npx cap sync" échoue
+  ─────────────────────────
+  → Assure-toi d'être dans le bon dossier : c:\xampp\htdocs\resotravo\
+  → Essaie : npm install  puis  npx cap sync android
+
+  ❌ La session expire tout le temps / pas connecté
+  ──────────────────────────────────────────────────
+  → C'est normal si tu changes d'IP entre les sessions.
+  → La session Laravel dure 120 minutes par défaut.
+  → Pour allonger : dans .env, ajoute SESSION_LIFETIME=1440 (24h)
+
+
+═══════════════════════════════════════════════════════════════════════════════
+  RÉSUMÉ DES COMMANDES UTILES (terminal dans c:\xampp\htdocs\resotravo\)
+═══════════════════════════════════════════════════════════════════════════════
+
+  npx cap sync android      → Synchroniser les changements vers Android
+  npx cap open android      → Ouvrir Android Studio
+  npx cap run android       → Lancer directement sur émulateur/device
+  npm run build             → Builder les assets Vite (CSS/JS)
+
+  OU plus simplement :
+  cap-build.bat             → Sync + ouvre Android Studio (double-clic)
+
+
+═══════════════════════════════════════════════════════════════════════════════
+  FICHIERS IMPORTANTS DU PROJET MOBILE
+═══════════════════════════════════════════════════════════════════════════════
+
+  capacitor.config.ts                        → URL du serveur, appId, plugins
+  android/app/src/main/AndroidManifest.xml   → Permissions Android
+  android/app/src/main/res/xml/
+    network_security_config.xml              → Autorisation HTTP cleartext
+  android/app/build.gradle                   → Version de l'app (versionCode)
+  resources/js/mobile.js                     → Status bar, splash, offline...
+  www/index.html                             → Splash screen pendant le chargement
+  cap-build.bat                              → Script de build rapide
+
+
+═══════════════════════════════════════════════════════════════════════════════

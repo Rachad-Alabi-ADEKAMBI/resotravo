@@ -28,14 +28,6 @@
   <meta name="apple-mobile-web-app-title" content="ResoTravo"/>
   <meta name="theme-color" content="#F97316"/>
 
-  {{-- Capacitor CSP --}}
-  <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self' capacitor://localhost http://localhost https://resotravo.xo.je;
-                 style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-                 font-src 'self' https://fonts.gstatic.com;
-                 script-src 'self' 'unsafe-inline' 'unsafe-eval';
-                 img-src 'self' data: blob: https:;
-                 connect-src 'self' https://resotravo.xo.je capacitor://localhost http://localhost ws://localhost;"/>
 
   <title>@yield('title', 'ResoTravo') — Prestataires certifiés au Bénin</title>
 
@@ -73,6 +65,7 @@
       -webkit-font-smoothing:antialiased;
       font-size:15px;
       line-height:1.65;
+      padding-top:var(--nav-h);
     }
     ::-webkit-scrollbar{width:4px}
     ::-webkit-scrollbar-track{background:var(--cr)}
@@ -127,7 +120,7 @@
        NAV — barre principale
     ──────────────────────────────────────────── */
     #main-nav{
-      position:sticky;top:0;z-index:200;
+      position:fixed;top:0;left:0;right:0;z-index:200;
       background:rgba(255,255,255,.95);
       backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
       border-bottom:1px solid var(--grl);

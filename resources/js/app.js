@@ -1,10 +1,6 @@
 import './bootstrap'
 
 import { createApp } from 'vue'
-import { initMobile } from './mobile'
-
-// Initialiser les plugins Capacitor si on est sur mobile
-initMobile().catch(() => {});
 
 import ExampleComponent               from './components/ExampleComponent.vue'
 import HomeComponent                  from './components/front/HomeComponent.vue'
@@ -74,3 +70,10 @@ app.component('contractor-accreditation-component', ContractorAccreditationCompo
 app.component('messages-component',                 MessagesComponent)
 
 app.mount('#resotravo-app')
+
+// Initialiser Capacitor uniquement dans l'app native (pas dans le navigateur)
+import('@capacitor/core').then(({ Capacitor }) => {
+    if (Capacitor.isNativePlatform()) {
+        import('./mobile').then(({ initMobile }) => initMobile().catch(() => {}));
+    }
+}).catch(() => {});

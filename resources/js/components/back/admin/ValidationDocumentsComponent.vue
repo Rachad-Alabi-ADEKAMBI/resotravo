@@ -499,28 +499,6 @@
                     <button class="av-btn av-btn-ghost" @click="closeDossier">
                         Fermer
                     </button>
-                    <button
-                        class="av-btn av-btn-red"
-                        @click="rejectDossier(activeDossier)"
-                        :disabled="loading.action"
-                    >
-                        ✕ Refuser le dossier
-                    </button>
-                    <button
-                        class="av-btn av-btn-orange"
-                        @click="requestComplement(activeDossier)"
-                        :disabled="loading.action"
-                    >
-                        ↻ Demander complément
-                    </button>
-                    <button
-                        class="av-btn av-btn-green"
-                        @click="approveDossier(activeDossier)"
-                        :disabled="loading.action"
-                    >
-                        <div class="av-spinner" v-if="loading.action"></div>
-                        <span v-else>✓ Approuver & Certifier</span>
-                    </button>
                 </div>
             </div>
         </div>
@@ -646,7 +624,7 @@
                 <div class="av-modal-body">
                     <label class="av-notes-label"
                         >Motif de refus
-                        <span style="color: #ef4444">*</span></label
+                        <span style="color: #6366f1">*</span></label
                     >
                     <textarea
                         class="av-notes-textarea"
@@ -980,7 +958,7 @@ export default {
                     contractor: "#F97316",
                     client: "#3b82f6",
                     talent: "#8b5cf6",
-                    admin: "#ef4444",
+                    admin: "#6366f1",
                 }[role] ?? "#7C6A5A"
             );
         },
@@ -1704,7 +1682,7 @@ export default {
     position: absolute;
     top: -5px;
     right: -5px;
-    background: #ef4444;
+    background: #6366f1;
     color: #fff;
     font-size: 9px;
     font-weight: 700;
@@ -1747,11 +1725,11 @@ export default {
     background: #16a34a;
 }
 .av-btn-red {
-    background: #ef4444;
+    background: #6366f1;
     color: #fff;
 }
 .av-btn-red:hover:not(:disabled) {
-    background: #dc2626;
+    background: #4f46e5;
 }
 .av-btn-blue {
     background: #3b82f6;
@@ -1840,13 +1818,19 @@ export default {
 }
 .av-stat {
     background: var(--wh);
-    border-radius: 14px;
-    padding: 16px;
+    border-radius: 12px;
+    padding: 10px 12px;
     border: 2px solid var(--grl);
 }
+@media (min-width: 600px) {
+    .av-stat {
+        border-radius: 14px;
+        padding: 14px 16px;
+    }
+}
 .av-stat.red {
-    background: #ef4444;
-    border-color: #ef4444;
+    background: #6366f1;
+    border-color: #6366f1;
 }
 .av-stat.orange {
     background: var(--or);
@@ -1857,13 +1841,25 @@ export default {
     border-color: #22c55e;
 }
 .av-stat-icon {
-    font-size: 20px;
-    margin-bottom: 6px;
+    font-size: 16px;
+    margin-bottom: 4px;
+}
+@media (min-width: 600px) {
+    .av-stat-icon {
+        font-size: 20px;
+        margin-bottom: 6px;
+    }
 }
 .av-stat-val {
-    font-size: 22px;
+    font-size: 18px;
     font-weight: 900;
     color: var(--dk);
+    line-height: 1;
+}
+@media (min-width: 600px) {
+    .av-stat-val {
+        font-size: 22px;
+    }
 }
 .av-stat.red .av-stat-val,
 .av-stat.orange .av-stat-val,
@@ -1871,14 +1867,20 @@ export default {
     color: #fff;
 }
 .av-stat-lbl {
-    font-size: 11.5px;
+    font-size: 10px;
     color: var(--gr);
-    margin-top: 3px;
+    margin-top: 2px;
+    line-height: 1.3;
+}
+@media (min-width: 600px) {
+    .av-stat-lbl {
+        font-size: 11.5px;
+    }
 }
 .av-stat.red .av-stat-lbl,
 .av-stat.orange .av-stat-lbl,
 .av-stat.green .av-stat-lbl {
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.85);
 }
 
 /* TOOLBAR */
@@ -1971,13 +1973,18 @@ export default {
     overflow: hidden;
 }
 .av-table-header {
-    padding: 14px 18px;
+    padding: 12px 14px;
     border-bottom: 2px solid var(--grl);
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 10px;
+}
+@media (min-width: 600px) {
+    .av-table-header {
+        padding: 14px 18px;
+    }
 }
 .av-table-header h3 {
     font-size: 15px;
@@ -2114,7 +2121,7 @@ export default {
     background: #fcd34d;
 }
 .av-doc-dot.rejected {
-    background: #ef4444;
+    background: #6366f1;
 }
 .av-doc-dot.missing {
     background: #e5e5e5;
@@ -2158,9 +2165,9 @@ export default {
     border: 1px solid #bbf7d0;
 }
 .av-badge.rejected {
-    background: #fef2f2;
-    color: #dc2626;
-    border: 1px solid #fecaca;
+    background: #eef2ff;
+    color: #4f46e5;
+    border: 1px solid #c7d2fe;
 }
 .av-badge.incomplete {
     background: #f5f5f5;
@@ -2180,11 +2187,15 @@ export default {
     }
 }
 .av-dossier-card {
-    padding: 16px 18px;
+    padding: 14px 16px;
     border-bottom: 1px solid var(--grl);
+    transition: background 0.15s;
 }
 .av-dossier-card:last-child {
     border-bottom: none;
+}
+.av-dossier-card:hover {
+    background: #fdf9f6;
 }
 .av-dossier-card-top {
     display: flex;
@@ -2196,9 +2207,15 @@ export default {
 .av-dossier-card-meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    font-size: 12px;
+    gap: 6px 12px;
+    font-size: 11.5px;
     color: var(--gr);
+    margin-bottom: 10px;
+}
+.av-dossier-card-meta span {
+    display: flex;
+    align-items: center;
+    gap: 3px;
 }
 
 /* EMPTY */
@@ -2229,10 +2246,17 @@ export default {
     backdrop-filter: blur(3px);
     z-index: 200;
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: center;
-    padding: 16px;
+    padding: 0;
     animation: av-fade 0.2s ease;
+    overflow-y: auto;
+}
+@media (min-width: 600px) {
+    .av-modal-overlay {
+        align-items: center;
+        padding: 16px;
+    }
 }
 @keyframes av-fade {
     from {
@@ -2244,14 +2268,21 @@ export default {
 }
 .av-modal {
     background: var(--wh);
-    border-radius: 18px;
+    border-radius: 20px 20px 0 0;
     width: 100%;
-    max-width: 760px;
-    max-height: 92vh;
+    max-width: 100%;
+    max-height: 94dvh;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     animation: av-slide 0.25s ease;
+}
+@media (min-width: 600px) {
+    .av-modal {
+        border-radius: 18px;
+        max-width: 760px;
+        max-height: 92vh;
+    }
 }
 .av-modal-sm {
     max-width: 460px;
@@ -2271,13 +2302,19 @@ export default {
     align-items: flex-start;
     justify-content: space-between;
     gap: 14px;
-    padding: 20px 24px 16px;
+    padding: 16px 18px 14px;
     border-bottom: 2px solid var(--grl);
     position: sticky;
     top: 0;
     background: var(--wh);
-    border-radius: 18px 18px 0 0;
+    border-radius: 20px 20px 0 0;
     z-index: 1;
+}
+@media (min-width: 600px) {
+    .av-modal-header {
+        padding: 20px 24px 16px;
+        border-radius: 18px 18px 0 0;
+    }
 }
 .av-modal-header h3 {
     font-size: 18px;
@@ -2298,22 +2335,34 @@ export default {
     flex-shrink: 0;
 }
 .av-modal-body {
-    padding: 20px 24px;
+    padding: 14px 16px;
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 14px;
+}
+@media (min-width: 600px) {
+    .av-modal-body {
+        padding: 20px 24px;
+        gap: 18px;
+    }
 }
 .av-modal-footer {
-    padding: 14px 24px;
+    padding: 12px 16px;
     border-top: 2px solid var(--grl);
     display: flex;
     align-items: center;
     justify-content: flex-end;
     gap: 8px;
     background: #faf7f4;
-    border-radius: 0 0 18px 18px;
+    border-radius: 0;
     flex-wrap: wrap;
+}
+@media (min-width: 600px) {
+    .av-modal-footer {
+        padding: 14px 24px;
+        border-radius: 0 0 18px 18px;
+    }
 }
 
 /* DETAIL GRID */
@@ -2405,8 +2454,8 @@ export default {
     background: #f0fdf4;
 }
 .av-doc-item.rejected {
-    border-color: #fecaca;
-    background: #fef2f2;
+    border-color: #c7d2fe;
+    background: #eef2ff;
 }
 .av-doc-item.pending {
     border-color: #fde68a;
@@ -2439,7 +2488,7 @@ export default {
     color: #16a34a;
 }
 .av-doc-status.rejected {
-    color: #dc2626;
+    color: #4f46e5;
 }
 .av-doc-status.pending {
     color: #d97706;
@@ -2487,12 +2536,12 @@ export default {
     background: #dcfce7;
 }
 .av-doc-btn.reject {
-    background: #fef2f2;
-    border-color: #fecaca;
-    color: #dc2626;
+    background: #eef2ff;
+    border-color: #c7d2fe;
+    color: #4f46e5;
 }
 .av-doc-btn.reject:hover {
-    background: #fee2e2;
+    background: #e0e7ff;
 }
 .av-doc-missing-lbl {
     font-size: 12px;
@@ -2526,7 +2575,7 @@ export default {
 }
 .av-err {
     font-size: 12px;
-    color: #dc2626;
+    color: #4f46e5;
     margin-top: 6px;
 }
 

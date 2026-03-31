@@ -275,6 +275,11 @@
                         <div class="msg-chat-loading" v-if="chatLoading">
                             <div class="msg-spinner"></div>
                             <span>Chargement…</span>
+                            <div v-if="debugInfo" style="margin-top:10px;font-size:11px;color:#888;word-break:break-all;max-width:400px;text-align:left;background:#f5f5f5;padding:8px;border-radius:6px;">
+                                <b>URL:</b> {{ debugInfo.url }}<br>
+                                <b>Status:</b> {{ debugInfo.status ?? '(en attente…)' }}<br>
+                                <span v-if="debugInfo.preview"><b>Réponse:</b> {{ debugInfo.preview }}</span>
+                            </div>
                         </div>
 
                         <div class="msg-chat-error" v-else-if="chatError">
@@ -549,6 +554,9 @@ export default {
 
             // Photo de profil
             photoUrl: null,
+
+            // Debug
+            debugInfo: null,
         };
     },
 
@@ -654,6 +662,7 @@ export default {
                     "{id}",
                     conv.id,
                 );
+                this.debugInfo = { url, status: null, preview: null };
                 console.log("[MessagesComponent] fetchMessages URL:", url);
                 const res = await fetch(url, {
                     headers: { Accept: "application/json" },
@@ -666,6 +675,7 @@ export default {
 
                 // Lire le texte brut d'abord pour diagnostiquer sans bloquer
                 const rawText = await res.text();
+                this.debugInfo = { url, status: res.status, preview: rawText.slice(0, 150) };
                 console.log(
                     "[MessagesComponent] raw response (100 chars):",
                     rawText.slice(0, 100),
@@ -695,6 +705,7 @@ export default {
                     .slice()
                     .sort((a, b) => a.id - b.id);
                 this.messages = msgs;
+                this.debugInfo = null;
                 this.lastMsgId = msgs.at(-1)?.id ?? 0;
 
                 // Marquer comme lu
