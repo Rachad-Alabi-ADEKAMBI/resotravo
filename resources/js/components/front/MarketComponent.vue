@@ -22,7 +22,7 @@
                 <p class="mk-hero-desc au2">
                     Les entreprises publient leurs besoins. Les prestataires et
                     Talents y répondent.<br />
-                    Chaque offre est validée par l'équipe Resotravo avant
+                    Chaque offre est validée par l'équipe Mesotravo avant
                     publication.
                 </p>
                 <div class="mk-hero-btns au3">
@@ -232,7 +232,7 @@
                         <h2>📝 Publier un appel d'offres</h2>
                         <p>
                             Votre publication sera validée par l'équipe
-                            Resotravo avant mise en ligne.
+                            Mesotravo avant mise en ligne.
                         </p>
                     </div>
 
@@ -364,7 +364,7 @@
 
                     <div class="mk-form-notice">
                         ⚠️ Votre appel d'offres sera soumis à validation par
-                        l'administrateur Resotravo avant publication. Délai
+                        l'administrateur Mesotravo avant publication. Délai
                         habituel : 24h.
                     </div>
 
@@ -855,7 +855,7 @@ export default {
                 },
                 {
                     title: "Soumission admin",
-                    desc: "L'équipe Resotravo examine votre offre sous 24h.",
+                    desc: "L'équipe Mesotravo examine votre offre sous 24h.",
                 },
                 {
                     title: "Mise en ligne",
@@ -888,7 +888,7 @@ export default {
                 list = list.filter(
                     (a) =>
                         a.title.toLowerCase().includes(q) ||
-                        a.description.toLowerCase().includes(q),
+                        a.description.toLowerCase().includes(q)
                 );
             }
             if (this.filterDomain)
@@ -897,12 +897,12 @@ export default {
                 list = list.filter((a) => a.location === this.filterLocation);
             if (this.filterTag)
                 list = list.filter((a) =>
-                    (a.tags ?? []).includes(this.filterTag),
+                    (a.tags ?? []).includes(this.filterTag)
                 );
             if (this.filterBudget === "low")
                 list = list.filter(
                     (a) =>
-                        parseInt((a.budget ?? "0").replace(/\D/g, "")) < 100000,
+                        parseInt((a.budget ?? "0").replace(/\D/g, "")) < 100000
                 );
             if (this.filterBudget === "mid")
                 list = list.filter((a) => {
@@ -912,11 +912,11 @@ export default {
             if (this.filterBudget === "high")
                 list = list.filter(
                     (a) =>
-                        parseInt((a.budget ?? "0").replace(/\D/g, "")) > 500000,
+                        parseInt((a.budget ?? "0").replace(/\D/g, "")) > 500000
                 );
             if (this.sortBy === "candidatures")
                 list = [...list].sort(
-                    (a, b) => b.candidatures - a.candidatures,
+                    (a, b) => b.candidatures - a.candidatures
                 );
             return list;
         },
@@ -934,7 +934,7 @@ export default {
         alreadyApplied() {
             if (!this.selectedAO) return false;
             return this.myCandidatures.some(
-                (c) => c.tender_id === this.selectedAO.id,
+                (c) => c.tender_id === this.selectedAO.id
             );
         },
         isOwnTender() {
@@ -1019,13 +1019,13 @@ export default {
                 const data = await res.json();
                 this.appelsOffres = Array.isArray(data)
                     ? data
-                    : (data.data ?? []);
+                    : data.data ?? [];
                 // Forcer révélation des éléments reveal après rendu Vue
                 this.$nextTick(() => {
                     setTimeout(() => {
                         document
                             .querySelectorAll(
-                                ".reveal:not(.revealed),.reveal-left:not(.revealed),.reveal-right:not(.revealed)",
+                                ".reveal:not(.revealed),.reveal-left:not(.revealed),.reveal-right:not(.revealed)"
                             )
                             .forEach((el) => el.classList.add("revealed"));
                     }, 80);
@@ -1062,7 +1062,7 @@ export default {
                 });
                 if (!res.ok) throw new Error("HTTP " + res.status);
                 const data = await res.json();
-                this.myTenders = Array.isArray(data) ? data : (data.data ?? []);
+                this.myTenders = Array.isArray(data) ? data : data.data ?? [];
             } catch (e) {
                 console.error("[fetchMyTenders]", e);
                 this.myTendersError =
@@ -1103,11 +1103,11 @@ export default {
             this.applyError = "";
             try {
                 const csrf = document.querySelector(
-                    'meta[name="csrf-token"]',
+                    'meta[name="csrf-token"]'
                 )?.content;
                 const url = this.routes.tenders_apply.replace(
                     "{id}",
-                    this.selectedAO.id,
+                    this.selectedAO.id
                 );
                 const res = await fetch(url, {
                     method: "POST",
@@ -1131,7 +1131,7 @@ export default {
 
                 // Incrémenter le compteur local
                 const idx = this.appelsOffres.findIndex(
-                    (a) => a.id === this.selectedAO.id,
+                    (a) => a.id === this.selectedAO.id
                 );
                 if (idx !== -1) this.appelsOffres[idx].candidatures++;
 
@@ -1170,7 +1170,7 @@ export default {
             this.formError = "";
             try {
                 const csrf = document.querySelector(
-                    'meta[name="csrf-token"]',
+                    'meta[name="csrf-token"]'
                 )?.content;
                 const res = await fetch(this.routes.tenders_store, {
                     method: "POST",
@@ -1195,7 +1195,7 @@ export default {
                 if (!res.ok) {
                     this.formError = data.errors
                         ? Object.values(data.errors).flat()[0]
-                        : (data.message ?? "Erreur.");
+                        : data.message ?? "Erreur.";
                     return;
                 }
                 this.formSubmitted = true;
@@ -1255,11 +1255,11 @@ export default {
                                 io.unobserve(e.target);
                             }
                         }),
-                    { threshold: 0.08, rootMargin: "0px 0px -30px 0px" },
+                    { threshold: 0.08, rootMargin: "0px 0px -30px 0px" }
                 );
                 document
                     .querySelectorAll(
-                        ".reveal:not(.revealed),.reveal-left:not(.revealed),.reveal-right:not(.revealed)",
+                        ".reveal:not(.revealed),.reveal-left:not(.revealed),.reveal-right:not(.revealed)"
                     )
                     .forEach((el) => io.observe(el));
             }, 150);
@@ -2150,9 +2150,7 @@ export default {
 .reveal-right {
     opacity: 0;
     transform: translateY(22px);
-    transition:
-        opacity 0.55s ease,
-        transform 0.55s ease;
+    transition: opacity 0.55s ease, transform 0.55s ease;
 }
 .reveal-left {
     transform: translateX(-22px);

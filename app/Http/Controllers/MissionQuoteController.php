@@ -55,7 +55,7 @@ class MissionQuoteController extends Controller
             'action'               => 'required|in:draft,submit',
             'diagnosis'            => 'nullable|string|max:2000',
             'items'                => 'required|array|min:1',
-            'items.*.type'         => 'required|in:part,labor,travel,other',
+            'items.*.type'         => 'required|in:part,labor,diagnostic,travel,other',
             'items.*.description'  => 'required|string|max:255',
             'items.*.quantity'     => 'required|numeric|min:0.01|max:9999',
             'items.*.unit_price'   => 'required|numeric|min:0|max:99999999',

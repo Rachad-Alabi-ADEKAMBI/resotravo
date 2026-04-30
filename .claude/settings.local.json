@@ -3,10 +3,13 @@
     "allow": [
       "Bash(php artisan:*)",
       "Bash(npm run:*)",
-      "Bash(grep -l \"document\\\\|accreditation\" /c/xampp/htdocs/resotravo/resources/js/components/back/client/*.vue)",
+      "Bash(grep -l \"document\\\\|accreditation\" /c/xampp/htdocs/Mesotravo/resources/js/components/back/client/*.vue)",
       "Bash(npm install:*)",
       "Bash(npx cap:*)",
-      "Bash(ipconfig)"
+      "Bash(ipconfig)",
+      "Bash(find:*)",
+      "Bash(composer require *)",
+      "Bash(php -r ' *)"
     ]
   }
 }

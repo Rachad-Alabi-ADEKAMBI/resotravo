@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Storage;
 
 class Mission extends Model
 {
@@ -122,7 +124,6 @@ class Mission extends Model
 
     protected $casts = [
         'availabilities' => 'array',
-        'images'         => 'array',
         'dispute_open'   => 'boolean',
         'assigned_at'    => 'datetime',
         'accepted_at'    => 'datetime',
@@ -136,6 +137,21 @@ class Mission extends Model
         'longitude'      => 'decimal:7',
         'min_distance_m' => 'integer',
     ];
+
+    // ══════════════════════════════════════════════════════════════
+    // ACCESSORS
+    // ══════════════════════════════════════════════════════════════
+
+    protected function images(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => collect(json_decode($value, true) ?? [])
+                ->map(fn ($p) => Storage::disk('public')->url($p))
+                ->values()
+                ->toArray(),
+            set: fn ($value) => is_array($value) ? json_encode($value) : $value,
+        );
+    }
 
     // ══════════════════════════════════════════════════════════════
     // RELATIONS
@@ -172,6 +188,11 @@ class Mission extends Model
     public function proposals(): HasMany
     {
         return $this->hasMany(MissionProposal::class);
+    }
+
+    public function reservation(): HasOne
+    {
+        return $this->hasOne(Reservation::class);
     }
 
     /**
@@ -333,14 +354,34 @@ class Mission extends Model
     }
 
     /**
-     * Calculate and store the 10% Resotravo commission from total_amount.
+     * Calculate and store the Mesotravo commission from quote line items.
+     * Uses configurable rates per item type (diagnostic vs main d'oeuvre/other).
      */
     public function calculateCommission(): void
     {
-        if ($this->total_amount) {
-            $this->commission = round($this->total_amount * 0.10, 2);
-            $this->save();
+        if (! $this->total_amount) {
+            return;
         }
+
+        $rateDiag   = ((float) Setting::get('commission_diagnostic', 10)) / 100;
+        $rateLabor  = ((float) Setting::get('commission_main_oeuvre', 10)) / 100;
+
+        $quote = $this->quote;
+
+        if ($quote) {
+            $diagTotal  = $quote->items()->where('type', 'diagnostic')->sum(\DB::raw('quantity * unit_price'));
+            $laborTotal = $quote->items()->where('type', 'labor')->sum(\DB::raw('quantity * unit_price'));
+            $otherTotal = $this->total_amount - $diagTotal - $laborTotal;
+
+            $this->commission = round(
+                ($diagTotal * $rateDiag) + ($laborTotal * $rateLabor) + ($otherTotal * $rateLabor),
+                2
+            );
+        } else {
+            $this->commission = round($this->total_amount * $rateLabor, 2);
+        }
+
+        $this->save();
     }
 
     /**

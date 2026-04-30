@@ -115,6 +115,7 @@ class UserController extends Controller
             'specialties'       => $request->specialties ?? [],
             'intervention_zone' => trim($request->intervention_zone),
             'experience_years'  => $request->experience_years,
+            'accreditation'     => 'home',
         ]);
 
         // 3. Connecter directement

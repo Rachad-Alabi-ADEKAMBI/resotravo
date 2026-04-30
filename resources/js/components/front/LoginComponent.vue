@@ -3,13 +3,13 @@
         <div class="lc-card">
             <!-- Logo -->
             <a class="lc-logo" :href="routes.home">
-                <div class="lc-logo-mark">R</div>
-                <span class="lc-logo-name">RESO<em>TRAVO</em></span>
+                <div class="lc-logo-mark">M</div>
+                <span class="lc-logo-name">MESO<em>TRAVO</em></span>
             </a>
 
             <div class="lc-icon">🔐</div>
             <h1 class="lc-title">Bon retour !</h1>
-            <p class="lc-subtitle">Connectez-vous à votre espace ResoTravo</p>
+            <p class="lc-subtitle">Connectez-vous à votre espace Mesotravo</p>
 
             <!-- ── FORMULAIRE ── -->
             <div v-if="step === 'login'">
@@ -94,9 +94,23 @@
                         </div>
                     </div>
 
-                    <a class="lc-forgot" :href="routes.forgot"
-                        >Mot de passe oublié ?</a
-                    >
+                    <!-- Se souvenir de moi + Mot de passe oublié -->
+                    <div class="lc-row-remember">
+                        <label class="lc-remember-label">
+                            <input
+                                type="checkbox"
+                                class="lc-remember-check"
+                                v-model="form.remember"
+                            />
+                            <span class="lc-remember-box">
+                                <svg v-if="form.remember" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"/>
+                                </svg>
+                            </span>
+                            Se souvenir de moi
+                        </label>
+                        <a class="lc-forgot" :href="routes.forgot">Mot de passe oublié ?</a>
+                    </div>
 
                     <button
                         class="lc-btn lc-btn-primary"
@@ -210,6 +224,7 @@ export default {
             form: {
                 email: "",
                 password: "",
+                remember: false,
             },
             errors: {},
         };
@@ -221,7 +236,7 @@ export default {
             this.showPwd = !this.showPwd;
             console.log(
                 "[LoginComponent] togglePwd →",
-                this.showPwd ? "visible" : "masqué",
+                this.showPwd ? "visible" : "masqué"
             );
         },
 
@@ -252,7 +267,7 @@ export default {
             console.log(
                 "[LoginComponent] validate →",
                 valid ? "OK" : "ERREURS",
-                this.errors,
+                this.errors
             );
             return valid;
         },
@@ -264,7 +279,7 @@ export default {
 
             if (!this.validate()) {
                 console.warn(
-                    "[LoginComponent] handleLogin — validation échouée, abandon",
+                    "[LoginComponent] handleLogin — validation échouée, abandon"
                 );
                 return;
             }
@@ -273,11 +288,12 @@ export default {
             const payload = {
                 email: this.form.email,
                 password: this.form.password,
+                remember: this.form.remember,
             };
             const route = "/login";
 
             console.log(
-                "[LoginComponent] ── REQUÊTE ─────────────────────────",
+                "[LoginComponent] ── REQUÊTE ─────────────────────────"
             );
             console.log("[LoginComponent] Route   :", route);
             console.log("[LoginComponent] Méthode :", "POST");
@@ -286,7 +302,7 @@ export default {
                 password: "***",
             });
             console.log(
-                "[LoginComponent] ────────────────────────────────────",
+                "[LoginComponent] ────────────────────────────────────"
             );
 
             this.loading = true;
@@ -295,16 +311,16 @@ export default {
                 const response = await window.axios.post(route, payload);
 
                 console.log(
-                    "[LoginComponent] ── RÉPONSE SERVEUR ─────────────",
+                    "[LoginComponent] ── RÉPONSE SERVEUR ─────────────"
                 );
                 console.log("[LoginComponent] Status  :", response.status);
                 console.log("[LoginComponent] Data    :", response.data);
                 console.log(
                     "[LoginComponent] Redirect:",
-                    response.data?.redirect ?? this.routes.dashboard,
+                    response.data?.redirect ?? this.routes.dashboard
                 );
                 console.log(
-                    "[LoginComponent] ────────────────────────────────",
+                    "[LoginComponent] ────────────────────────────────"
                 );
 
                 /* Laravel renvoie { redirect: '/dashboard' } après connexion réussie.
@@ -313,7 +329,7 @@ export default {
                     response.data?.redirect ?? this.routes.dashboard;
                 console.log(
                     "[LoginComponent] handleLogin — connexion réussie, redirection vers:",
-                    redirectUrl,
+                    redirectUrl
                 );
 
                 this.step = "success";
@@ -324,16 +340,16 @@ export default {
                 }, 800);
             } catch (err) {
                 console.error(
-                    "[LoginComponent] ── ERREUR SERVEUR ─────────────",
+                    "[LoginComponent] ── ERREUR SERVEUR ─────────────"
                 );
                 console.error(
                     "[LoginComponent] Status :",
-                    err?.response?.status,
+                    err?.response?.status
                 );
                 console.error("[LoginComponent] Data   :", err?.response?.data);
                 console.error("[LoginComponent] Message:", err?.message);
                 console.error(
-                    "[LoginComponent] ─────────────────────────────────",
+                    "[LoginComponent] ─────────────────────────────────"
                 );
 
                 this.loginError =
@@ -351,7 +367,7 @@ export default {
             console.log("[LoginComponent] handleGoogle — déclenchement OAuth");
             // TODO: window.location.href = '/auth/google';
             alert(
-                "Connexion Google — intégration OAuth disponible en production.",
+                "Connexion Google — intégration OAuth disponible en production."
             );
         },
 
@@ -484,9 +500,7 @@ export default {
     font-size: 14.5px;
     font-family: "Poppins", sans-serif;
     outline: none;
-    transition:
-        border-color 0.2s,
-        box-shadow 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
     color: var(--dk);
     background: var(--cr);
 }
@@ -530,17 +544,64 @@ export default {
     height: 18px;
 }
 
-/* MOT DE PASSE OUBLIÉ */
-.lc-forgot {
+/* SE SOUVENIR DE MOI + MOT DE PASSE OUBLIÉ */
+.lc-row-remember {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: -6px;
+    margin-bottom: 20px;
+    gap: 8px;
+}
+.lc-remember-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--dk);
+    user-select: none;
+}
+.lc-remember-check {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.lc-remember-box {
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    border: 2px solid var(--grl);
+    background: var(--cr);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.18s, background 0.18s;
+}
+.lc-remember-check:checked ~ .lc-remember-box,
+.lc-remember-label:has(input:checked) .lc-remember-box {
+    border-color: var(--or);
+    background: var(--or);
+}
+.lc-remember-box svg {
+    width: 11px;
+    height: 11px;
+    stroke: #fff;
+    display: none;
+}
+.lc-remember-label:has(input:checked) .lc-remember-box svg {
     display: block;
-    text-align: right;
+}
+.lc-forgot {
     font-size: 13px;
     color: var(--or);
     text-decoration: none;
-    margin-top: -10px;
-    margin-bottom: 20px;
     font-weight: 600;
     transition: opacity 0.18s;
+    white-space: nowrap;
 }
 .lc-forgot:hover {
     opacity: 0.75;

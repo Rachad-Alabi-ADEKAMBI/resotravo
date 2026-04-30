@@ -1,7 +1,7 @@
 {{-- resources/views/pages/back/client/messages.blade.php --}}
 @extends('layouts.back')
 
-@section('title', 'Messages — Resotravo')
+@section('title', 'Messages — Mesotravo')
 
 @php $active = 'messages'; @endphp
 

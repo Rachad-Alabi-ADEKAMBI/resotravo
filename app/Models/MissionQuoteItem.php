@@ -8,10 +8,11 @@ use App\Models\MissionQuote;
 
 class MissionQuoteItem extends Model
 {
-    const TYPE_PART   = 'part';
-    const TYPE_LABOR  = 'labor';
-    const TYPE_TRAVEL = 'travel';
-    const TYPE_OTHER  = 'other';
+    const TYPE_PART       = 'part';
+    const TYPE_LABOR      = 'labor';
+    const TYPE_TRAVEL     = 'travel';
+    const TYPE_OTHER      = 'other';
+    const TYPE_DIAGNOSTIC = 'diagnostic';
 
     protected $table = 'mission_quote_items';
 

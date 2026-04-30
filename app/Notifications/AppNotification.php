@@ -6,7 +6,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
 /**
- * Classe unique pour toutes les notifications Resotravo.
+ * Classe unique pour toutes les notifications Mesotravo.
  *
  * On ne peut pas nommer cette classe "Notification" car ce nom
  * est réservé par Laravel. "AppNotification" est la convention.

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
     <div class="pm-wrap">
         <!-- ══════════════════════════════════
              TOPBAR
@@ -15,7 +15,7 @@
                 <div>
                     <div class="pm-page-title">Paramètres</div>
                     <div class="pm-page-sub">
-                        {{ greeting }}, <strong>{{ user.name }}</strong>
+                        <strong>{{ user.name }}</strong>
                     </div>
                 </div>
             </div>
@@ -37,7 +37,7 @@
                             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                         </svg>
                         <span class="pm-notif-badge" v-if="unreadCount > 0">{{
-                            unreadCount > 9 ? "9+" : unreadCount
+                            unreadCount
                         }}</span>
                     </button>
                     <div class="pm-notif-dropdown" v-if="notifOpen">
@@ -433,11 +433,11 @@
                     <div class="pm-actions">
                         <button
                             type="submit"
-                            class="pm-btn-submit"
+                            class="pm-btn-submit success-action"
                             :disabled="loading || confirmMismatch"
                         >
                             <span v-if="loading" class="pm-spinner"></span>
-                            <span v-else>
+                            <span v-else class="pm-btn-submit-content">
                                 <svg
                                     width="15"
                                     height="15"
@@ -447,10 +447,6 @@
                                     stroke-width="2.5"
                                     stroke-linecap="round"
                                     stroke-linejoin="round"
-                                    style="
-                                        margin-right: 6px;
-                                        vertical-align: -2px;
-                                    "
                                 >
                                     <path
                                         d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"
@@ -567,12 +563,6 @@ export default {
     },
 
     computed: {
-        greeting() {
-            const h = new Date().getHours();
-            if (h < 12) return "Bonjour";
-            if (h < 18) return "Bon après-midi";
-            return "Bonsoir";
-        },
 
         userInitials() {
             return (this.user.name || "")
@@ -754,9 +744,9 @@ export default {
                         ago: this.timeAgo(n.created_at),
                     }),
                 );
-                this.unreadCount = this.notifications.filter(
-                    (n) => !n.read,
-                ).length;
+                this.unreadCount =
+                    data.unread_count ??
+                    this.notifications.filter((n) => !n.read).length;
             } catch (_) {
                 // silencieux
             } finally {
@@ -801,7 +791,7 @@ export default {
                 this.unreadCount = Math.max(0, this.unreadCount - 1);
             }
             this.notifOpen = false;
-            if (n.url) window.location.href = n.url;
+            
         },
 
         handleOutsideClick(e) {
@@ -1271,13 +1261,13 @@ export default {
     display: flex;
     gap: 12px;
     align-items: center;
-    margin-top: 4px;
+    margin-top: 16px;
 }
 
 .pm-btn-submit {
     flex: 1;
     height: 46px;
-    background: linear-gradient(135deg, #f97316, #ea580c);
+    background: linear-gradient(135deg, #22c55e, #16a34a);
     color: #fff;
     border: none;
     border-radius: 11px;
@@ -1292,6 +1282,13 @@ export default {
     transition:
         opacity 0.18s,
         transform 0.15s;
+}
+.pm-btn-submit-content {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    line-height: 1;
 }
 .pm-btn-submit:hover:not(:disabled) {
     opacity: 0.9;

@@ -16,13 +16,16 @@ class Contractor extends Model
         'total_missions', 'completed_missions',
         'average_rating', 'reviews_count',
         'latitude', 'longitude', 'radius_km',
+        'diagnostic_fee',
+        'ifu',
     ];
 
     protected $casts = [
         'specialties'    => 'array',
         'working_days'   => 'array',
         'available'      => 'boolean',
-        'average_rating' => 'decimal:2',
+        'average_rating'  => 'decimal:2',
+        'diagnostic_fee'  => 'decimal:2',
     ];
 
     public static array $accreditations = [

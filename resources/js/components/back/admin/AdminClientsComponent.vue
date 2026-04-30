@@ -1,4 +1,4 @@
-<template>
+﻿<template>
     <div class="amis-wrap">
         <!-- ══════════════ TOPBAR ══════════════ -->
         <div class="amis-topbar">
@@ -13,7 +13,7 @@
                 <div>
                     <div class="amis-page-title">Gestion des Clients</div>
                     <div class="amis-page-sub">
-                        {{ greeting }}, <strong>{{ user.name }}</strong>
+                        <strong>{{ user.name }}</strong>
                     </div>
                 </div>
             </div>
@@ -38,7 +38,7 @@
                             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                         </svg>
                         <span class="amis-notif-badge" v-if="unreadCount > 0">{{
-                            unreadCount > 9 ? "9+" : unreadCount
+                            unreadCount
                         }}</span>
                     </button>
                     <div class="amis-notif-dropdown" v-if="notifOpen">
@@ -456,37 +456,31 @@
 
                         <!-- COL DROITE -->
                         <div class="amis-detail-col">
-                            <!-- Dernières missions -->
+                            <!-- Historique complet des missions -->
                             <div class="amis-detail-section">
-                                <div class="amis-detail-section-title">
-                                    📋 Dernières missions
-                                </div>
-                                <div
-                                    class="ac-mission-item"
-                                    v-for="m in activeClient.recent_missions ??
-                                    []"
-                                    :key="m.id"
-                                    style="cursor: default"
-                                >
-                                    <div class="ac-mission-check">
-                                        {{ serviceIcon(m.service) }}
-                                    </div>
-                                    <div>
-                                        <div class="ac-mission-title">
-                                            {{ m.service }}
-                                        </div>
-                                        <div class="ac-mission-meta">
-                                            {{ m.status_label }} ·
-                                            {{ m.created_at }}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div
-                                    class="at-empty-sub"
-                                    v-if="!activeClient.recent_missions?.length"
-                                >
-                                    Aucune mission enregistrée.
-                                </div>
+                                <div class="amis-detail-section-title">📋 Historique des missions</div>
+                                <div v-if="clientMissionsLoading" class="amis-missions-loading">Chargement…</div>
+                                <div v-else-if="clientMissions.length === 0" class="amis-missions-empty">Aucune mission pour ce client.</div>
+                                <table v-else class="amis-missions-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Service</th>
+                                            <th>Prestataire</th>
+                                            <th>Date</th>
+                                            <th>Montant</th>
+                                            <th>Statut</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="m in clientMissions" :key="m.id">
+                                            <td>{{ m.service }}</td>
+                                            <td>{{ m.contractor_name }}</td>
+                                            <td>{{ m.created_at }}</td>
+                                            <td class="amis-missions-amount">{{ formatMissionAmount(m.total_amount) }}</td>
+                                            <td><span class="amis-missions-badge" :class="'ms-' + m.status">{{ m.status_label }}</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
 
                             <!-- Actions admin -->
@@ -644,6 +638,8 @@ export default {
 
             // Détail
             activeClient: null,
+            clientMissions: [],
+            clientMissionsLoading: false,
             actionLoading: null,
 
             // Modal suspension
@@ -670,12 +666,6 @@ export default {
     },
 
     computed: {
-        greeting() {
-            const h = new Date().getHours();
-            if (h < 12) return "Bonjour";
-            if (h < 18) return "Bon après-midi";
-            return "Bonsoir";
-        },
 
         userInitials() {
             return (
@@ -870,9 +860,28 @@ export default {
         // ── Détail ────────────────────────────────────────────────
         openDetail(c) {
             this.activeClient = c;
+            this.clientMissions = [];
+            this.fetchClientMissions(c.id);
         },
         closeDetail() {
             this.activeClient = null;
+            this.clientMissions = [];
+        },
+
+        async fetchClientMissions(clientId) {
+            if (!this.routes.clients_missions) return;
+            this.clientMissionsLoading = true;
+            try {
+                const url = this.routes.clients_missions.replace('{client}', clientId);
+                const res = await fetch(url, { headers: { Accept: 'application/json' } });
+                this.clientMissions = await res.json();
+            } catch { this.clientMissions = []; }
+            finally { this.clientMissionsLoading = false; }
+        },
+
+        formatMissionAmount(amount) {
+            if (!amount) return '—';
+            return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
         },
 
         // ── Helpers ───────────────────────────────────────────────
@@ -939,7 +948,7 @@ export default {
                 menuiserie: "🪵",
                 frigoriste: "❄️",
                 mecanique: "🚗",
-                nettoyage: "🧹",
+                "entretien & nettoyage": "🧹",
                 peinture: "🎨",
                 maintenance: "🛠️",
             };
@@ -1430,23 +1439,25 @@ export default {
     }
 }
 .amis-tab {
-    padding: 7px 6px;
+    padding: 6px 4px;
     background: none;
     border: none;
     border-radius: 8px;
     font-family: "Poppins", sans-serif;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     color: var(--gr);
     cursor: pointer;
-    white-space: nowrap;
+    white-space: normal;
+    word-break: break-word;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 3px;
     transition: all 0.18s;
     text-align: center;
     overflow: hidden;
+    line-height: 1.2;
 }
 @media (min-width: 600px) {
     .amis-tab {
@@ -1518,12 +1529,12 @@ export default {
     background: var(--wh);
     border: 1.5px solid var(--grl);
     border-radius: 16px;
-    padding: 18px;
+    padding: 14px;
     cursor: pointer;
     transition: all 0.2s;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
 }
 .ac-card:hover {
     border-color: var(--or);
@@ -1536,18 +1547,19 @@ export default {
 .ac-card-head {
     display: flex;
     align-items: flex-start;
-    gap: 12px;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 .ac-avatar {
-    width: 46px;
-    height: 46px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #fff;
     font-weight: 800;
-    font-size: 16px;
+    font-size: 13px;
     flex-shrink: 0;
 }
 .ac-card-headinfo {
@@ -1576,12 +1588,15 @@ export default {
     margin-top: 1px;
 }
 .ac-type-chip {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
-    padding: 3px 9px;
+    padding: 2px 7px;
     border-radius: 99px;
     white-space: nowrap;
     flex-shrink: 0;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .type-individual {
     background: #dbeafe;
@@ -1609,13 +1624,16 @@ export default {
 }
 .ac-cstat-val {
     display: block;
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 800;
     color: var(--dk);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .ac-cstat-lbl {
     display: block;
-    font-size: 10.5px;
+    font-size: 9.5px;
     color: var(--gr);
     margin-top: 1px;
 }
@@ -2028,4 +2046,19 @@ export default {
         transform: translateY(0);
     }
 }
+
+/* ── Tableau missions dans modal ── */
+.amis-missions-loading, .amis-missions-empty { font-size: 13px; color: var(--gr, #7c6a5a); padding: 10px 0; text-align: center }
+.amis-missions-table { width: 100%; border-collapse: collapse; font-size: 12.5px }
+.amis-missions-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; color: #8A7D78; padding: 6px 8px; border-bottom: 1px solid #E8DDD4; font-weight: 700 }
+.amis-missions-table td { padding: 8px 8px; border-bottom: 1px solid #f5f0ec; vertical-align: middle }
+.amis-missions-table tr:last-child td { border-bottom: none }
+.amis-missions-amount { font-weight: 700; color: var(--or, #f97316); white-space: nowrap }
+.amis-missions-badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 700; white-space: nowrap; background: #f1f5f9; color: #64748b }
+.amis-missions-badge.ms-closed    { background: #dcfce7; color: #15803d }
+.amis-missions-badge.ms-completed { background: #dbeafe; color: #1d4ed8 }
+.amis-missions-badge.ms-cancelled { background: #fee2e2; color: #dc2626 }
+.amis-missions-badge.ms-in_progress { background: #fef3c7; color: #92400e }
 </style>
+
+

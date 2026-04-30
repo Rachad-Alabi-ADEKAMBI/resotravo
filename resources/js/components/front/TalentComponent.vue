@@ -9,7 +9,7 @@
             <div class="tl-hero-inner">
                 <div class="tl-badge au">
                     <span class="bdot"></span>
-                    Experts BAC+3 minimum - Valides par Resotravo
+                    Experts BAC+3 minimum - Valides par Mesotravo
                 </div>
                 <h1 class="au1">
                     Espace Talents<br />
@@ -20,7 +20,7 @@
                     Ingénieurs, experts techniques et professionnels
                     qualifies.<br />
                     Chaque profil est verifie et valide manuellement par
-                    l'equipe Resotravo.
+                    l'equipe Mesotravo.
                 </p>
                 <div class="tl-hero-btns au3">
                     <button
@@ -161,7 +161,7 @@
                     @click="openProfile(talent)"
                 >
                     <!-- Badge valide -->
-                    <div class="tl-card-validated">Valide Resotravo</div>
+                    <div class="tl-card-validated">Valide Mesotravo</div>
 
                     <!-- Avatar + infos principales -->
                     <div class="tl-card-top">
@@ -265,7 +265,7 @@
                                 {{ selectedTalent.domain }}</span
                             >
                             <span class="tl-validated-badge"
-                                >Valide Resotravo</span
+                                >Valide Mesotravo</span
                             >
                         </div>
                     </div>
@@ -487,7 +487,7 @@
                         <h2>Rejoindre l'Espace Talents</h2>
                         <p>
                             Votre profil sera examine et valide manuellement par
-                            l'equipe Resotravo sous 48h.
+                            l'equipe Mesotravo sous 48h.
                         </p>
                     </div>
 
@@ -914,7 +914,7 @@
                                 class="mk-form-notice"
                                 style="margin-top: 20px"
                             >
-                                Votre profil sera examine par l'equipe Resotravo
+                                Votre profil sera examine par l'equipe Mesotravo
                                 sous 48h. Vous recevrez une notification par
                                 email et SMS.
                             </div>
@@ -946,7 +946,7 @@
                                     color: #16a34a;
                                 "
                             >
-                                ✅ Dossier envoyé ! L'équipe Resotravo vous
+                                ✅ Dossier envoyé ! L'équipe Mesotravo vous
                                 contactera sous 48h.
                             </div>
 
@@ -1028,7 +1028,7 @@
         <section class="sec sec-cr" v-show="activeTab === 'search'">
             <div class="sec-tag reveal">Avis entreprises</div>
             <div class="sec-title reveal reveal-d1">
-                Ils font confiance aux Talents Resotravo
+                Ils font confiance aux Talents Mesotravo
             </div>
             <div class="sec-sub reveal reveal-d2">
                 Des experts selectionnes avec soin pour chaque mission.
@@ -1175,11 +1175,11 @@ export default {
                 {
                     icon: "🎯",
                     title: "Visibilite maximale",
-                    desc: "Votre profil visible par toutes les entreprises inscrites sur Resotravo.",
+                    desc: "Votre profil visible par toutes les entreprises inscrites sur Mesotravo.",
                 },
                 {
                     icon: "🏅",
-                    title: "Badge valide Resotravo",
+                    title: "Badge valide Mesotravo",
                     desc: "Un gage de confiance qui vous distingue des autres profils en ligne.",
                 },
                 {
@@ -1206,11 +1206,11 @@ export default {
                 },
                 {
                     title: "Examen du dossier",
-                    desc: "L'equipe Resotravo verifie chaque profil sous 48h.",
+                    desc: "L'equipe Mesotravo verifie chaque profil sous 48h.",
                 },
                 {
                     title: "Validation et publication",
-                    desc: "Votre profil est publie avec le badge Valide Resotravo.",
+                    desc: "Votre profil est publie avec le badge Valide Mesotravo.",
                 },
                 {
                     title: "Recevez des missions",
@@ -1220,12 +1220,12 @@ export default {
 
             reviews: [
                 {
-                    text: "Le talent que nous avons contacte via Resotravo a livre un travail exceptionnel. Tres professionnel et parfaitement qualifie.",
+                    text: "Le talent que nous avons contacte via Mesotravo a livre un travail exceptionnel. Tres professionnel et parfaitement qualifie.",
                     company: "SOTRAC Immobilier",
                     role: "Directeur des Travaux",
                 },
                 {
-                    text: "Grace a Resotravo, nous avons trouve en 2 jours un ingenieur solaire pour notre projet. Profil verifie, pas de mauvaises surprises.",
+                    text: "Grace a Mesotravo, nous avons trouve en 2 jours un ingenieur solaire pour notre projet. Profil verifie, pas de mauvaises surprises.",
                     company: "GreenPower BJ",
                     role: "Responsable Projets",
                 },
@@ -1248,7 +1248,7 @@ export default {
                         t.name.toLowerCase().includes(q) ||
                         t.title.toLowerCase().includes(q) ||
                         t.domain.toLowerCase().includes(q) ||
-                        t.skills.some((s) => s.toLowerCase().includes(q)),
+                        t.skills.some((s) => s.toLowerCase().includes(q))
                 );
             }
             if (this.filterDomain)
@@ -1256,14 +1256,13 @@ export default {
             if (this.filterLevel === "bac3")
                 list = list.filter(
                     (t) =>
-                        t.level.includes("BAC+3") ||
-                        t.level.includes("Licence"),
+                        t.level.includes("BAC+3") || t.level.includes("Licence")
                 );
             if (this.filterLevel === "bac4")
                 list = list.filter(
                     (t) =>
                         t.level.includes("BAC+4") ||
-                        t.level.includes("Master 1"),
+                        t.level.includes("Master 1")
                 );
             if (this.filterLevel === "bac5plus")
                 list = list.filter((t) => t.exp >= 5);
@@ -1313,7 +1312,7 @@ export default {
             try {
                 const res = await fetch(
                     this.routes.talents_list ?? "/talent/list",
-                    { headers: { Accept: "application/json" } },
+                    { headers: { Accept: "application/json" } }
                 );
                 if (!res.ok) throw new Error("Erreur serveur " + res.status);
                 const data = await res.json();
@@ -1336,7 +1335,7 @@ export default {
             const payload = {
                 ...this.talentForm,
                 certifications: this.talentForm.certifications.filter(
-                    (c) => c && c.trim() !== "",
+                    (c) => c && c.trim() !== ""
                 ),
             };
 
@@ -1355,7 +1354,7 @@ export default {
                             ...(csrf ? { "X-CSRF-TOKEN": csrf } : {}),
                         },
                         body: JSON.stringify(payload),
-                    },
+                    }
                 );
 
                 const data = await res.json();
@@ -1449,11 +1448,11 @@ export default {
                                 io.unobserve(e.target);
                             }
                         }),
-                    { threshold: 0.08, rootMargin: "0px 0px -30px 0px" },
+                    { threshold: 0.08, rootMargin: "0px 0px -30px 0px" }
                 );
                 document
                     .querySelectorAll(
-                        ".reveal:not(.revealed),.reveal-left:not(.revealed),.reveal-right:not(.revealed)",
+                        ".reveal:not(.revealed),.reveal-left:not(.revealed),.reveal-right:not(.revealed)"
                     )
                     .forEach((el) => io.observe(el));
             }, 150);

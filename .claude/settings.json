@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell.exe -Command \"Get-Item 'C:\\\\xampp\\\\htdocs\\\\mesotravo\\\\public\\\\storage' -ErrorAction SilentlyContinue | Select-Object Name, LinkType, Target\")",
+      "Bash(xargs grep:*)"
+    ]
+  }
+}

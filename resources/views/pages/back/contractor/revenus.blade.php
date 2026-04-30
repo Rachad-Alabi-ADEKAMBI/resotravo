@@ -1,7 +1,7 @@
 {{-- resources/views/pages/back/contractor/revenus.blade.php --}}
 @extends('layouts.back')
 
-@section('title', 'Mes revenus — Resotravo')
+@section('title', 'Mes revenus — Mesotravo')
 
 @php $active = 'revenus'; @endphp
 

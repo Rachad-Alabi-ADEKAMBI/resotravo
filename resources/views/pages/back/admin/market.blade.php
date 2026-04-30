@@ -9,6 +9,8 @@
     :routes="{{ json_encode([
         'tenders_index'  => route('admin.tenders.admin-index'),
         'tenders_status' => url('/admin/tenders/{id}/status'),
+        'notifications'  => route('notifications.index'),
+        'notifications_all' => route('notifications.read-all'),
     ]) }}"
 ></admin-market-component>
 @endsection

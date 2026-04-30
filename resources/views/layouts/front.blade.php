@@ -20,16 +20,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <meta name="format-detection" content="telephone=no"/>
   <meta name="csrf-token" content="{{ csrf_token() }}">
+  <link rel="icon" type="image/png" href="{{ asset('favicon-96x96.png') }}" sizes="96x96" />
+<link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}" />
+<link rel="shortcut icon" href="{{ asset('favicon.ico') }}" />
+<link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}" />
+<link rel="manifest" href="{{ asset('site.webmanifest') }}" />
+
+  <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+<meta name="description" content="MesoTravo est une plateforme qui facilite la mise en relation entre clients et professionnels du bâtiment pour des travaux rapides, fiables et de qualité.">
+
 
   {{-- Mobile / PWA --}}
   <meta name="mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
-  <meta name="apple-mobile-web-app-title" content="ResoTravo"/>
+  <meta name="apple-mobile-web-app-title" content="Mesotravo"/>
   <meta name="theme-color" content="#F97316"/>
 
 
-  <title>@yield('title', 'ResoTravo') — Prestataires certifiés au Bénin</title>
+  <title>@yield('title', 'Mesotravo') — Prestataires certifiés au Bénin</title>
 
   {{-- Fonts --}}
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -37,8 +46,45 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap"
         rel="stylesheet"/>
 
+  @php $iconMode = \App\Models\Setting::get('site_icon_mode', 'current'); @endphp
+  @if ($iconMode === 'fontawesome')
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+  @endif
+  <script>
+    window.MESOTRAVO_ICON_MODE = @json($iconMode);
+  </script>
+
   {{-- Chargement du build Vite (app.js + app.css) --}}
   @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+  <style>
+    #mesotravo-app { visibility: hidden; }
+    #Mesotravo-loader {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      background: #fff;
+      color: var(--dk);
+      font-family: 'Poppins', sans-serif;
+      font-size: 15px;
+      text-align: center;
+      padding: 18px;
+    }
+    #Mesotravo-loader.hidden { display: none; }
+    #Mesotravo-loader .loader-ring {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 4px solid rgba(249, 115, 22, .2);
+      border-top-color: var(--or);
+      animation: loader-rotate 1s linear infinite;
+    }
+    @keyframes loader-rotate { to { transform: rotate(1turn); } }
+  </style>
 
   <style>
     /* ── RESET ── */
@@ -448,14 +494,24 @@
 
 <body>
 
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-M476WRKF"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
   {{-- ── Navigation ──
        Chemin : resources/views/partials/nav.blade.php
        Appel  : @include('partials.nav', ['active' => 'home'])
   --}}
   @include('partials.nav', ['active' => $active ?? ''])
 
+  <div id="Mesotravo-loader">
+    <div class="loader-ring"></div>
+    <div>Chargement…</div>
+  </div>
+
   {{-- #app est ici : Vue monte sur ce div et trouve les composants dans @yield('content') --}}
-  <div id="resotravo-app">
+  <div id="mesotravo-app">
 
     <main>
       @yield('content')
@@ -515,6 +571,21 @@
 
   {{-- Scripts supplémentaires par page (si besoin) --}}
   @stack('scripts')
+
+  @include('partials.cookie-banner')
+
+  {{--
+    Exemple : charger un script analytics uniquement si le cookie a ete accepte.
+    @if(request()->cookie('cookie_consent') === 'accepted')
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXX"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-XXXXXXX');
+        </script>
+    @endif
+  --}}
 
 </body>
 </html>

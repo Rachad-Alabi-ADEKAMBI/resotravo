@@ -5,9 +5,13 @@
 
 @section('content')
 <contractor-mission-component
-    :user="{{ json_encode(['id' => $user->id, 'name' => $user->name, 'role' => $user->role]) }}"
+    :user="{{ json_encode(['id' => $user->id, 'name' => $user->name, 'role' => $user->role, 'status' => $user->status, 'accreditation' => $user->contractor?->accreditation ?? 'none', 'completed_missions' => $user->contractor?->completed_missions ?? 0]) }}"
+    :diagnostic-fee="{{ (float) \App\Models\Setting::get('diagnostic_fee', 5000) }}"
+    :commission-diagnostic="{{ (float) \App\Models\Setting::get('commission_diagnostic', 10) }}"
+    :commission-main-oeuvre="{{ (float) \App\Models\Setting::get('commission_main_oeuvre', 10) }}"
     :routes="{{ json_encode([
         'missions_index'         => route('contractor.missions.index'),
+        'missions_available'     => route('contractor.missions.available'),
         'missions_status'        => url('/contractor/missions/{id}/status'),
         'missions_quote_store'   => url('/contractor/missions/{id}/quote'),
         'notifications'          => route('notifications.index'),
@@ -19,6 +23,7 @@
         'conversations_attach'   => url('/conversations/{id}/attachment'),
         'conversations_read'     => url('/conversations/{id}/read'),
         'unread_summary'         => route('unread-messages'),
+        'accreditation_page'     => route('contractor.accreditation'),
     ]) }}"
 ></contractor-mission-component>
 @endsection

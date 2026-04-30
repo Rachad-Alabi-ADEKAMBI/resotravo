@@ -6,6 +6,7 @@ use App\Models\Client;
 use App\Models\Contractor;
 use App\Models\Mission;
 use App\Models\MissionProposal;
+use App\Models\Reservation;
 use App\Models\User;
 use App\Notifications\AppNotification;
 use Illuminate\Http\JsonResponse;
@@ -26,15 +27,18 @@ class MissionController extends Controller
         $client = Client::where('user_id', $user->id)->firstOrFail();
 
         $data = $request->validate([
-            'service'        => 'required|string|max:100',
-            'address'        => 'required|string|max:255',
-            'latitude'       => 'nullable|numeric|between:-90,90',
-            'longitude'      => 'nullable|numeric|between:-180,180',
-            'description'    => 'required|string|min:20|max:2000',
-            'availabilities' => 'nullable|array',
-            'location_type'  => ['required', Rule::in(['residential', 'business'])],
-            'images'         => 'nullable|array|max:5',
-            'images.*'       => 'image|max:10240',
+            'service'           => 'required|string|max:100',
+            'address'           => 'required|string|max:255',
+            'latitude'          => 'nullable|numeric|between:-90,90',
+            'longitude'         => 'nullable|numeric|between:-180,180',
+            'description'       => 'required|string|min:20|max:2000',
+            'availabilities'    => 'nullable|array',
+            'location_type'     => ['required', Rule::in(['residential', 'business'])],
+            'images'            => 'nullable|array|max:5',
+            'images.*'          => 'image|max:10240',
+            'schedule_type'     => ['required', Rule::in(['now', 'later'])],
+            'reservation_day'   => 'required_if:schedule_type,later|nullable|date|after_or_equal:today',
+            'reservation_time'  => 'required_if:schedule_type,later|nullable|date_format:H:i',
         ]);
 
         if ($data['location_type'] === 'business' && $client->account_type === 'individual') {
@@ -44,11 +48,19 @@ class MissionController extends Controller
         }
 
         $mission = Mission::create([
-            ...collect($data)->except('images')->toArray(),
+            ...collect($data)->except(['images', 'schedule_type', 'reservation_day', 'reservation_time'])->toArray(),
             'client_id'      => $client->id,
             'status'         => Mission::STATUS_PENDING,
             'min_distance_m' => $client->min_distance_m ?? 0,
         ]);
+
+        if ($data['schedule_type'] === 'later') {
+            Reservation::create([
+                'mission_id' => $mission->id,
+                'day'        => $data['reservation_day'],
+                'time'       => $data['reservation_time'],
+            ]);
+        }
 
         // Store images after creation (need mission ID for path)
         if ($request->hasFile('images')) {
@@ -83,7 +95,7 @@ class MissionController extends Controller
 
         return response()->json([
             'message' => 'Mission created successfully.',
-            'mission' => $this->formatMission($mission->fresh()),
+            'mission' => $this->formatMission($mission->fresh()->load(['client', 'contractor', 'quote', 'reservation'])),
         ], 201);
     }
 
@@ -96,7 +108,7 @@ class MissionController extends Controller
         $this->authorizeAccess(Auth::user(), $mission);
 
         return response()->json(
-            $this->formatMission($mission->load(['client', 'contractor', 'quote']))
+            $this->formatMission($mission->load(['client', 'contractor', 'quote', 'reservation']))
         );
     }
 
@@ -105,7 +117,7 @@ class MissionController extends Controller
         $user   = Auth::user();
         $status = $request->query('status');
 
-        $query = Mission::with(['client', 'contractor', 'quote.items'])
+        $query = Mission::with(['client', 'contractor', 'quote.items', 'reservation'])
             ->when($user->role === 'client', function ($q) use ($user) {
                 $clientId = Client::where('user_id', $user->id)->value('id');
                 $q->where('client_id', $clientId);
@@ -311,7 +323,7 @@ class MissionController extends Controller
             $mission->client?->user?->notify(new AppNotification(
                 event: 'mission.cancelled',
                 title: 'Mission annulée',
-                body:  "Votre mission « {$mission->service} » a été annulée par Resotravo. Motif : " . ($request->reason ?? 'Non précisé'),
+                body:  "Votre mission « {$mission->service} » a été annulée par Mesotravo. Motif : " . ($request->reason ?? 'Non précisé'),
                 url:   "/client/missions/{$mission->id}",
                 icon:  'x-circle',
                 extra: ['mission_id' => $mission->id],
@@ -437,8 +449,8 @@ class MissionController extends Controller
             case Mission::STATUS_ASSIGNED:
                 $contractorUser?->notify(new AppNotification(
                     event: 'mission.assigned',
-                    title: '📬 Nouvelle mission proposée',
-                    body:  "Une mission « {$service} » à {$mission->address} vous a été proposée. Vous avez 5 min pour accepter.",
+                    title: '📬 Une nouvelle mission vous a été proposée',
+                    body:  "Une nouvelle mission « {$service} » vous a été proposée à {$mission->address}. Vous avez 5 min pour accepter.",
                     url:   $contractorUrl, icon: 'bell', extra: $extra,
                 ));
                 break;
@@ -487,6 +499,8 @@ class MissionController extends Controller
                     body:  "Le client a approuvé votre devis pour « {$service} ». Vous pouvez démarrer l'intervention.",
                     url:   $contractorUrl, icon: 'check-circle', extra: $extra,
                 ));
+                // Envoyer la facture par email au client
+                \App\Http\Controllers\PaymentController::sendInvoiceEmail($mission->load(['client.user', 'contractor.user', 'quote.items', 'reservation']));
                 break;
 
             case Mission::STATUS_AWAITING_CONFIRM:
@@ -508,8 +522,8 @@ class MissionController extends Controller
                 break;
 
             case Mission::STATUS_CLOSED:
-                $net        = $mission->total_amount ? round($mission->total_amount * 0.9) : null;
                 $commission = $mission->commission;
+                $net        = $mission->total_amount ? round($mission->total_amount - ($commission ?? 0)) : null;
 
                 // Incrémenter le compteur de missions terminées du client
                 if ($mission->client) {
@@ -615,8 +629,8 @@ class MissionController extends Controller
 
             User::find($contractor->user_id)?->notify(new AppNotification(
                 event: 'mission.assigned',
-                title: 'Nouvelle mission disponible',
-                body:  "Une mission « {$mission->service} » vous a été attribuée à {$mission->address}. Acceptez-la rapidement !",
+                title: '📬 Une nouvelle mission vous a été proposée',
+                body:  "Une nouvelle mission « {$mission->service} » vous a été proposée à {$mission->address}. Acceptez-la rapidement !",
                 url:   "/contractor/missions/{$mission->id}",
                 icon:  'user-check',
                 extra: ['mission_id' => $mission->id, 'service' => $mission->service, 'address' => $mission->address],
@@ -708,7 +722,7 @@ class MissionController extends Controller
             'latitude'         => $mission->latitude,
             'longitude'        => $mission->longitude,
             'description'      => $mission->description,
-            'images'           => collect($mission->images ?? [])->map(fn($p) => Storage::disk('public')->url($p))->values()->toArray(),
+            'images'           => $mission->images ?? [],
             'availabilities'   => $mission->availabilities,
             'location_type'    => $mission->location_type,
             'min_distance_m'   => $mission->min_distance_m,
@@ -748,6 +762,10 @@ class MissionController extends Controller
                 'average_rating'  => $contractor->average_rating,
                 'reviews_count'   => $contractor->reviews_count,
                 'total_missions'  => $contractor->total_missions,
+            ] : null,
+            'reservation' => $mission->reservation ? [
+                'day'  => $mission->reservation->day->format('Y-m-d'),
+                'time' => $mission->reservation->time,
             ] : null,
             'quote' => $mission->quote ? [
                 'id'              => $mission->quote->id,

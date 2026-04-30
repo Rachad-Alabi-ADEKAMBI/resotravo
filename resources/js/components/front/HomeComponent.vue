@@ -29,9 +29,8 @@
                 </h1>
                 <p class="hero-desc au2">
                     🔧 Plomberie · ⚡ Électricité · ❄️ Climatisation · 🪚
-                    Menuiserie · et plus.<br />
-                    Des prestataires vérifiés, disponibles à Cotonou et dans
-                    tout le Bénin.
+                    Menuiserie.<br />
+                    Des prestataires vérifiés, près de chez vous.
                 </p>
                 <div class="hero-btns au3">
                     <a
@@ -94,7 +93,7 @@
                 <div class="search-head">
                     <div class="search-head-icon">🔍</div>
                     <h3>Recherche rapide</h3>
-                    <span>— Trouvez le prestataire parfait maintenant</span>
+                    <span>— Trouvez vite un prestataire</span>
                 </div>
                 <div class="search-row">
                     <input
@@ -178,8 +177,7 @@
                 Tous vos besoins, un seul endroit
             </div>
             <div class="sec-sub reveal reveal-d2">
-                Des prestataires certifiés dans tous les corps de métier,
-                attribués automatiquement selon votre localisation.
+                Des prestataires certifiés pour vos besoins essentiels.
             </div>
             <div class="services-grid">
                 <a
@@ -205,8 +203,7 @@
             <div class="sec-tag reveal">📋 Comment ça marche</div>
             <div class="sec-title reveal reveal-d1">Simple, rapide, fiable</div>
             <div class="sec-sub reveal reveal-d2">
-                4 étapes pour trouver et gérer votre intervention de A à Z, sans
-                tracas.
+                4 étapes, sans complication.
             </div>
             <div class="steps-grid">
                 <div
@@ -239,8 +236,7 @@
                     Des pros vérifiés,<br />pas des inconnus
                 </div>
                 <p class="sec-sub">
-                    Avant toute mission, chaque prestataire passe un processus
-                    rigoureux de vérification.
+                    Chaque prestataire est vérifié avant intervention.
                 </p>
                 <ul class="checklist">
                     <li>
@@ -255,7 +251,7 @@
                     </li>
                     <li>
                         <span class="ci">📋</span
-                        ><span>Formation aux standards Resotravo</span>
+                        ><span>Formation aux standards Mesotravo</span>
                     </li>
                     <li>
                         <span class="ci">⭐</span
@@ -278,13 +274,12 @@
          CONFIANCE
     ═══════════════════════════════════════════ -->
         <section class="sec" id="confiance">
-            <div class="sec-tag reveal">🛡️ Pourquoi Resotravo</div>
+            <div class="sec-tag reveal">🛡️ Pourquoi Mesotravo</div>
             <div class="sec-title reveal reveal-d1">
                 La confiance au cœur<br />de chaque intervention
             </div>
             <div class="sec-sub reveal reveal-d2">
-                Nous vérifions chaque prestataire avant qu'il accède à votre
-                domicile ou entreprise.
+                Des profils contrôlés avant chaque mission.
             </div>
             <div class="trust-grid">
                 <div
@@ -311,8 +306,7 @@
                 <div class="sec-tag">💸 Paiement sécurisé</div>
                 <div class="sec-title">Payez après,<br />jamais avant</div>
                 <p class="sec-sub">
-                    Votre argent ne bouge que quand vous confirmez la fin des
-                    travaux. Zéro risque, zéro stress.
+                    Vous payez uniquement après validation des travaux.
                 </p>
                 <ul class="checklist">
                     <li>
@@ -354,8 +348,7 @@
                 Ils nous font confiance
             </div>
             <div class="sec-sub reveal reveal-d2">
-                Des centaines de clients satisfaits témoignent de leur
-                expérience Resotravo.
+                Des retours simples et concrets.
             </div>
             <div class="test-grid">
                 <div
@@ -384,10 +377,7 @@
             <div class="app-banner-inner reveal">
                 <div>
                     <h3>📲 Bientôt sur mobile</h3>
-                    <p>
-                        Gérez vos demandes depuis votre smartphone. Disponible
-                        sur iOS &amp; Android très prochainement.
-                    </p>
+                    <p>Suivez vos demandes sur mobile, bientôt disponible.</p>
                 </div>
                 <div class="app-badges">
                     <div class="abadge">
@@ -416,12 +406,9 @@
                 <div class="faq-left reveal-left">
                     <div class="sec-tag">❓ FAQ</div>
                     <div class="sec-title">Questions fréquentes</div>
-                    <p class="sec-sub">
-                        Tout ce que vous devez savoir sur Resotravo en quelques
-                        clics.
-                    </p>
+                    <p class="sec-sub">Les réponses essentielles.</p>
                     <div class="faq-help">
-                        💬 Pas de réponse ? Contactez-nous sur
+                        💬 Une question ? Contactez-nous sur
                         <a href="#">WhatsApp</a> ou <a href="#">par email</a>
                     </div>
                 </div>
@@ -464,10 +451,7 @@
         <div class="cta-final" id="register">
             <div class="cta-inner reveal">
                 <h2>Prêt à trouver votre prestataire ? 🚀</h2>
-                <p>
-                    Rejoignez des milliers de clients et prestataires sur
-                    Resotravo. C'est gratuit et sans engagement.
-                </p>
+                <p>Inscription gratuite, sans engagement.</p>
                 <div class="cta-btns">
                     <a class="btn btn-dark btn-lg" :href="routes.registerClient"
                         >🔍 Je cherche un prestataire →</a
@@ -548,22 +532,22 @@ export default {
                 {
                     icon: "📝",
                     title: "Décrivez votre besoin",
-                    desc: "Service, adresse, description et disponibilités souhaitées en quelques secondes.",
+                    desc: "Indiquez le service et votre adresse en quelques secondes.",
                 },
                 {
                     icon: "🤖",
                     title: "Attribution automatique",
-                    desc: "Le prestataire certifié le plus proche est assigné en moins de 5 min.",
+                    desc: "Le prestataire certifié le plus proche est attribué rapidement.",
                 },
                 {
                     icon: "📍",
                     title: "Suivi en temps réel",
-                    desc: "Suivez l'arrivée du prestataire sur carte avec ETA dynamique recalculé.",
+                    desc: "Suivez l'arrivée du prestataire en temps réel.",
                 },
                 {
                     icon: "💸",
                     title: "Paiement sécurisé",
-                    desc: "Confirmez la fin des travaux, puis payez via MTN MoMo en un clic.",
+                    desc: "Validez la fin des travaux, puis payez.",
                 },
             ],
 
@@ -572,42 +556,42 @@ export default {
                 {
                     icon: "✅",
                     title: "Prestataires certifiés",
-                    desc: "6 pièces vérifiées : CNI, casier judiciaire, diplômes, références.",
+                    desc: "Identité, diplômes et références vérifiés.",
                 },
                 {
                     icon: "🏅",
                     title: "Accréditation différenciée",
-                    desc: "Badge DOMICILE & ENTREPRISE. Seuls les accrédités accèdent aux missions.",
+                    desc: "Seuls les profils validés accèdent aux missions.",
                 },
                 {
                     icon: "📍",
                     title: "Suivi GPS temps réel",
-                    desc: "Position visible sur carte. ETA recalculé jusqu'à l'arrivée.",
+                    desc: "Position visible jusqu'à l'arrivée.",
                 },
                 {
                     icon: "💸",
                     title: "Paiement post-travaux",
-                    desc: "Vous payez après confirmation de fin. Zéro risque pour vous.",
+                    desc: "Paiement après confirmation de fin des travaux.",
                 },
                 {
                     icon: "⭐",
                     title: "Système d'évaluation",
-                    desc: "Notez chaque prestataire. Les moins bien notés sont suspendus.",
+                    desc: "Les clients notent chaque intervention.",
                 },
                 {
                     icon: "🔄",
                     title: "Disponible 7j/7",
-                    desc: "La plateforme fonctionne tous les jours, weekends et jours fériés.",
+                    desc: "La plateforme reste accessible tous les jours.",
                 },
                 {
                     icon: "🛡️",
                     title: "Données protégées",
-                    desc: "Vos infos sont chiffrées et jamais revendues à des tiers.",
+                    desc: "Vos données sont protégées.",
                 },
                 {
                     icon: "📞",
                     title: "Support réactif",
-                    desc: "Notre équipe répond en moins de 2h par chat, appel ou WhatsApp.",
+                    desc: "Une équipe disponible pour vous aider rapidement.",
                 },
             ],
 
@@ -616,32 +600,32 @@ export default {
                 {
                     name: "Adjovi Kokou",
                     role: "Particulier · Cotonou",
-                    text: "En moins de 20 minutes après ma demande, le plombier était déjà en route. Travail propre, professionnel. Je recommande vivement !",
+                    text: "Demande rapide, intervention propre et professionnelle.",
                 },
                 {
                     name: "Bertrand Houngbo",
                     role: "Chef de projet · Ouidah",
-                    text: "Nous utilisons Resotravo pour nos chantiers. La qualité des prestataires et la rapidité d'attribution sont bluffantes.",
+                    text: "Des prestataires sérieux et une attribution rapide.",
                 },
                 {
                     name: "Faridath ADEOSSI",
                     role: "Restauratrice · Porto-Novo",
-                    text: "Ma climatisation est tombée en plein service. Grâce à Resotravo, un technicien était là en 12 minutes. Impressionnant !",
+                    text: "Un technicien est intervenu très vite. Service efficace.",
                 },
                 {
                     name: "Cossii ADEBOLA",
                     role: "Propriétaire · Calavi",
-                    text: "Le paiement post-travaux m'a totalement rassuré. Excellent service, je suis désormais client fidèle de Resotravo.",
+                    text: "Le paiement après travaux met vraiment en confiance.",
                 },
                 {
                     name: "Aïssatou Barry",
                     role: "DRH · Lokossa",
-                    text: "Nous avons sous-traité notre maintenance à Resotravo. Gain de temps énorme, factures automatiques. Parfait !",
+                    text: "Gain de temps et gestion simple de la maintenance.",
                 },
                 {
                     name: "Rodrigue Dossou",
                     role: "Particulier · Bohicon",
-                    text: "Simple, rapide, fiable. J'ai pu suivre l'électricien en direct sur la carte. Travaux finis en 1h chrono.",
+                    text: "Simple, rapide et fiable du début à la fin.",
                 },
             ],
 
@@ -649,38 +633,38 @@ export default {
             faqs: [
                 {
                     icon: "👷",
-                    q: "Comment Resotravo sélectionne-t-il ses prestataires ?",
-                    a: "Chaque prestataire passe un processus rigoureux : CNI, casier judiciaire, diplômes et références professionnelles vérifiés. Ils reçoivent un badge d'accréditation DOMICILE et/ou ENTREPRISE.",
+                    q: "Comment Mesotravo sélectionne-t-il ses prestataires ?",
+                    a: "Chaque prestataire est vérifié avant validation de son profil.",
                 },
                 {
                     icon: "⚡",
                     q: "Combien de temps faut-il pour trouver un prestataire ?",
-                    a: "Notre algorithme vous met en relation avec le prestataire certifié le plus proche en moins de 5 minutes. À Cotonou, le délai moyen est de 3 minutes.",
+                    a: "Le prestataire certifié le plus proche est attribué en quelques minutes.",
                 },
                 {
                     icon: "💸",
                     q: "Comment fonctionne le paiement ?",
-                    a: "Paiement sécurisé et post-travaux uniquement. Vous ne payez qu'après avoir confirmé la bonne réalisation. Le règlement se fait via MTN MoMo dans l'application.",
+                    a: "Vous payez après confirmation de fin des travaux, via MTN MoMo.",
                 },
                 {
                     icon: "😟",
                     q: "Que faire si je ne suis pas satisfait ?",
-                    a: "Signalez l'intervention dans l'app. Notre équipe intervient sous 2h pour trouver une solution, incluant le remboursement si nécessaire.",
+                    a: "Signalez le problème et notre équipe prend le relais rapidement.",
                 },
                 {
                     icon: "🗺️",
-                    q: "Resotravo est-il disponible hors de Cotonou ?",
-                    a: "Oui ! Nous couvrons 9 villes : Cotonou, Porto-Novo, Parakou, Abomey-Calavi, Bohicon, Natitingou, Ouidah, Lokossa et Djougou.",
+                    q: "Mesotravo est-il disponible hors de Cotonou ?",
+                    a: "Oui, Mesotravo couvre Cotonou et plusieurs autres villes du Bénin.",
                 },
                 {
                     icon: "🚀",
-                    q: "Comment devenir prestataire sur Resotravo ?",
-                    a: "Inscrivez-vous, renseignez votre métier et vos documents. Notre équipe traite les dossiers sous 48h. Une fois validé, vous recevez des missions dans votre secteur.",
+                    q: "Comment devenir prestataire sur Mesotravo ?",
+                    a: "Inscrivez-vous, envoyez vos documents et attendez la validation du profil.",
                 },
                 {
                     icon: "❤️",
                     q: "Puis-je demander un prestataire spécifique ?",
-                    a: "Oui ! Après une première intervention, sauvegardez un prestataire en favori et sollicitez-le en priorité pour vos prochaines demandes.",
+                    a: "Oui, vous pouvez solliciter à nouveau un prestataire déjà utilisé.",
                 },
             ],
         };
@@ -1040,6 +1024,7 @@ export default {
         width: 100% !important;
         height: 220px !important;
         object-fit: cover !important;
+        object-position: top !important;
     }
     .split-content {
         padding: 28px 16px !important;

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
     <div class="ctr-wrap">
         <!-- TOPBAR -->
         <div class="ctr-topbar">
@@ -13,7 +13,7 @@
                 <div>
                     <div class="ctr-page-title">Mon dossier</div>
                     <div class="ctr-page-sub">
-                        {{ greeting }}, <strong>{{ user.name }}</strong>
+                        <strong>{{ user.name }}</strong>
                     </div>
                 </div>
             </div>
@@ -34,7 +34,7 @@
                             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                         </svg>
                         <span class="ctr-notif-badge" v-if="unreadCount > 0">{{
-                            unreadCount > 9 ? "9+" : unreadCount
+                            unreadCount
                         }}</span>
                     </button>
                     <div class="ctr-notif-dropdown" v-if="notifOpen">
@@ -116,7 +116,7 @@
                 <div class="dos-progress-note">
                     Le badge <strong>Profil Certifié</strong> est accordé après
                     validation de <strong>tous</strong> vos documents par
-                    l'équipe Resotravo.
+                    l'équipe Mesotravo.
                 </div>
             </div>
 
@@ -187,10 +187,10 @@
                                     doc.status === "missing"
                                         ? "+ Déposer"
                                         : doc.status === "rejected"
-                                          ? "↻ Remplacer"
-                                          : doc.status === "pending"
-                                            ? "↻ Modifier"
-                                            : "↻"
+                                        ? "↻ Remplacer"
+                                        : doc.status === "pending"
+                                        ? "↻ Modifier"
+                                        : "↻"
                                 }}
                             </span>
                             <input
@@ -251,10 +251,6 @@ export default {
         };
     },
     computed: {
-        greeting() {
-            const h = new Date().getHours();
-            return h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir";
-        },
         initials() {
             return (
                 this.user.name
@@ -283,18 +279,18 @@ export default {
             if (this.userStatus === "approved") return "✅";
             if (this.userStatus === "rejected") return "❌";
             const allUploaded = this.documents.every(
-                (d) => d.status !== "missing",
+                (d) => d.status !== "missing"
             );
             return allUploaded ? "⏳" : "📂";
         },
         bannerTitle() {
             if (this.userStatus === "approved")
                 return this.isContractor
-                    ? "Profil certifié Resotravo"
+                    ? "Profil certifié Mesotravo"
                     : "Identité vérifiée";
             if (this.userStatus === "rejected") return "Dossier refusé";
             const allUploaded = this.documents.every(
-                (d) => d.status !== "missing",
+                (d) => d.status !== "missing"
             );
             if (allUploaded) return "Dossier en cours de vérification";
             return "Dossier incomplet";
@@ -303,14 +299,14 @@ export default {
             if (this.userStatus === "approved")
                 return this.isContractor
                     ? "Vous pouvez accepter des missions et apparaître dans les recherches."
-                    : "Votre identité a été validée par l'équipe Resotravo.";
+                    : "Votre identité a été validée par l'équipe Mesotravo.";
             if (this.userStatus === "rejected")
                 return "Certains documents ont été refusés. Corrigez-les et re-soumettez.";
             const allUploaded = this.documents.every(
-                (d) => d.status !== "missing",
+                (d) => d.status !== "missing"
             );
             if (allUploaded)
-                return "L'équipe Resotravo vérifie vos documents. Délai : 24-48h.";
+                return "L'équipe Mesotravo vérifie vos documents. Délai : 24-48h.";
             return "Déposez tous vos documents pour activer votre compte.";
         },
     },
@@ -376,12 +372,12 @@ export default {
                 this.docProgress = data.progress ?? this.docProgress;
                 this.showToast(
                     "✅ Document déposé. Vérification sous 24-48h.",
-                    "success",
+                    "success"
                 );
             } catch {
                 this.showToast(
                     "Erreur lors de l'envoi. Vérifiez le format (PDF/JPG/PNG, max 5 Mo).",
-                    "error",
+                    "error"
                 );
             } finally {
                 doc.uploading = false;
@@ -448,7 +444,7 @@ export default {
             window.dispatchEvent(
                 new CustomEvent("ab-sidebar-toggle", {
                     detail: { open: this.sidebarOpen },
-                }),
+                })
             );
         },
     },
@@ -457,7 +453,7 @@ export default {
         this.fetchNotifications();
         this.notifInterval = setInterval(
             () => this.fetchNotifications(),
-            30000,
+            30000
         );
         document.addEventListener("click", this.handleClickOutside);
         window.addEventListener("ab-sidebar-close", () => {

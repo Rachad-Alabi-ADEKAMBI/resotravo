@@ -1,7 +1,7 @@
 {{-- resources/views/pages/front/consulting.blade.php --}}
 @extends('layouts.front')
 
-@section('title', 'Allo Conseils — Resotravo')
+@section('title', 'Allô Conseils - Mesotravo')
 
 @section('content')
 

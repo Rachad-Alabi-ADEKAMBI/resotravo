@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Contractor;
 use App\Models\Document;
 use App\Models\Mission;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 
@@ -107,13 +108,16 @@ class AdminController extends Controller
         // ── Finances ──────────────────────────────────────────────
         $paidMissions      = Mission::where('status', 'closed')->count();
         $totalAmount       = Mission::where('status', 'closed')->sum('total_amount');
-        $totalCommission   = $totalAmount * 0.10;
+        $totalCommission   = Mission::where('status', 'closed')->sum('commission') ?: $totalAmount * ((float) Setting::get('commission_main_oeuvre', 10) / 100);
 
         $monthlyAmount     = Mission::where('status', 'closed')
             ->whereMonth('updated_at', now()->month)
             ->whereYear('updated_at', now()->year)
             ->sum('total_amount');
-        $monthlyCommission = $monthlyAmount * 0.10;
+        $monthlyCommission = Mission::where('status', 'closed')
+            ->whereMonth('updated_at', now()->month)
+            ->whereYear('updated_at', now()->year)
+            ->sum('commission') ?: $monthlyAmount * ((float) Setting::get('commission_main_oeuvre', 10) / 100);
 
         // ── Accréditations ────────────────────────────────────────
         $accredResidential = Contractor::whereIn('accreditation', ['home', 'both'])->count();

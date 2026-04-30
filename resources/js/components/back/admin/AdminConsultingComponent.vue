@@ -1,6 +1,6 @@
-<template>
+﻿<template>
     <div class="amis-wrap">
-        <!-- ══════════════ TOPBAR ══════════════ -->
+        <!-- -------------- TOPBAR -------------- -->
         <div class="amis-topbar">
             <div class="amis-topbar-left">
                 <button
@@ -11,9 +11,9 @@
                     <span></span><span></span><span></span>
                 </button>
                 <div>
-                    <div class="amis-page-title">Allo Conseils</div>
+                    <div class="amis-page-title">Allô Conseils</div>
                     <div class="amis-page-sub">
-                        {{ greeting }}, <strong>{{ user.name }}</strong>
+                        <strong>{{ user.name }}</strong>
                     </div>
                 </div>
             </div>
@@ -38,7 +38,7 @@
                             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                         </svg>
                         <span class="amis-notif-badge" v-if="unreadCount > 0">{{
-                            unreadCount > 9 ? "9+" : unreadCount
+                            unreadCount
                         }}</span>
                     </button>
                     <div class="amis-notif-dropdown" v-if="notifOpen">
@@ -83,7 +83,7 @@
             </div>
         </div>
 
-        <!-- ══════════════ BANDE STATS ══════════════ -->
+        <!-- -------------- BANDE STATS -------------- -->
         <div class="ac-stats-band">
             <div class="ac-stat-item" v-for="s in statCards" :key="s.label">
                 <div class="ac-stat-dot" :class="s.dotClass"></div>
@@ -92,9 +92,9 @@
             </div>
         </div>
 
-        <!-- ══════════════ LAYOUT SPLIT ══════════════ -->
+        <!-- -------------- LAYOUT SPLIT -------------- -->
         <div class="ac-layout">
-            <!-- ── COLONNE GAUCHE : liste des tickets ── -->
+            <!-- -- COLONNE GAUCHE : liste des tickets -- -->
             <div class="ac-tickets-panel">
                 <!-- Filtres -->
                 <div class="ac-panel-filters">
@@ -205,8 +205,8 @@
                                     t.last_message_type === "user"
                                         ? "👤"
                                         : t.last_message_type === "ia"
-                                          ? "🤖"
-                                          : "👨‍💼"
+                                        ? "🤖"
+                                        : "🧑‍💼"
                                 }}
                             </span>
                             {{ t.last_message }}
@@ -214,12 +214,12 @@
                         <div class="ac-ticket-meta">
                             <span>{{ t.updated_at_ago }}</span>
                             <span v-if="t.agent_name"
-                                >👨‍💼 {{ t.agent_name }}</span
+                                >🧑‍💼 {{ t.agent_name }}</span
                             >
                             <span
                                 v-if="t.human_requested && !t.human_assigned"
                                 class="ac-urgent-chip"
-                                >⚠️ Humain demandé</span
+                                >👤 Humain demandé</span
                             >
                             <span
                                 class="ac-unread-chip"
@@ -274,7 +274,7 @@
                 </div>
             </div>
 
-            <!-- ── COLONNE DROITE : détail / messagerie ── -->
+            <!-- -- COLONNE DROITE : détail / messagerie -- -->
             <div class="ac-chat-panel">
                 <!-- Placeholder vide -->
                 <div class="ac-chat-empty" v-if="!activeTicket">
@@ -293,6 +293,13 @@
                     <!-- En-tête ticket -->
                     <div class="ac-chat-header">
                         <div class="ac-chat-header-left">
+                            <button
+                                class="ac-back-btn"
+                                @click="activeTicket = null"
+                                aria-label="Retour à la liste"
+                            >
+                                ?
+                            </button>
                             <div class="ac-chat-avatar">
                                 {{ activeTicket.user_name[0] }}
                             </div>
@@ -319,7 +326,7 @@
                                 v-if="
                                     !activeTicket.human_assigned &&
                                     !['resolved', 'closed'].includes(
-                                        activeTicket.status,
+                                        activeTicket.status
                                     )
                                 "
                                 @click="assignToMe"
@@ -329,13 +336,13 @@
                                     class="amis-spinner"
                                     v-if="actionLoading === 'assign'"
                                 ></div>
-                                <span v-else>👋 Prendre en charge</span>
+                                <span v-else>🧑‍💼 Prendre en charge</span>
                             </button>
                             <button
                                 class="amis-btn amis-btn-green amis-btn-sm"
                                 v-if="
                                     !['resolved', 'closed'].includes(
-                                        activeTicket.status,
+                                        activeTicket.status
                                     )
                                 "
                                 @click="closeTicket('resolved')"
@@ -351,7 +358,7 @@
                                 class="amis-btn amis-btn-red amis-btn-sm"
                                 v-if="
                                     !['resolved', 'closed'].includes(
-                                        activeTicket.status,
+                                        activeTicket.status
                                     )
                                 "
                                 @click="closeTicket('closed')"
@@ -367,7 +374,7 @@
                                 class="amis-btn amis-btn-ghost amis-btn-sm"
                                 v-if="
                                     ['resolved', 'closed'].includes(
-                                        activeTicket.status,
+                                        activeTicket.status
                                     )
                                 "
                                 @click="closeTicket('in_progress')"
@@ -377,7 +384,7 @@
                                     class="amis-spinner"
                                     v-if="actionLoading === 'reopen'"
                                 ></div>
-                                <span v-else>🔄 Rouvrir</span>
+                                <span v-else>↻ Rouvrir</span>
                             </button>
                         </div>
                     </div>
@@ -385,11 +392,11 @@
                     <!-- Infos ticket -->
                     <div class="ac-ticket-info-bar">
                         <span v-if="activeTicket.category"
-                            >🏷️ {{ activeTicket.category }}</span
+                            >📂 {{ activeTicket.category }}</span
                         >
                         <span>📅 {{ activeTicket.created_at_label }}</span>
                         <span v-if="activeTicket.agent_name"
-                            >👨‍💼 {{ activeTicket.agent_name }}</span
+                            >🧑‍💼 {{ activeTicket.agent_name }}</span
                         >
                         <span
                             v-if="
@@ -397,10 +404,10 @@
                                 !activeTicket.human_assigned
                             "
                             class="ac-urgent-chip"
-                            >⚠️ Agent humain demandé</span
+                            >👤 Agent humain demandé</span>
                         >
                         <span v-if="activeTicket.rating">{{
-                            "⭐".repeat(activeTicket.rating)
+                            "★".repeat(activeTicket.rating)
                         }}</span>
                     </div>
 
@@ -427,8 +434,8 @@
                                         msg.sender_type === "user"
                                             ? "👤"
                                             : msg.sender_type === "ia"
-                                              ? "🤖"
-                                              : "👨‍💼"
+                                            ? "🤖"
+                                            : "🧑‍💼"
                                     }}
                                 </div>
                                 <div class="ac-msg-content">
@@ -499,10 +506,10 @@
                                     ? "résolu"
                                     : "clôturé"
                             }}
-                            — répondre n'est plus possible.</span
+                            - répondre n'est plus possible.</span
                         >
                         <button
-                            class="amis-btn amis-btn-ghost amis-btn-sm"
+                            class="amis-btn amis-btn-ghost amis-btn-sm success-action"
                             @click="closeTicket('in_progress')"
                             :disabled="actionLoading === 'reopen'"
                         >
@@ -510,7 +517,7 @@
                                 class="amis-spinner"
                                 v-if="actionLoading === 'reopen'"
                             ></div>
-                            <span v-else>🔄 Rouvrir</span>
+                            <span v-else>↻ Rouvrir</span>
                         </button>
                     </div>
 
@@ -541,7 +548,7 @@
             </div>
         </div>
 
-        <!-- ══════════════ TOASTS ══════════════ -->
+        <!-- -------------- TOASTS -------------- -->
         <div class="amis-toast-container">
             <div
                 class="amis-toast"
@@ -604,12 +611,6 @@ export default {
     },
 
     computed: {
-        greeting() {
-            const h = new Date().getHours();
-            if (h < 12) return "Bonjour";
-            if (h < 18) return "Bon après-midi";
-            return "Bonsoir";
-        },
 
         userInitials() {
             return (
@@ -642,21 +643,21 @@ export default {
                 {
                     dotClass: "dot-red",
                     value: this.tickets.filter(
-                        (t) => t.status === "pending_human",
+                        (t) => t.status === "pending_human"
                     ).length,
                     label: "En attente agent",
                 },
                 {
                     dotClass: "dot-blue",
                     value: this.tickets.filter(
-                        (t) => t.status === "in_progress",
+                        (t) => t.status === "in_progress"
                     ).length,
                     label: "En cours",
                 },
                 {
                     dotClass: "dot-green",
                     value: this.tickets.filter(
-                        (t) => t.status === "resolved" || t.status === "closed",
+                        (t) => t.status === "resolved" || t.status === "closed"
                     ).length,
                     label: "Résolus",
                 },
@@ -674,7 +675,7 @@ export default {
                 list = list.filter((t) => t.status === "in_progress");
             else if (this.activeTab === "resolved")
                 list = list.filter((t) =>
-                    ["resolved", "closed"].includes(t.status),
+                    ["resolved", "closed"].includes(t.status)
                 );
 
             if (this.filterStatus)
@@ -687,7 +688,7 @@ export default {
                         t.user_name?.toLowerCase().includes(q) ||
                         t.subject?.toLowerCase().includes(q) ||
                         t.user_email?.toLowerCase().includes(q) ||
-                        t.last_message?.toLowerCase().includes(q),
+                        t.last_message?.toLowerCase().includes(q)
                 );
             }
 
@@ -718,7 +719,7 @@ export default {
     },
 
     methods: {
-        // ── Fetch ──────────────────────────────────────────────────
+        // -- Fetch --------------------------------------------------
         async fetchTickets() {
             this.loading = true;
             this.loadError = null;
@@ -746,7 +747,7 @@ export default {
             try {
                 const url = this.routes.tickets_messages.replace(
                     "{ticket}",
-                    ticket.id,
+                    ticket.id
                 );
                 const res = await fetch(url, {
                     headers: { Accept: "application/json" },
@@ -762,7 +763,7 @@ export default {
             } catch {
                 this.showToast(
                     "Erreur lors du chargement des messages.",
-                    "error",
+                    "error"
                 );
             } finally {
                 this.messagesLoading = false;
@@ -770,7 +771,7 @@ export default {
             // Polling léger toutes les 15s
             this.messageInterval = setInterval(
                 () => this.pollMessages(),
-                15000,
+                15000
             );
         },
 
@@ -779,7 +780,7 @@ export default {
             try {
                 const url = this.routes.tickets_messages.replace(
                     "{ticket}",
-                    this.activeTicket.id,
+                    this.activeTicket.id
                 );
                 const res = await fetch(url, {
                     headers: { Accept: "application/json" },
@@ -793,7 +794,7 @@ export default {
             } catch {}
         },
 
-        // ── Répondre ───────────────────────────────────────────────
+        // -- Répondre -----------------------------------------------
         async sendReply() {
             if (!this.replyText.trim()) return;
             this.actionLoading = "reply";
@@ -803,7 +804,7 @@ export default {
             try {
                 const url = this.routes.tickets_reply.replace(
                     "{ticket}",
-                    this.activeTicket.id,
+                    this.activeTicket.id
                 );
                 const res = await fetch(url, {
                     method: "POST",
@@ -827,7 +828,7 @@ export default {
                     this.activeTicket.status_label = "En cours";
                     this.activeTicket.human_assigned = true;
                 }
-                this.showToast("✅ Réponse envoyée.", "success");
+                this.showToast("? Réponse envoyée.", "success");
                 this.$nextTick(() => this.scrollMessages());
             } catch {
                 this.showToast("Erreur lors de l'envoi.", "error");
@@ -836,7 +837,7 @@ export default {
             }
         },
 
-        // ── Assigner ───────────────────────────────────────────────
+        // -- Assigner -----------------------------------------------
         async assignToMe() {
             this.actionLoading = "assign";
             const csrf = document
@@ -845,7 +846,7 @@ export default {
             try {
                 const url = this.routes.tickets_assign.replace(
                     "{ticket}",
-                    this.activeTicket.id,
+                    this.activeTicket.id
                 );
                 const res = await fetch(url, {
                     method: "PATCH",
@@ -860,7 +861,7 @@ export default {
                 this.activeTicket.status = "in_progress";
                 this.activeTicket.status_label = "En cours";
                 this.activeTicket.agent_name = data.agent_name;
-                this.showToast("✅ Ticket pris en charge.", "success");
+                this.showToast("? Ticket pris en charge.", "success");
             } catch {
                 this.showToast("Erreur lors de l'assignation.", "error");
             } finally {
@@ -868,14 +869,14 @@ export default {
             }
         },
 
-        // ── Clôturer / Résoudre / Rouvrir ─────────────────────────
+        // -- Clôturer / Résoudre / Rouvrir -------------------------
         async closeTicket(newStatus) {
             const loadingKey =
                 newStatus === "resolved"
                     ? "resolve"
                     : newStatus === "closed"
-                      ? "close"
-                      : "reopen";
+                    ? "close"
+                    : "reopen";
             this.actionLoading = loadingKey;
             const csrf = document
                 .querySelector('meta[name="csrf-token"]')
@@ -883,7 +884,7 @@ export default {
             try {
                 const url = this.routes.tickets_status.replace(
                     "{ticket}",
-                    this.activeTicket.id,
+                    this.activeTicket.id
                 );
                 const res = await fetch(url, {
                     method: "PATCH",
@@ -908,7 +909,7 @@ export default {
 
                 // Mettre à jour dans la liste gauche
                 const idx = this.tickets.findIndex(
-                    (t) => t.id === this.activeTicket.id,
+                    (t) => t.id === this.activeTicket.id
                 );
                 if (idx !== -1) {
                     this.tickets[idx].status = newStatus;
@@ -919,28 +920,28 @@ export default {
                 const msgs = {
                     resolved: "✅ Ticket marqué comme résolu.",
                     closed: "🔒 Ticket clôturé.",
-                    in_progress: "🔄 Ticket rouvert.",
+                    in_progress: "↻ Ticket rouvert.",
                 };
                 this.showToast(
                     msgs[newStatus] ?? "Statut mis à jour.",
-                    "success",
+                    "success"
                 );
             } catch {
                 this.showToast(
                     "Erreur lors de la mise à jour du statut.",
-                    "error",
+                    "error"
                 );
             } finally {
                 this.actionLoading = null;
             }
         },
 
-        // ── Statut (conservé pour compatibilité interne) ───────────
+        // -- Statut (conservé pour compatibilité interne) -----------
         async updateStatus() {
             await this.closeTicket(this.activeTicket.status);
         },
 
-        // ── Note interne ───────────────────────────────────────────
+        // -- Note interne -------------------------------------------
         async saveNote() {
             this.actionLoading = "note";
             const csrf = document
@@ -949,7 +950,7 @@ export default {
             try {
                 const url = this.routes.tickets_note.replace(
                     "{ticket}",
-                    this.activeTicket.id,
+                    this.activeTicket.id
                 );
                 await fetch(url, {
                     method: "PATCH",
@@ -961,7 +962,7 @@ export default {
                     body: JSON.stringify({ note: this.noteText }),
                 });
                 this.activeTicket.admin_note = this.noteText;
-                this.showToast("📝 Note sauvegardée.", "success");
+                this.showToast("✅ Note sauvegardée.", "success");
             } catch {
                 this.showToast("Erreur lors de la sauvegarde.", "error");
             } finally {
@@ -969,7 +970,7 @@ export default {
             }
         },
 
-        // ── Helpers ────────────────────────────────────────────────
+        // -- Helpers ------------------------------------------------
         countByTab(key) {
             if (key === "all") return this.tickets.length;
             if (key === "open")
@@ -982,7 +983,7 @@ export default {
                     .length;
             if (key === "resolved")
                 return this.tickets.filter((t) =>
-                    ["resolved", "closed"].includes(t.status),
+                    ["resolved", "closed"].includes(t.status)
                 ).length;
             return 0;
         },
@@ -1007,7 +1008,7 @@ export default {
             });
         },
 
-        // ── Notifications ──────────────────────────────────────────
+        // -- Notifications ------------------------------------------
         async fetchNotifications() {
             this.notifLoading = true;
             try {
@@ -1060,7 +1061,7 @@ export default {
                 this.notifOpen = false;
         },
 
-        // ── Toasts ─────────────────────────────────────────────────
+        // -- Toasts -------------------------------------------------
         showToast(message, type = "") {
             const id = ++this.toastId;
             this.toasts.push({ id, message, type });
@@ -1074,7 +1075,7 @@ export default {
             window.dispatchEvent(
                 new CustomEvent("ab-sidebar-toggle", {
                     detail: { open: this.sidebarOpen },
-                }),
+                })
             );
         },
     },
@@ -1084,7 +1085,7 @@ export default {
         this.fetchNotifications();
         this.notifInterval = setInterval(
             () => this.fetchNotifications(),
-            30000,
+            30000
         );
         document.addEventListener("click", this.handleClickOutside);
         window.addEventListener("ab-sidebar-close", () => {
@@ -1118,9 +1119,11 @@ export default {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    overflow-x: hidden;
+    max-width: 100vw;
 }
 
-/* ── Topbar ── */
+/* -- Topbar -- */
 .amis-topbar {
     background: var(--wh);
     border-bottom: 2px solid var(--grl);
@@ -1133,6 +1136,9 @@ export default {
     top: 0;
     z-index: 40;
     gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
 }
 @media (min-width: 600px) {
     .amis-topbar {
@@ -1213,9 +1219,15 @@ export default {
     font-size: 12.5px;
     font-weight: 700;
     color: var(--gr);
+    display: none;
+}
+@media (min-width: 480px) {
+    .amis-count-pill {
+        display: block;
+    }
 }
 
-/* ── Notifications ── */
+/* -- Notifications -- */
 .amis-notif-wrap {
     position: relative;
 }
@@ -1265,6 +1277,12 @@ export default {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
     z-index: 100;
     overflow: hidden;
+}
+@media (max-width: 480px) {
+    .amis-notif-dropdown {
+        width: calc(100vw - 32px);
+        right: -40px;
+    }
 }
 .amis-notif-header {
     display: flex;
@@ -1326,12 +1344,19 @@ export default {
     text-align: center;
 }
 
-/* ── Layout split ── */
+/* -- Layout split -- */
 .ac-layout {
     display: flex;
     flex: 1;
-    height: calc(100vh - 64px - 45px);
+    height: calc(100vh - 60px - 45px);
     overflow: hidden;
+    width: 100%;
+    box-sizing: border-box;
+}
+@media (min-width: 600px) {
+    .ac-layout {
+        height: calc(100vh - 64px - 45px);
+    }
 }
 @media (max-width: 899px) {
     .ac-layout {
@@ -1341,7 +1366,7 @@ export default {
     }
 }
 
-/* ── Panel gauche : liste tickets ── */
+/* -- Panel gauche : liste tickets -- */
 .ac-tickets-panel {
     width: 380px;
     flex-shrink: 0;
@@ -1360,34 +1385,62 @@ export default {
     .ac-tickets-panel {
         width: 100%;
         height: auto;
+        max-height: 55vh;
         border-right: none;
         border-bottom: 2px solid var(--grl);
     }
 }
 
-/* ── Bande stats horizontale sous la topbar ── */
+/* -- Bande stats horizontale sous la topbar -- */
 .ac-stats-band {
-    display: flex;
-    align-items: center;
-    gap: 0;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
     background: var(--wh);
     border-bottom: 1.5px solid var(--grl);
-    padding: 0 24px;
     flex-shrink: 0;
-    overflow-x: auto;
+    width: 100%;
+    box-sizing: border-box;
+}
+@media (min-width: 600px) {
+    .ac-stats-band {
+        display: flex;
+        align-items: center;
+        padding: 0 24px;
+        gap: 0;
+    }
 }
 .ac-stat-item {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 12px 20px 12px 0;
-    margin-right: 20px;
+    padding: 10px 12px;
     border-right: 1px solid var(--grl);
+    border-bottom: 1px solid var(--grl);
     white-space: nowrap;
+    overflow: hidden;
+    min-width: 0;
 }
-.ac-stat-item:last-child {
+.ac-stat-item:nth-child(2n) {
     border-right: none;
-    margin-right: 0;
+}
+.ac-stat-item:nth-last-child(-n + 2) {
+    border-bottom: none;
+}
+@media (min-width: 600px) {
+    .ac-stat-item {
+        padding: 12px 20px 12px 0;
+        margin-right: 20px;
+        border-right: 1px solid var(--grl);
+        border-bottom: none;
+        overflow: visible;
+    }
+    .ac-stat-item:last-child {
+        border-right: none;
+        margin-right: 0;
+    }
+    .ac-stat-item:nth-child(2n) {
+        border-right: 1px solid var(--grl);
+    }
 }
 .ac-stat-dot {
     width: 10px;
@@ -1408,15 +1461,31 @@ export default {
     background: #22c55e;
 }
 .ac-stat-val {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 900;
     color: var(--dk);
     line-height: 1;
+    flex-shrink: 0;
+}
+@media (min-width: 600px) {
+    .ac-stat-val {
+        font-size: 18px;
+    }
 }
 .ac-stat-lbl {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--gr);
     font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+@media (min-width: 600px) {
+    .ac-stat-lbl {
+        font-size: 12px;
+        white-space: nowrap;
+    }
 }
 
 /* Filtres panel gauche */
@@ -1467,6 +1536,9 @@ export default {
     color: var(--dk);
     outline: none;
     cursor: pointer;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
 }
 .amis-select:focus {
     border-color: var(--or);
@@ -1480,14 +1552,19 @@ export default {
     gap: 0;
     flex-shrink: 0;
     border-bottom: 1.5px solid var(--grl);
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.amis-tabs::-webkit-scrollbar {
+    display: none;
 }
 .amis-tab {
-    padding: 8px 12px;
+    padding: 10px 10px;
     background: none;
     border: none;
     border-radius: 0;
     font-family: "Poppins", sans-serif;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     color: var(--gr);
     cursor: pointer;
@@ -1497,6 +1574,13 @@ export default {
     gap: 4px;
     border-bottom: 2px solid transparent;
     transition: all 0.18s;
+    flex-shrink: 0;
+}
+@media (min-width: 600px) {
+    .amis-tab {
+        font-size: 12px;
+        padding: 10px 12px;
+    }
 }
 .amis-tab.active {
     color: var(--or);
@@ -1508,6 +1592,7 @@ export default {
     padding: 1px 6px;
     font-size: 10px;
     color: var(--gr);
+    font-weight: 700;
 }
 .amis-tab.active .amis-tab-count {
     background: var(--or);
@@ -1659,13 +1744,42 @@ export default {
     cursor: not-allowed;
 }
 
-/* ── Panel droit : chat ── */
+/* -- Panel droit : chat -- */
+.ac-back-btn {
+    display: none;
+    background: var(--grl);
+    border: none;
+    border-radius: 8px;
+    width: 34px;
+    height: 34px;
+    font-size: 18px;
+    cursor: pointer;
+    color: var(--dk);
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.18s;
+}
+.ac-back-btn:hover {
+    background: #ddd4c8;
+}
+@media (max-width: 899px) {
+    .ac-back-btn {
+        display: flex;
+    }
+}
 .ac-chat-panel {
     flex: 1;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     min-width: 0;
+}
+@media (max-width: 899px) {
+    .ac-chat-panel {
+        min-height: 60vh;
+        overflow: visible;
+    }
 }
 
 .ac-chat-empty {
@@ -1676,6 +1790,11 @@ export default {
     justify-content: center;
     gap: 12px;
     color: var(--gr);
+}
+@media (max-width: 899px) {
+    .ac-chat-empty {
+        display: none;
+    }
 }
 .ac-chat-empty-icon {
     font-size: 52px;
@@ -1695,11 +1814,15 @@ export default {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
     background: var(--wh);
     flex-shrink: 0;
     flex-wrap: wrap;
     gap: 10px;
+}
+@media (max-width: 599px) {
+    .ac-chat-header {
+        padding: 12px 14px;
+    }
 }
 .ac-chat-header-left {
     display: flex;
@@ -1748,6 +1871,13 @@ export default {
     color: var(--gr);
     flex-shrink: 0;
 }
+@media (max-width: 599px) {
+    .ac-ticket-info-bar {
+        padding: 8px 14px;
+        gap: 8px;
+        font-size: 11.5px;
+    }
+}
 
 .ac-messages-wrap {
     flex: 1;
@@ -1756,6 +1886,11 @@ export default {
     display: flex;
     flex-direction: column;
     gap: 14px;
+}
+@media (max-width: 599px) {
+    .ac-messages-wrap {
+        padding: 12px 12px;
+    }
 }
 .ac-msg-loading {
     display: flex;
@@ -1805,6 +1940,12 @@ export default {
     max-width: 520px;
     word-break: break-word;
 }
+@media (max-width: 599px) {
+    .ac-msg-bubble {
+        font-size: 13px;
+        max-width: calc(100vw - 100px);
+    }
+}
 .bubble-user {
     background: #f0e9e4;
     color: var(--dk);
@@ -1838,6 +1979,11 @@ export default {
     background: var(--wh);
     flex-shrink: 0;
 }
+@media (max-width: 599px) {
+    .ac-reply-bar {
+        padding: 10px 12px;
+    }
+}
 .ac-reply-input {
     width: 100%;
     border: 1.5px solid var(--grl);
@@ -1860,6 +2006,18 @@ export default {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+@media (max-width: 480px) {
+    .ac-reply-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .ac-reply-actions .amis-btn {
+        width: 100%;
+        justify-content: center;
+    }
 }
 .ac-reply-hint {
     font-size: 11px;
@@ -1877,6 +2035,17 @@ export default {
     gap: 10px;
     flex-shrink: 0;
     flex-wrap: wrap;
+}
+@media (max-width: 480px) {
+    .ac-reply-closed {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+    .ac-reply-closed .amis-btn {
+        width: 100%;
+        justify-content: center;
+    }
 }
 
 .ac-note-section {
@@ -1910,7 +2079,7 @@ export default {
     background: #fff;
 }
 
-/* ── Badges ── */
+/* -- Badges -- */
 .amis-badge {
     font-size: 11px;
     font-weight: 700;
@@ -1943,7 +2112,7 @@ export default {
     color: var(--gr);
 }
 
-/* ── Boutons ── */
+/* -- Boutons -- */
 .amis-btn {
     display: inline-flex;
     align-items: center;
@@ -1994,7 +2163,7 @@ export default {
     cursor: not-allowed;
 }
 
-/* ── Spinner ── */
+/* -- Spinner -- */
 .amis-spinner {
     width: 14px;
     height: 14px;
@@ -2009,7 +2178,7 @@ export default {
     }
 }
 
-/* ── Empty / Error ── */
+/* -- Empty / Error -- */
 .amis-empty {
     text-align: center;
     padding: 40px 20px;
@@ -2041,7 +2210,7 @@ export default {
     margin: 10px;
 }
 
-/* ── Toasts ── */
+/* -- Toasts -- */
 .amis-toast-container {
     position: fixed;
     bottom: 24px;
@@ -2050,6 +2219,13 @@ export default {
     flex-direction: column;
     gap: 8px;
     z-index: 9999;
+}
+@media (max-width: 520px) {
+    .amis-toast-container {
+        bottom: 16px;
+        right: 12px;
+        left: 12px;
+    }
 }
 .amis-toast {
     background: var(--dk);
@@ -2061,6 +2237,11 @@ export default {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
     animation: fadeUp 0.25s ease;
     max-width: 320px;
+}
+@media (max-width: 520px) {
+    .amis-toast {
+        max-width: 100%;
+    }
 }
 .amis-toast.success {
     background: #16a34a;
@@ -2079,3 +2260,7 @@ export default {
     }
 }
 </style>
+
+
+
+

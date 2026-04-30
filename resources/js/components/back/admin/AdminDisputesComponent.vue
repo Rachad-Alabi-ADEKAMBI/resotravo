@@ -12,15 +12,9 @@
                 </button>
                 <div>
                     <div class="amis-page-title">Litiges</div>
-                    <div class="amis-page-sub">
-                        {{ greeting }}, <strong>{{ user.name }}</strong>
-                    </div>
                 </div>
             </div>
             <div class="amis-topbar-right">
-                <div class="amis-count-pill">
-                    {{ totalFiltered }} litige{{ totalFiltered > 1 ? "s" : "" }}
-                </div>
                 <div class="amis-notif-wrap" ref="notifWrap">
                     <button class="amis-notif-btn" @click="toggleNotif">
                         <svg
@@ -37,7 +31,7 @@
                             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                         </svg>
                         <span class="amis-notif-badge" v-if="unreadCount > 0">{{
-                            unreadCount > 9 ? "9+" : unreadCount
+                            unreadCount
                         }}</span>
                     </button>
                     <div class="amis-notif-dropdown" v-if="notifOpen">
@@ -79,10 +73,11 @@
                     </div>
                 </div>
                 <button
-                    class="amis-btn amis-btn-orange"
+                    class="amis-btn amis-btn-orange amis-btn-circle"
                     @click="openCreateModal"
+                    aria-label="Ouvrir un litige"
                 >
-                    ⚖️ Ouvrir un litige
+                    +
                 </button>
                 <div class="amis-avatar">{{ userInitials }}</div>
             </div>
@@ -408,8 +403,8 @@
                                         msg.sender_role === "admin"
                                             ? "👨‍💼"
                                             : msg.sender_role === "client"
-                                              ? "👤"
-                                              : "👷"
+                                            ? "👤"
+                                            : "👷"
                                     }}
                                 </div>
                                 <div class="ad-msg-content">
@@ -1116,10 +1111,6 @@ export default {
     },
 
     computed: {
-        greeting() {
-            const h = new Date().getHours();
-            return h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir";
-        },
         userInitials() {
             return (
                 this.user.name
@@ -1156,7 +1147,7 @@ export default {
                 {
                     dotClass: "dot-blue",
                     value: this.disputes.filter(
-                        (d) => d.status === "in_progress",
+                        (d) => d.status === "in_progress"
                     ).length,
                     label: "En cours",
                 },
@@ -1164,8 +1155,8 @@ export default {
                     dotClass: "dot-green",
                     value: this.disputes.filter((d) =>
                         ["resolved_client", "resolved_contractor"].includes(
-                            d.status,
-                        ),
+                            d.status
+                        )
                     ).length,
                     label: "Résolus",
                 },
@@ -1190,7 +1181,7 @@ export default {
                         d.subject?.toLowerCase().includes(q) ||
                         d.client_name?.toLowerCase().includes(q) ||
                         d.contractor_name?.toLowerCase().includes(q) ||
-                        d.mission_service?.toLowerCase().includes(q),
+                        d.mission_service?.toLowerCase().includes(q)
                 );
             }
             return list;
@@ -1248,7 +1239,7 @@ export default {
             try {
                 const url = this.routes.disputes_show.replace(
                     "{dispute}",
-                    d.id,
+                    d.id
                 );
                 const res = await fetch(url, {
                     headers: { Accept: "application/json" },
@@ -1278,7 +1269,7 @@ export default {
             try {
                 const url = this.routes.disputes_message.replace(
                     "{dispute}",
-                    this.activeDispute.id,
+                    this.activeDispute.id
                 );
                 const res = await fetch(url, {
                     method: "POST",
@@ -1320,7 +1311,7 @@ export default {
                 form.append("file", file);
                 const url = this.routes.disputes_attachment.replace(
                     "{dispute}",
-                    this.activeDispute.id,
+                    this.activeDispute.id
                 );
                 const res = await fetch(url, {
                     method: "POST",
@@ -1419,7 +1410,7 @@ export default {
             } catch (e) {
                 this.showToast(
                     e.message ?? "Erreur lors de la création.",
-                    "error",
+                    "error"
                 );
             } finally {
                 this.createModal.loading = false;
@@ -1436,7 +1427,7 @@ export default {
             try {
                 const url = this.routes.disputes_verdict.replace(
                     "{dispute}",
-                    this.activeDispute.id,
+                    this.activeDispute.id
                 );
                 const res = await fetch(url, {
                     method: "POST",
@@ -1476,7 +1467,7 @@ export default {
             try {
                 const url = this.routes.disputes_close.replace(
                     "{dispute}",
-                    this.activeDispute.id,
+                    this.activeDispute.id
                 );
                 const res = await fetch(url, {
                     method: "POST",
@@ -1492,7 +1483,7 @@ export default {
                 this.activeDispute.status_label = "Clôturé";
                 this.activeDispute.is_resolved = true;
                 const idx = this.disputes.findIndex(
-                    (x) => x.id === this.activeDispute.id,
+                    (x) => x.id === this.activeDispute.id
                 );
                 if (idx !== -1) {
                     this.disputes[idx].status = "closed";
@@ -1589,7 +1580,7 @@ export default {
             window.dispatchEvent(
                 new CustomEvent("ab-sidebar-toggle", {
                     detail: { open: this.sidebarOpen },
-                }),
+                })
             );
         },
     },
@@ -1599,7 +1590,7 @@ export default {
         this.fetchNotifications();
         this.notifInterval = setInterval(
             () => this.fetchNotifications(),
-            30000,
+            30000
         );
         document.addEventListener("click", this.handleClickOutside);
         window.addEventListener("ab-sidebar-close", () => {
@@ -1727,6 +1718,62 @@ export default {
     font-weight: 700;
     color: var(--gr);
 }
+@media (max-width: 520px) {
+    .amis-topbar {
+        height: auto;
+        padding: 12px 14px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    .amis-topbar-right {
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        width: 100%;
+    }
+    .amis-topbar-left {
+        width: 100%;
+        min-width: 0;
+        margin-bottom: 8px;
+    }
+}
+@media (max-width: 479px) {
+    .amis-count-pill-hide-xs {
+        display: none;
+    }
+    .amis-topbar-right {
+        gap: 6px;
+    }
+}
+/* Bouton ouvrir litige : texte court sur xs */
+.amis-btn-open-full {
+    display: inline;
+}
+.amis-btn-open-short {
+    display: none;
+}
+@media (max-width: 479px) {
+    .amis-btn-open-full {
+        display: none;
+    }
+    .amis-btn-open-short {
+        display: inline;
+    }
+    .amis-btn-open-hide-xs {
+        padding: 9px 12px;
+    }
+}
+.amis-btn-circle {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    line-height: 1;
+}
 
 /* ── Notifs ── */
 .amis-notif-wrap {
@@ -1743,6 +1790,7 @@ export default {
     position: relative;
     transition: color 0.18s;
     border-radius: 8px;
+    flex-shrink: 0;
 }
 .amis-notif-btn:hover {
     color: var(--or);
@@ -1768,16 +1816,26 @@ export default {
     padding: 0 3px;
 }
 .amis-notif-dropdown {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-    width: 300px;
+    position: fixed;
+    top: auto;
+    right: 8px;
+    width: calc(100vw - 16px);
+    max-width: 320px;
     background: var(--wh);
     border: 1.5px solid var(--grl);
     border-radius: 14px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
     z-index: 100;
     overflow: hidden;
+}
+@media (min-width: 480px) {
+    .amis-notif-dropdown {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        width: 300px;
+        max-width: none;
+    }
 }
 .amis-notif-header {
     display: flex;
@@ -1845,9 +1903,19 @@ export default {
     align-items: center;
     background: var(--wh);
     border-bottom: 1.5px solid var(--grl);
-    padding: 0 24px;
+    padding: 0 16px;
     flex-shrink: 0;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+.ac-stats-band::-webkit-scrollbar {
+    display: none;
+}
+@media (min-width: 600px) {
+    .ac-stats-band {
+        padding: 0 24px;
+    }
 }
 .ac-stat-item {
     display: flex;
@@ -1904,6 +1972,7 @@ export default {
         flex-direction: column;
         height: auto;
         overflow: visible;
+        min-height: 0;
     }
 }
 
@@ -1926,8 +1995,13 @@ export default {
     .ac-tickets-panel {
         width: 100%;
         height: auto;
+        max-height: none;
         border-right: none;
         border-bottom: 2px solid var(--grl);
+        overflow: visible;
+    }
+    .ac-ticket-list {
+        max-height: none;
     }
 }
 .ac-panel-filters {
@@ -2013,6 +2087,24 @@ export default {
     color: #fff;
 }
 
+@media (max-width: 520px) {
+    .amis-tabs {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+        padding: 0 10px;
+    }
+    .amis-tab {
+        padding: 10px 8px;
+        font-size: 11px;
+        white-space: normal;
+    }
+    .amis-tab-count {
+        font-size: 10px;
+        padding: 1px 5px;
+    }
+}
+
 /* ── Ticket list ── */
 .ac-ticket-list {
     flex: 1;
@@ -2086,10 +2178,16 @@ export default {
     display: flex;
     align-items: center;
     gap: 3px;
-    padding: 10px 12px;
+    padding: 8px 10px;
     justify-content: center;
     flex-shrink: 0;
     border-top: 1px solid var(--grl);
+    flex-wrap: wrap;
+}
+@media (min-width: 600px) {
+    .ac-pagination {
+        padding: 10px 12px;
+    }
 }
 .ac-page-btn {
     min-width: 30px;
@@ -2129,6 +2227,15 @@ export default {
     overflow: hidden;
     min-width: 0;
 }
+@media (max-width: 899px) {
+    .ac-chat-panel {
+        min-height: 60vh;
+        overflow: visible;
+    }
+    .ac-messages-wrap {
+        min-height: 300px;
+    }
+}
 .ac-chat-empty {
     flex: 1;
     display: flex;
@@ -2150,26 +2257,67 @@ export default {
     font-size: 13px;
 }
 .ac-chat-header {
-    padding: 14px 20px;
+    padding: 12px 16px;
     border-bottom: 1.5px solid var(--grl);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 10px;
     background: var(--wh);
     flex-shrink: 0;
     flex-wrap: wrap;
+}
+@media (min-width: 600px) {
+    .ac-chat-header {
+        padding: 14px 20px;
+    }
 }
 .ac-chat-header-left {
     display: flex;
     align-items: center;
     gap: 12px;
+    min-width: 0;
+    flex: 1;
+}
+.ac-chat-header-left > div {
+    min-width: 0;
+    overflow: hidden;
+}
+.ac-chat-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .ac-chat-header-right {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     flex-wrap: wrap;
+    flex-shrink: 0;
+}
+@media (max-width: 520px) {
+    .ac-chat-header-right {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        width: 100%;
+    }
+    .ac-chat-header-right .amis-btn {
+        width: 100%;
+    }
+}
+@media (max-width: 479px) {
+    .ac-chat-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .ac-chat-header-right {
+        width: 100%;
+    }
+    .ac-chat-header-right .amis-btn {
+        flex: 1;
+        justify-content: center;
+    }
 }
 .ac-chat-avatar {
     font-size: 28px;
@@ -2195,6 +2343,12 @@ export default {
     flex-shrink: 0;
     background: #faf7f4;
     flex-wrap: wrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+.ad-parties-bar::-webkit-scrollbar {
+    display: none;
 }
 .ad-party {
     display: flex;
@@ -2202,11 +2356,30 @@ export default {
     gap: 2px;
     padding: 10px 16px;
     flex: 1;
-    min-width: 140px;
+    min-width: 130px;
     border-right: 1px solid var(--grl);
 }
 .ad-party:last-child {
     border-right: none;
+}
+@media (max-width: 479px) {
+    .ad-parties-bar {
+        flex-direction: column;
+        overflow-x: visible;
+    }
+    .ad-party {
+        flex: none;
+        width: 100%;
+        min-width: 0;
+        border-right: none;
+        border-bottom: 1px solid var(--grl);
+    }
+    .ad-party:last-child {
+        border-bottom: none;
+    }
+    .ad-party-vs {
+        display: none;
+    }
 }
 .ad-party-vs {
     display: flex;
@@ -2255,6 +2428,12 @@ export default {
     border-bottom: 1.5px solid var(--grl);
     flex-shrink: 0;
     background: var(--wh);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+.ad-detail-tabs::-webkit-scrollbar {
+    display: none;
 }
 .ad-dtab {
     padding: 10px 16px;
@@ -2274,6 +2453,18 @@ export default {
 .ad-dtab.active {
     color: var(--or);
     border-bottom-color: var(--or);
+}
+
+@media (max-width: 520px) {
+    .ad-detail-tabs {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+    }
+    .ad-dtab {
+        justify-content: center;
+        padding: 10px 12px;
+    }
 }
 
 /* ── Messages ── */
@@ -2532,6 +2723,24 @@ export default {
     font-size: 11px;
     color: var(--grm);
 }
+@media (max-width: 479px) {
+    .ac-reply-hint {
+        display: none;
+    }
+    .ac-reply-bar {
+        padding: 10px 12px;
+    }
+    .ac-reply-input {
+        font-size: 13px;
+    }
+    .ac-reply-actions .amis-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    .ac-reply-actions {
+        justify-content: flex-end;
+    }
+}
 .ac-reply-closed {
     display: flex;
     align-items: center;
@@ -2615,6 +2824,17 @@ export default {
     padding: 14px 20px;
     border-top: 1.5px solid var(--grl);
     flex-shrink: 0;
+    flex-wrap: wrap;
+}
+@media (max-width: 479px) {
+    .amis-modal-footer {
+        flex-direction: column-reverse;
+        padding: 12px 16px;
+    }
+    .amis-modal-footer .amis-btn {
+        width: 100%;
+        justify-content: center;
+    }
 }
 .amis-form-label {
     display: block;
@@ -2948,6 +3168,18 @@ export default {
 .amis-toast.error {
     background: #dc2626;
 }
+
+@media (max-width: 520px) {
+    .amis-toast-container {
+        bottom: 16px;
+        right: 12px;
+        left: 12px;
+    }
+    .amis-toast {
+        max-width: 100%;
+    }
+}
+
 @keyframes fadeUp {
     from {
         opacity: 0;

@@ -8,7 +8,7 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'name' => env('APP_NAME', 'Resotravo'), // Mis à jour avec le nom du projet [cite: 1]
+    'name' => env('APP_NAME', 'Mesotravo'), // Mis à jour avec le nom du projet [cite: 1]
 
     /*
     |--------------------------------------------------------------------------

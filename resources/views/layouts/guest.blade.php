@@ -11,6 +11,14 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
+        @php $iconMode = \App\Models\Setting::get('site_icon_mode', 'current'); @endphp
+        @if ($iconMode === 'fontawesome')
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+        @endif
+        <script>
+            window.MESOTRAVO_ICON_MODE = @json($iconMode);
+        </script>
+
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
@@ -26,5 +34,6 @@
                 {{ $slot }}
             </div>
         </div>
+    @include('partials.cookie-banner')
     </body>
 </html>

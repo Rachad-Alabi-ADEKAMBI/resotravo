@@ -27,6 +27,54 @@
                         <span>{{ counts.total }}</span> total
                     </div>
                 </div>
+                <div class="amk-notif-wrap" ref="notifWrap">
+                    <button class="amk-notif-btn" @click="toggleNotif" aria-label="Notifications">
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                        </svg>
+                        <span class="amk-notif-badge" v-if="unreadCount > 0">
+                            {{ unreadCount }}
+                        </span>
+                    </button>
+                    <div class="amk-notif-dropdown" v-if="notifOpen">
+                        <div class="amk-notif-header">
+                            <span>Notifications</span>
+                            <button
+                                class="amk-notif-read-all"
+                                @click="markAllRead"
+                                v-if="unreadCount > 0"
+                            >
+                                Tout lire
+                            </button>
+                        </div>
+                        <div class="amk-notif-loading" v-if="notifLoading">Chargement...</div>
+                        <div class="amk-notif-empty" v-else-if="notifications.length === 0">
+                            Aucune notification
+                        </div>
+                        <div
+                            class="amk-notif-item"
+                            v-for="n in notifications"
+                            :key="n.id"
+                            :class="{ unread: !n.read }"
+                            @click="openNotif(n)"
+                        >
+                            <div class="amk-notif-dot" v-if="!n.read"></div>
+                            <div class="amk-notif-content">
+                                <div class="amk-notif-title">{{ n.title }}</div>
+                                <div class="amk-notif-body">{{ n.body }}</div>
+                                <div class="amk-notif-ago">{{ n.ago }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="amk-avatar">{{ userInitials }}</div>
             </div>
         </div>
@@ -615,7 +663,7 @@ export default {
                 },
                 {
                     value: "domain",
-                    label: "🔧 Domaine non pris en charge par Resotravo",
+                    label: "🔧 Domaine non pris en charge par Mesotravo",
                 },
                 { value: "duplicate", label: "🔁 Doublon d'un AO déjà publié" },
                 {
@@ -628,6 +676,10 @@ export default {
             toasts: [],
             toastId: 0,
             sidebarOpen: false,
+            notifications: [],
+            unreadCount: 0,
+            notifOpen: false,
+            notifLoading: false,
 
             tabs: [
                 { key: "pending", label: "⏳ En attente" },
@@ -699,7 +751,7 @@ export default {
                 list = list.filter((t) => t.domain === this.filterDomain);
             if (this.filterProfile)
                 list = list.filter(
-                    (t) => t.profile_type === this.filterProfile,
+                    (t) => t.profile_type === this.filterProfile
                 );
             if (this.search.trim()) {
                 const q = this.search.toLowerCase();
@@ -708,7 +760,7 @@ export default {
                         t.title?.toLowerCase().includes(q) ||
                         t.company?.toLowerCase().includes(q) ||
                         t.domain?.toLowerCase().includes(q) ||
-                        t.location?.toLowerCase().includes(q),
+                        t.location?.toLowerCase().includes(q)
                 );
             }
             return list;
@@ -751,7 +803,7 @@ export default {
                 });
                 if (!res.ok) throw new Error();
                 const data = await res.json();
-                this.tenders = Array.isArray(data) ? data : (data.data ?? []);
+                this.tenders = Array.isArray(data) ? data : data.data ?? [];
             } catch {
                 this.error = "Impossible de charger les appels d'offres.";
             } finally {
@@ -776,7 +828,7 @@ export default {
                 await this.patchStatus(t.id, "published", null);
                 this.showToast(
                     "✅ AO publié et visible par les prestataires.",
-                    "success",
+                    "success"
                 );
             } catch {
                 this.showToast("Erreur lors de la publication.", "error");
@@ -816,7 +868,7 @@ export default {
                 const updated = await this.patchStatus(
                     this.activeTender.id,
                     status,
-                    rejectReason,
+                    rejectReason
                 );
                 this.activeTender = { ...updated };
                 this.showToast(this.actionSuccessMessage(status), "success");
@@ -830,7 +882,7 @@ export default {
 
         async patchStatus(tenderId, status, rejectReason) {
             const csrf = document.querySelector(
-                'meta[name="csrf-token"]',
+                'meta[name="csrf-token"]'
             )?.content;
             const url = this.routes.tenders_status.replace("{id}", tenderId);
             const res = await fetch(url, {
@@ -875,9 +927,9 @@ export default {
             const reason =
                 this.rejectModal.reason === "other"
                     ? this.rejectModal.customReason.trim()
-                    : (this.rejectOptions.find(
-                          (o) => o.value === this.rejectModal.reason,
-                      )?.label ?? "");
+                    : this.rejectOptions.find(
+                          (o) => o.value === this.rejectModal.reason
+                      )?.label ?? "";
 
             if (this.rejectModal.reason === "other" && !reason) {
                 this.rejectModal.error = "Veuillez préciser le motif.";
@@ -895,14 +947,14 @@ export default {
                 const updated = await this.patchStatus(
                     targetId,
                     "rejected",
-                    reason,
+                    reason
                 );
                 if (this.activeTender?.id === targetId)
                     this.activeTender = { ...updated };
                 this.rejectModal.visible = false;
                 this.showToast(
                     "❌ AO rejeté. L'entreprise a été notifiée.",
-                    "success",
+                    "success"
                 );
             } catch {
                 this.rejectModal.error = "Erreur réseau. Veuillez réessayer.";
@@ -980,20 +1032,92 @@ export default {
             window.dispatchEvent(
                 new CustomEvent("ab-sidebar-toggle", {
                     detail: { open: this.sidebarOpen },
-                }),
+                })
             );
+        },
+
+        async fetchNotifications() {
+            if (!this.routes.notifications) return;
+            this.notifLoading = true;
+            try {
+                const res = await fetch(this.routes.notifications, {
+                    headers: {
+                        Accept: "application/json",
+                        "X-Requested-With": "XMLHttpRequest",
+                    },
+                });
+                const data = await res.json();
+                this.notifications = data.notifications ?? [];
+                this.unreadCount = data.unread_count ?? 0;
+            } catch {
+                // notifications are non-blocking
+            } finally {
+                this.notifLoading = false;
+            }
+        },
+
+        toggleNotif() {
+            this.notifOpen = !this.notifOpen;
+            if (this.notifOpen) this.fetchNotifications();
+        },
+
+        closeNotifOutside(e) {
+            if (this.$refs.notifWrap && !this.$refs.notifWrap.contains(e.target)) {
+                this.notifOpen = false;
+            }
+        },
+
+        async markAllRead() {
+            if (!this.routes.notifications_all) return;
+            try {
+                await fetch(this.routes.notifications_all, {
+                    method: "PATCH",
+                    headers: {
+                        "X-CSRF-TOKEN": document
+                            .querySelector('meta[name="csrf-token"]')
+                            .getAttribute("content"),
+                        Accept: "application/json",
+                        "X-Requested-With": "XMLHttpRequest",
+                    },
+                });
+                this.notifications.forEach((n) => (n.read = true));
+                this.unreadCount = 0;
+            } catch {}
+        },
+
+        openNotif(n) {
+            if (!n.read) {
+                fetch(`/notifications/${n.id}/read`, {
+                    method: "PATCH",
+                    headers: {
+                        "X-CSRF-TOKEN": document
+                            .querySelector('meta[name="csrf-token"]')
+                            .getAttribute("content"),
+                        Accept: "application/json",
+                        "X-Requested-With": "XMLHttpRequest",
+                    },
+                }).catch(() => {});
+                n.read = true;
+                this.unreadCount = Math.max(0, this.unreadCount - 1);
+            }
+
+            if (n.url) window.location.href = n.url;
         },
     },
 
     mounted() {
         this.fetchTenders();
-        window.addEventListener("ab-sidebar-close", () => {
+        this.fetchNotifications();
+        this.onSidebarClose = () => {
             this.sidebarOpen = false;
-        });
+        };
+        window.addEventListener("ab-sidebar-close", this.onSidebarClose);
+        document.addEventListener("click", this.closeNotifOutside);
     },
 
     beforeUnmount() {
-        window.removeEventListener("ab-sidebar-close", () => {});
+        window.removeEventListener("ab-sidebar-close", this.onSidebarClose);
+        document.removeEventListener("click", this.closeNotifOutside);
     },
 };
 </script>
@@ -1079,6 +1203,127 @@ export default {
     font-weight: 800;
     font-size: 13px;
     flex-shrink: 0;
+}
+.amk-notif-wrap {
+    position: relative;
+}
+.amk-notif-btn {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    border: 1px solid var(--grl);
+    background: #fff;
+    color: var(--gr);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color 0.18s, color 0.18s, background 0.18s;
+}
+.amk-notif-btn:hover {
+    border-color: var(--or);
+    color: var(--or);
+    background: var(--or3);
+}
+.amk-notif-btn svg {
+    width: 21px;
+    height: 21px;
+}
+.amk-notif-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 99px;
+    background: #ef4444;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #fff;
+    font-size: 10px;
+    font-weight: 900;
+}
+.amk-notif-dropdown {
+    position: absolute;
+    right: 0;
+    top: 46px;
+    width: 340px;
+    max-height: 400px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid var(--grl);
+    border-radius: 12px;
+    box-shadow: 0 12px 34px rgba(28, 20, 18, 0.14);
+    z-index: 100;
+}
+.amk-notif-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid #f0e9e4;
+    font-size: 14px;
+    font-weight: 900;
+}
+.amk-notif-read-all {
+    background: transparent;
+    border: 0;
+    color: var(--or);
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+}
+.amk-notif-loading,
+.amk-notif-empty {
+    padding: 24px;
+    text-align: center;
+    color: var(--grm);
+    font-size: 13px;
+}
+.amk-notif-item {
+    display: flex;
+    gap: 10px;
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid #f8f4f0;
+    transition: background 0.15s;
+}
+.amk-notif-item:hover {
+    background: #fafafa;
+}
+.amk-notif-item.unread {
+    background: #fff8f0;
+}
+.amk-notif-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--or);
+    flex-shrink: 0;
+    margin-top: 6px;
+}
+.amk-notif-content {
+    min-width: 0;
+}
+.amk-notif-title {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--dk);
+}
+.amk-notif-body {
+    margin-top: 2px;
+    font-size: 12px;
+    color: #666;
+    line-height: 1.45;
+}
+.amk-notif-ago {
+    margin-top: 4px;
+    font-size: 11px;
+    color: #aaa;
 }
 .ad-burger {
     background: none;
@@ -1231,12 +1476,21 @@ export default {
     border: 1.5px solid var(--grl);
     background: #f8f4f0;
     border-radius: 8px;
-    padding: 8px 12px;
+    padding: 7px 8px;
     font-family: "Poppins", sans-serif;
-    font-size: 13px;
+    font-size: 12px;
     color: var(--dk);
     outline: none;
     cursor: pointer;
+    width: 100%;
+    min-width: 0;
+}
+@media (min-width: 600px) {
+    .amis-select {
+        font-size: 13px;
+        padding: 8px 12px;
+        width: auto;
+    }
 }
 .amis-select:focus {
     border-color: var(--or);
@@ -1244,30 +1498,46 @@ export default {
 
 /* ── TABS ── */
 .amis-tabs {
-    display: flex;
-    gap: 0;
-    overflow-x: auto;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
     background: var(--wh);
     border: 1.5px solid var(--grl);
     border-radius: 12px;
     padding: 4px;
     margin-bottom: 20px;
 }
+@media (max-width: 480px) {
+    .amis-tabs {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
 .amis-tab {
-    padding: 8px 16px;
+    padding: 6px 4px;
     background: none;
     border: none;
     border-radius: 8px;
     font-family: "Poppins", sans-serif;
-    font-size: 13px;
+    font-size: 10px;
     font-weight: 600;
     color: var(--gr);
     cursor: pointer;
-    white-space: nowrap;
+    white-space: normal;
+    word-break: break-word;
     display: flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    gap: 3px;
     transition: all 0.18s;
+    text-align: center;
+    overflow: hidden;
+    line-height: 1.2;
+}
+@media (min-width: 600px) {
+    .amis-tab {
+        font-size: 13px;
+        padding: 8px 12px;
+    }
 }
 .amis-tab:hover {
     color: var(--dk);
@@ -1279,9 +1549,16 @@ export default {
 .amis-tab-count {
     background: var(--grl);
     border-radius: 99px;
-    padding: 1px 7px;
-    font-size: 11px;
+    padding: 1px 6px;
+    font-size: 10px;
     font-weight: 700;
+    flex-shrink: 0;
+}
+@media (min-width: 600px) {
+    .amis-tab-count {
+        font-size: 11px;
+        padding: 1px 7px;
+    }
 }
 .amis-tab.active .amis-tab-count {
     background: var(--or);
@@ -1675,6 +1952,18 @@ export default {
     overflow: hidden;
     animation: slideIn 0.25s ease;
 }
+@media (max-width: 520px) {
+    .amk-panel-overlay {
+        align-items: flex-end;
+        justify-content: stretch;
+    }
+    .amk-panel {
+        max-width: 100%;
+        height: 92vh;
+        border-radius: 20px 20px 0 0;
+        animation: slideUp 0.28s ease;
+    }
+}
 @keyframes slideIn {
     from {
         transform: translateX(100%);
@@ -1683,10 +1972,22 @@ export default {
         transform: translateX(0);
     }
 }
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+    }
+    to {
+        transform: translateY(0);
+    }
+}
 .amk-panel-header {
     padding: 18px 20px;
     border-bottom: 1.5px solid var(--grl);
     flex-shrink: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
 }
 .amk-panel-header h2 {
     font-size: 16px;
@@ -1695,6 +1996,11 @@ export default {
     line-height: 1.3;
     margin-bottom: 4px;
 }
+@media (max-width: 420px) {
+    .amk-panel-header h2 {
+        font-size: 14px;
+    }
+}
 .amk-panel-sub {
     font-size: 12px;
     color: var(--gr);
@@ -1702,9 +2008,8 @@ export default {
 .amk-panel-header-right {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-top: 10px;
-    flex-wrap: wrap;
+    gap: 8px;
+    flex-shrink: 0;
 }
 .amk-panel-close {
     background: none;
@@ -1889,6 +2194,7 @@ export default {
     display: flex;
     gap: 10px;
     justify-content: flex-end;
+    flex-wrap: wrap;
     padding: 14px 20px;
     border-top: 1.5px solid var(--grl);
     flex-shrink: 0;
@@ -1951,6 +2257,13 @@ export default {
     gap: 8px;
     z-index: 9999;
 }
+@media (max-width: 520px) {
+    .amk-toast-container {
+        bottom: 16px;
+        right: 12px;
+        left: 12px;
+    }
+}
 .amk-toast {
     background: var(--dk);
     color: #fff;
@@ -1961,6 +2274,11 @@ export default {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
     animation: fadeUp 0.25s ease;
     max-width: 320px;
+}
+@media (max-width: 520px) {
+    .amk-toast {
+        max-width: 100%;
+    }
 }
 .amk-toast.success {
     background: #16a34a;

@@ -1,7 +1,7 @@
 {{-- resources/views/pages/back/admin/dashboard.blade.php --}}
 @extends('layouts.back')
 
-@section('title', 'Tableau de bord — Resotravo')
+@section('title', 'Tableau de bord — Mesotravo')
 
 @php $active = 'dashboard'; @endphp
 

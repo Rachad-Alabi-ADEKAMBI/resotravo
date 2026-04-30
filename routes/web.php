@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminMailController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ContractorController;
 use App\Http\Controllers\DocumentController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\ConsultingController;
 use App\Http\Controllers\DisputeController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -21,8 +23,46 @@ use Illuminate\Support\Facades\Route;
 // ══════════════════════════════════════════════════════════════════
 // PAGES PUBLIQUES (front)
 // ══════════════════════════════════════════════════════════════════
+Route::get('/momo', function () {
+    $uuid       = \Ramsey\Uuid\Uuid::uuid4()->toString();
+    $primaryKey = env('MTN_MOMO_COLLECTION_KEY');
 
-Route::get('/', function () {
+    $response = \Illuminate\Support\Facades\Http::withHeaders([
+        'X-Reference-Id'             => $uuid,
+        'Ocp-Apim-Subscription-Key'  => $primaryKey,
+    ])->post('https://sandbox.momodeveloper.mtn.com/v1_0/apiuser', [
+        'providerCallbackHost' => 'https://mesotravo.com',
+    ]);
+
+    return [
+        'uuid'   => $uuid,       // ← sauvegarde ce UUID dans ton .env
+        'status' => $response->status(),
+        'body'   => $response->body(),
+    ];
+});
+
+Route::get('/momo-apikey', function () {
+    $userId     = env('MTN_MOMO_USER_ID');   // le UUID que tu as sauvegardé
+    $primaryKey = env('MTN_MOMO_COLLECTION_KEY');
+
+    $response = \Illuminate\Support\Facades\Http::withHeaders([
+        'Ocp-Apim-Subscription-Key' => $primaryKey,
+    ])->post("https://sandbox.momodeveloper.mtn.com/v1_0/apiuser/{$userId}/apikey");
+
+    return [
+        'status' => $response->status(),
+        'body'   => $response->json(),  // ← contient ton apiKey
+    ];
+});
+
+
+
+Route::get('/', function (Illuminate\Http\Request $request) {
+    $ua = strtolower($request->header('User-Agent', ''));
+    if (str_contains($ua, 'capacitor')) {
+        return redirect()->route('login');
+    }
+
     $services = \App\Models\Service::where('status', 'active')
         ->where('is_visible', true)
         ->orderBy('sort_order')
@@ -97,11 +137,13 @@ Route::get('/policy', fn() => view('pages.front.policy'))->name('policy');
 // ── Services (public — page d'accueil) ───────────────────────────
 Route::get('/services/public', [ServiceController::class, 'publicIndex'])->name('services.public');
 
-// ── Inscription ──────────────────────────────────────────────────
-Route::get ('/register/client',           fn() => view('pages.front.registerClient'))     ->name('register.client');
-Route::get ('/register/contractor',       fn() => view('pages.front.registerContractor')) ->name('register.contractor');
-Route::post('/register/client/store',     [UserController::class, 'storeClient'])         ->name('register.client.store');
-Route::post('/register/contractor/store', [UserController::class, 'storeContractor'])     ->name('register.contractor.store');
+// ── Inscription (accès interdit si déjà connecté) ────────────────
+Route::middleware('guest')->group(function () {
+    Route::get('/register/client',     fn() => view('pages.front.registerClient'))     ->name('register.client');
+    Route::get('/register/contractor', fn() => view('pages.front.registerContractor')) ->name('register.contractor');
+});
+Route::post('/register/client/store',     [UserController::class, 'storeClient'])     ->name('register.client.store');
+Route::post('/register/contractor/store', [UserController::class, 'storeContractor']) ->name('register.contractor.store');
 
 // ══════════════════════════════════════════════════════════════════
 // AUTHENTIFIÉ
@@ -325,6 +367,56 @@ Route::middleware('auth')->group(function () {
             ]);
         })->name('parameters');
 
+        Route::get('/mail', [AdminMailController::class, 'page'])->name('mail');
+        Route::get('/mail/users', [AdminMailController::class, 'users'])->name('mail.users');
+        Route::get('/mail/templates', [AdminMailController::class, 'templates'])->name('mail.templates.index');
+        Route::post('/mail/templates', [AdminMailController::class, 'storeTemplate'])->name('mail.templates.store');
+        Route::put('/mail/templates/{template}', [AdminMailController::class, 'updateTemplate'])->name('mail.templates.update');
+        Route::delete('/mail/templates/{template}', [AdminMailController::class, 'destroyTemplate'])->name('mail.templates.destroy');
+        Route::get('/mail/history', [AdminMailController::class, 'history'])->name('mail.history');
+        Route::post('/mail/upload-image', [AdminMailController::class, 'uploadImage'])->name('mail.upload-image');
+        Route::post('/mail/send', [AdminMailController::class, 'send'])->name('mail.send');
+
+        // ── Configuration ────────────────────────────────────────
+        Route::get('/configuration', function () {
+            $user = Auth::user();
+            return view('pages.back.admin.configuration', [
+                'active' => 'configuration',
+                'user'   => $user,
+                'routes' => [
+                    'settings_index'     => route('admin.configuration.settings'),
+                    'settings_update'    => route('admin.configuration.settings.update'),
+                    'notifications'      => route('notifications.index'),
+                    'notifications_all'  => route('notifications.read-all'),
+                ],
+            ]);
+        })->name('configuration');
+
+        Route::get('/configuration/settings', function () {
+            return response()->json([
+                'diagnostic_fee'         => (float) \App\Models\Setting::get('diagnostic_fee', '5000'),
+                'commission_diagnostic'  => (float) \App\Models\Setting::get('commission_diagnostic', '10'),
+                'commission_main_oeuvre' => (float) \App\Models\Setting::get('commission_main_oeuvre', '10'),
+                'site_icon_mode'         => \App\Models\Setting::get('site_icon_mode', 'current'),
+            ]);
+        })->name('configuration.settings');
+
+        Route::put('/configuration/settings', function (\Illuminate\Http\Request $request) {
+            $validated = $request->validate([
+                'diagnostic_fee'         => 'required|numeric|min:0',
+                'commission_diagnostic'  => 'required|numeric|min:0|max:100',
+                'commission_main_oeuvre' => 'required|numeric|min:0|max:100',
+                'site_icon_mode'         => 'required|in:current,fontawesome',
+            ]);
+
+            \App\Models\Setting::set('diagnostic_fee',         $validated['diagnostic_fee']);
+            \App\Models\Setting::set('commission_diagnostic',  $validated['commission_diagnostic']);
+            \App\Models\Setting::set('commission_main_oeuvre', $validated['commission_main_oeuvre']);
+            \App\Models\Setting::set('site_icon_mode',         $validated['site_icon_mode']);
+
+            return response()->json(['message' => 'Configuration mise a jour.']);
+        })->name('configuration.settings.update');
+
         // ── Vues ─────────────────────────────────────────────────
         Route::get('/missions',      [AdminController::class, 'missions'])      ->name('missions');
         Route::get('/accreditation', [AdminController::class, 'accreditation']) ->name('accreditation');
@@ -400,6 +492,45 @@ Route::middleware('auth')->group(function () {
         Route::patch ('/contractors/{contractor}/status',          [ContractorController::class, 'updateStatut'])        ->name('contractors.status');
         Route::patch ('/contractors/{contractor}/accreditation',   [ContractorController::class, 'updateAccreditation']) ->name('contractors.accreditation');
 
+        // ── Missions par prestataire / client (pour les modals admin) ─
+        Route::get('/contractors/{contractor}/missions', function (\App\Models\Contractor $contractor) {
+            $missions = \App\Models\Mission::with('client')
+                ->where('contractor_id', $contractor->id)
+                ->latest()
+                ->get()
+                ->map(fn($m) => [
+                    'id'           => $m->id,
+                    'service'      => $m->service,
+                    'status'       => $m->status,
+                    'status_label' => $m->status_label,
+                    'total_amount' => $m->total_amount,
+                    'created_at'   => $m->created_at->format('d/m/Y'),
+                    'completed_at' => $m->completed_at?->format('d/m/Y'),
+                    'client_name'  => trim(($m->client?->first_name ?? '') . ' ' . ($m->client?->last_name ?? '')) ?: '—',
+                ]);
+            return response()->json($missions);
+        })->name('contractors.missions');
+
+        Route::get('/clients/{user}/missions', function (\App\Models\User $user) {
+            $client = \App\Models\Client::where('user_id', $user->id)->first();
+            if (!$client) return response()->json([]);
+            $missions = \App\Models\Mission::with('contractor')
+                ->where('client_id', $client->id)
+                ->latest()
+                ->get()
+                ->map(fn($m) => [
+                    'id'              => $m->id,
+                    'service'         => $m->service,
+                    'status'          => $m->status,
+                    'status_label'    => $m->status_label,
+                    'total_amount'    => $m->total_amount,
+                    'created_at'      => $m->created_at->format('d/m/Y'),
+                    'completed_at'    => $m->completed_at?->format('d/m/Y'),
+                    'contractor_name' => trim(($m->contractor?->first_name ?? '') . ' ' . ($m->contractor?->last_name ?? '')) ?: '—',
+                ]);
+            return response()->json($missions);
+        })->name('clients.missions');
+
         // ── Missions ─────────────────────────────────────────────
         Route::get  ('/missions/list',              [MissionController::class, 'adminIndex'])   ->name('missions.index');
         Route::get  ('/missions/{mission}',         [MissionController::class, 'adminShow'])    ->name('missions.show');
@@ -433,6 +564,8 @@ Route::middleware('auth')->group(function () {
                     'contractors_index'         => route('admin.contractors.index'),
                     'contractors_status'        => url('/admin/contractors/{contractor}/status'),
                     'contractors_accreditation' => url('/admin/contractors/{contractor}/accreditation'),
+                    'contractors_missions'      => url('/admin/contractors/{contractor}/missions'),
+                    'clients_missions'          => url('/admin/clients/{client}/missions'),
                     'missions_pending'          => route('admin.missions.index') . '?status=pending',
                     'missions_propose'          => url('/admin/missions/{mission}/propose'),
                     'notifications_index'       => route('notifications.index'),
@@ -607,6 +740,9 @@ Route::middleware('auth')->group(function () {
                     'missions_page'            => route('client.missions.page'),
                     'missions_store'           => route('client.missions.store'),
                     'missions_status'          => '/client/missions/{id}/status',
+                    'payment_initiate'         => '/client/missions/{id}/payment',
+                    'payment_status'           => '/client/missions/{id}/payment/status',
+                    'receipt'                  => '/client/missions/{id}/receipt',
                     'documents_upload'         => route('documents.upload'),
                     'documents_index'          => route('documents.index'),
                     'dossier_page'             => route('client.dossier'),
@@ -724,6 +860,10 @@ Route::middleware('auth')->group(function () {
                 'missions_index'           => route('client.missions.index'),
                 'missions_store'           => route('client.missions.store'),
                 'missions_status'          => '/client/missions/{id}/status',
+                'payment_initiate'         => '/client/missions/{id}/payment',
+                'payment_status'           => '/client/missions/{id}/payment/status',
+                'invoice'                  => '/client/missions/{id}/invoice',
+                'receipt'                  => '/client/missions/{id}/receipt',
                 'reviews_store'            => '/client/missions',
                 'notifications'            => '/notifications',
                 'notifications_read'       => '/notifications/{id}/read',
@@ -736,14 +876,20 @@ Route::middleware('auth')->group(function () {
                 'conversations_read'       => '/conversations/{id}/read',
                 'unread_summary'           => '/unread-messages',
                 'dossier_page'             => route('client.dossier'),
+                'suggestions'              => route('client.suggestions'),
             ];
-            return view('pages.back.client.missions', compact('user', 'client', 'routes', 'docProgress'));
+            $diagnosticFee = (int) \App\Models\Setting::get('diagnostic_fee', 5000);
+            return view('pages.back.client.missions', compact('user', 'client', 'routes', 'docProgress', 'diagnosticFee'));
         })->name('missions.page');
 
-        Route::get  ('/missions',                  [MissionController::class, 'index'])       ->name('missions.index');
-        Route::post ('/missions',                  [MissionController::class, 'store'])       ->name('missions.store');
-        Route::get  ('/missions/{mission}',        [MissionController::class, 'show'])        ->name('missions.show');
-        Route::patch('/missions/{mission}/status', [MissionController::class, 'updateStatus'])->name('missions.status');
+        Route::get  ('/missions',                           [MissionController::class, 'index'])             ->name('missions.index');
+        Route::post ('/missions',                           [MissionController::class, 'store'])             ->name('missions.store');
+        Route::get  ('/missions/{mission}',                 [MissionController::class, 'show'])              ->name('missions.show');
+        Route::patch('/missions/{mission}/status',          [MissionController::class, 'updateStatus'])      ->name('missions.status');
+        Route::post ('/missions/{mission}/payment',         [PaymentController::class, 'initiate'])          ->name('missions.payment.initiate');
+        Route::get  ('/missions/{mission}/payment/status',  [PaymentController::class, 'checkStatus'])       ->name('missions.payment.status');
+        Route::get  ('/missions/{mission}/invoice',         [PaymentController::class, 'invoice'])           ->name('missions.invoice');
+        Route::get  ('/missions/{mission}/receipt',         [PaymentController::class, 'receipt'])           ->name('missions.receipt');
 
         // ── Avis prestataire ──────────────────────────────────────
         Route::post('/missions/{mission}/review', function (\Illuminate\Http\Request $request, \App\Models\Mission $mission) {
@@ -778,6 +924,20 @@ Route::middleware('auth')->group(function () {
         // ── Appels d'offres — publication + mes AO (client uniquement) ────
         Route::post('/tenders',      [TenderController::class, 'store'])     ->name('tenders.store');
         Route::get ('/tenders/mine', [TenderController::class, 'myTenders']) ->name('tenders.mine');
+
+        // ── Suggestions clients ───────────────────────────────────
+        Route::post('/suggestions', function (\Illuminate\Http\Request $request) {
+            $request->validate(['message' => 'required|string|max:2000']);
+            $user = Auth::user();
+            \Illuminate\Support\Facades\Mail::raw(
+                "Suggestion de {$user->name} ({$user->email}) :\n\n{$request->message}",
+                function ($m) {
+                    $m->to('contact@mesotravo.com')
+                      ->subject('💡 Suggestion client — Mesotravo');
+                }
+            );
+            return response()->json(['success' => true]);
+        })->name('suggestions');
     });
 
     // ══════════════════════════════════════════════════════════════
@@ -864,6 +1024,39 @@ Route::middleware('auth')->group(function () {
             ]);
         })->name('revenus.index');
 
+        // ── Obligations fiscales ─────────────────────────────────────
+        Route::get('/obligations', function () {
+            $user       = Auth::user();
+            $contractor = $user->contractor;
+            return view('pages.back.contractor.obligations', [
+                'active'     => 'obligations',
+                'user'       => $user,
+                'contractor' => $contractor,
+                'routes'     => [
+                    'ifu_update'         => route('contractor.obligations.ifu'),
+                    'notifications'      => route('notifications.index'),
+                    'notifications_all'  => route('notifications.read-all'),
+                ],
+            ]);
+        })->name('obligations');
+
+        Route::put('/obligations/ifu', function (\Illuminate\Http\Request $request) {
+            $data = $request->validate([
+                'ifu' => 'required|string|max:50',
+            ]);
+
+            $user       = Auth::user();
+            $contractor = $user->contractor;
+
+            if (!$contractor) {
+                return response()->json(['message' => 'Profil prestataire introuvable.'], 404);
+            }
+
+            $contractor->update(['ifu' => $data['ifu']]);
+
+            return response()->json(['message' => 'IFU enregistre avec succes.']);
+        })->name('obligations.ifu');
+
         // ── Accréditation contractor ─────────────────────────────────
         Route::get('/accreditation', function () {
             $user       = Auth::user();
@@ -923,6 +1116,27 @@ Route::middleware('auth')->group(function () {
             $user = Auth::user()->load('contractor');
             return view('pages.back.contractor.missions', ['user' => $user]);
         })->name('missions.page');
+
+        // Aperçu missions disponibles pour prestataires en attente de validation
+        Route::get('/missions/available', function () {
+            $missions = \App\Models\Mission::with(['client'])
+                ->where('status', 'pending')
+                ->whereNull('contractor_id')
+                ->latest()
+                ->limit(10)
+                ->get()
+                ->map(fn($m) => [
+                    'id'            => $m->id,
+                    'service'       => $m->service,
+                    'address'       => $m->address,
+                    'location_type' => $m->location_type,
+                    'description'   => $m->description,
+                    'created_at'    => $m->created_at,
+                    'status'        => $m->status,
+                    'client'        => $m->client ? ['name' => '***'] : null,
+                ]);
+            return response()->json($missions);
+        })->name('missions.available');
 
         Route::get  ('/missions',                  [MissionController::class, 'index'])        ->name('missions.index');
         Route::get  ('/missions/{mission}',        [MissionController::class, 'show'])         ->name('missions.show');

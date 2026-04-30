@@ -1,7 +1,7 @@
 {{-- resources/views/pages/back/contractor/accreditation.blade.php --}}
 @extends('layouts.back')
 
-@section('title', 'Mon accréditation — Resotravo')
+@section('title', 'Mon accréditation — Mesotravo')
 
 @php $active = 'accreditation'; @endphp
 

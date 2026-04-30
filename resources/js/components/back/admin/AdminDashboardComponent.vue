@@ -1,4 +1,4 @@
-<template>
+﻿<template>
     <div class="amis-wrap">
         <!-- ══════════════ TOPBAR ══════════════ -->
         <div class="amis-topbar">
@@ -13,7 +13,7 @@
                 <div>
                     <div class="amis-page-title">Tableau de bord</div>
                     <div class="amis-page-sub">
-                        {{ greeting }}, <strong>{{ user.name }}</strong> —
+                        <strong>{{ user.name }}</strong> —
                         {{ today }}
                     </div>
                 </div>
@@ -36,7 +36,7 @@
                             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                         </svg>
                         <span class="amis-notif-badge" v-if="unreadCount > 0">{{
-                            unreadCount > 9 ? "9+" : unreadCount
+                            unreadCount
                         }}</span>
                     </button>
                     <div class="amis-notif-dropdown" v-if="notifOpen">
@@ -334,7 +334,7 @@
                                 {{ stats.tickets_pending }} ticket{{
                                     stats.tickets_pending > 1 ? "s" : ""
                                 }}
-                                Allo Conseils en attente
+                                Allô Conseils en attente
                             </div>
                             <div class="adb-alert-sub">
                                 Utilisateurs en attente d'un agent humain
@@ -360,7 +360,7 @@
                                 Publications en attente d'approbation
                             </div>
                         </div>
-                        <a class="adb-alert-btn" :href="routes.tenders_page"
+                        <a class="adb-alert-btn success-action" :href="routes.tenders_page"
                             >Valider →</a
                         >
                     </div>
@@ -605,7 +605,7 @@
                             "
                         >
                             <div class="adb-card-title">
-                                💬 Tickets Allo Conseils
+                                💬 Tickets Allô Conseils
                             </div>
                             <a
                                 class="adb-card-link"
@@ -693,7 +693,7 @@
                         </a>
                         <a class="adb-shortcut" :href="routes.consulting_page">
                             <span class="adb-shortcut-icon">💬</span>
-                            <span>Allo Conseils</span>
+                            <span>Allô Conseils</span>
                             <span
                                 class="adb-shortcut-badge adb-badge-blue"
                                 v-if="stats.tickets_pending > 0"
@@ -1027,10 +1027,6 @@ export default {
     },
 
     computed: {
-        greeting() {
-            const h = new Date().getHours();
-            return h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir";
-        },
         today() {
             return new Date().toLocaleDateString("fr-FR", {
                 weekday: "long",
@@ -1529,7 +1525,7 @@ export default {
     position: absolute;
     top: 0;
     right: 0;
-    background: #6366f1;
+    background: var(--or);
     color: #fff;
     font-size: 10px;
     font-weight: 700;
@@ -1618,10 +1614,11 @@ export default {
     padding: 20px 24px;
     max-width: 1400px;
     margin: 0 auto;
+    overflow-x: hidden;
 }
 @media (max-width: 600px) {
     .adb-content {
-        padding: 14px;
+        padding: 12px;
     }
 }
 
@@ -1739,10 +1736,8 @@ export default {
     font-size: 18px;
     font-weight: 900;
     color: var(--dk);
-    line-height: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    line-height: 1.2;
+    word-break: break-word;
 }
 @media (min-width: 600px) {
     .adb-kpi-val {
@@ -1789,11 +1784,18 @@ export default {
 .adb-alert {
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 12px 16px;
+    gap: 10px;
+    padding: 12px 14px;
     border-radius: 12px;
     border: 1.5px solid;
     flex-wrap: wrap;
+    overflow: hidden;
+}
+@media (max-width: 480px) {
+    .adb-alert {
+        gap: 8px;
+        padding: 10px 12px;
+    }
 }
 .adb-alert-red {
     background: #eef2ff;
@@ -1813,7 +1815,7 @@ export default {
 }
 .adb-alert-body {
     flex: 1;
-    min-width: 160px;
+    min-width: 0;
 }
 .adb-alert-title {
     font-size: 13.5px;
@@ -1829,13 +1831,19 @@ export default {
     background: var(--or);
     color: #fff;
     border-radius: 8px;
-    padding: 6px 14px;
+    padding: 7px 14px;
     font-size: 12.5px;
     font-weight: 700;
     text-decoration: none;
     white-space: nowrap;
     transition: background 0.18s;
     flex-shrink: 0;
+    text-align: center;
+}
+@media (max-width: 380px) {
+    .adb-alert-btn {
+        width: 100%;
+    }
 }
 .adb-alert-btn:hover {
     background: var(--or2);

@@ -1,7 +1,7 @@
 {{-- resources/views/pages/back/client/dashboard.blade.php --}}
 @extends('layouts.back')
 
-@section('title', 'Mon espace — Resotravo')
+@section('title', 'Mon espace — Mesotravo')
 
 @php $active = 'dashboard'; @endphp
 

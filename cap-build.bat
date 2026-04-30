@@ -1,6 +1,6 @@
 @echo off
 REM ═══════════════════════════════════════════════════════════
-REM  cap-build.bat — Builder et ouvrir ResoTravo dans Android Studio
+REM  cap-build.bat — Builder et ouvrir Mesotravo dans Android Studio
 REM
 REM  Usage :
 REM    cap-build.bat         → sync + ouvre Android Studio

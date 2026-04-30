@@ -1,4 +1,4 @@
-<template>
+﻿<template>
     <div class="amis-wrap">
         <!-- ══════════════ TOPBAR ══════════════ -->
         <div class="amis-topbar">
@@ -11,9 +11,9 @@
                     <span></span><span></span><span></span>
                 </button>
                 <div>
-                    <div class="amis-page-title">Catalogue des Services</div>
+                    <div class="amis-page-title">Services</div>
                     <div class="amis-page-sub">
-                        {{ greeting }}, <strong>{{ user.name }}</strong>
+                        <strong>{{ user.name }}</strong>
                     </div>
                 </div>
             </div>
@@ -23,9 +23,17 @@
                         totalFiltered > 1 ? "s" : ""
                     }}
                 </div>
+                <!-- Bouton Ajouter un service -->
+                <button
+                    class="amis-btn amis-btn-orange amis-btn-add"
+                    @click="openAddModal"
+                >
+                    <span class="amis-btn-add-full">+ Ajouter</span>
+                    <span class="amis-btn-add-short">+</span>
+                </button>
                 <!-- Cloche notifications -->
                 <div class="amis-notif-wrap" ref="notifWrap">
-                    <button class="amis-notif-btn" @click="toggleNotif">
+                    <button class="amis-notif-btn" @click="toggleNotif" aria-label="Notifications">
                         <svg
                             viewBox="0 0 24 24"
                             fill="none"
@@ -40,7 +48,7 @@
                             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                         </svg>
                         <span class="amis-notif-badge" v-if="unreadCount > 0">{{
-                            unreadCount > 9 ? "9+" : unreadCount
+                            unreadCount
                         }}</span>
                     </button>
                     <div class="amis-notif-dropdown" v-if="notifOpen">
@@ -81,10 +89,6 @@
                         </div>
                     </div>
                 </div>
-                <!-- Bouton Ajouter un service -->
-                <button class="amis-btn amis-btn-orange" @click="openAddModal">
-                    + Ajouter
-                </button>
                 <div class="amis-avatar">{{ userInitials }}</div>
             </div>
         </div>
@@ -282,7 +286,7 @@
                             🔄 Restaurer
                         </button>
                         <button
-                            class="amis-btn amis-btn-orange amis-btn-xs"
+                            class="amis-btn amis-btn-green amis-btn-xs"
                             v-if="s.status === 'pending'"
                             @click.stop="quickApprove(s)"
                             :disabled="actionLoading === s.id"
@@ -457,7 +461,7 @@
                                     <strong>{{
                                         activeService.avg_rating
                                             ? activeService.avg_rating.toFixed(
-                                                  1,
+                                                  1
                                               ) + " / 5 ⭐"
                                             : "—"
                                     }}</strong>
@@ -514,7 +518,7 @@
                                         <span v-else>🔄 Restaurer</span>
                                     </button>
                                     <button
-                                        class="amis-btn amis-btn-orange"
+                                        class="amis-btn amis-btn-green"
                                         v-if="
                                             activeService.status === 'pending'
                                         "
@@ -561,7 +565,7 @@
                                     class="ac-mission-item"
                                     v-for="ct in activeService.contractors.slice(
                                         0,
-                                        5,
+                                        5
                                     )"
                                     :key="ct.id"
                                 >
@@ -782,7 +786,7 @@
                         Annuler
                     </button>
                     <button
-                        class="amis-btn amis-btn-orange"
+                        class="amis-btn amis-btn-green"
                         @click="submitServiceForm"
                         :disabled="
                             !serviceForm.data.name.trim() || serviceForm.loading
@@ -902,7 +906,7 @@
                         class="amis-textarea"
                         v-model="rejectModal.reason"
                         rows="3"
-                        placeholder="Ex : Doublon avec une catégorie existante, hors périmètre Resotravo…"
+                        placeholder="Ex : Doublon avec une catégorie existante, hors périmètre Mesotravo…"
                     ></textarea>
                 </div>
                 <div class="amis-modal-footer">
@@ -1022,13 +1026,6 @@ export default {
     },
 
     computed: {
-        greeting() {
-            const h = new Date().getHours();
-            if (h < 12) return "Bonjour";
-            if (h < 18) return "Bon après-midi";
-            return "Bonsoir";
-        },
-
         userInitials() {
             return (
                 this.user.name
@@ -1053,7 +1050,7 @@ export default {
         availableCategories() {
             return [
                 ...new Set(
-                    this.services.map((s) => s.category).filter(Boolean),
+                    this.services.map((s) => s.category).filter(Boolean)
                 ),
             ].sort();
         },
@@ -1102,7 +1099,7 @@ export default {
                 list = list.filter((s) => s.category === this.filterCategory);
             if (this.filterAccreditation)
                 list = list.filter(
-                    (s) => s.accreditation === this.filterAccreditation,
+                    (s) => s.accreditation === this.filterAccreditation
                 );
 
             if (this.search.trim()) {
@@ -1111,7 +1108,7 @@ export default {
                     (s) =>
                         s.name?.toLowerCase().includes(q) ||
                         s.category?.toLowerCase().includes(q) ||
-                        s.description?.toLowerCase().includes(q),
+                        s.description?.toLowerCase().includes(q)
                 );
             }
 
@@ -1255,7 +1252,7 @@ export default {
                 .map((group) => ({
                     ...group,
                     icons: group.icons.filter((i) =>
-                        i.label.toLowerCase().includes(q),
+                        i.label.toLowerCase().includes(q)
                     ),
                 }))
                 .filter((group) => group.icons.length > 0);
@@ -1410,7 +1407,7 @@ export default {
             // Scroll automatique sur l'icône sélectionnée
             this.$nextTick(() => {
                 const selected = document.querySelector(
-                    ".asf-icon-btn.selected",
+                    ".asf-icon-btn.selected"
                 );
                 if (selected)
                     selected.scrollIntoView({
@@ -1432,7 +1429,7 @@ export default {
                 const url = isEdit
                     ? this.routes.services_update.replace(
                           "{service}",
-                          this.serviceForm.data.id,
+                          this.serviceForm.data.id
                       )
                     : this.routes.services_store;
 
@@ -1450,7 +1447,7 @@ export default {
 
                 if (isEdit) {
                     const idx = this.services.findIndex(
-                        (x) => x.id === saved.id,
+                        (x) => x.id === saved.id
                     );
                     if (idx !== -1) this.services.splice(idx, 1, saved);
                     this.showToast(`✅ Service mis à jour.`, "success");
@@ -1458,7 +1455,7 @@ export default {
                     this.services.unshift(saved);
                     this.showToast(
                         `✅ Service « ${saved.name} » créé.`,
-                        "success",
+                        "success"
                     );
                 }
 
@@ -1638,7 +1635,7 @@ export default {
             window.dispatchEvent(
                 new CustomEvent("ab-sidebar-toggle", {
                     detail: { open: this.sidebarOpen },
-                }),
+                })
             );
         },
     },
@@ -1648,7 +1645,7 @@ export default {
         this.fetchNotifications();
         this.notifInterval = setInterval(
             () => this.fetchNotifications(),
-            30000,
+            30000
         );
         document.addEventListener("click", this.handleClickOutside);
         window.addEventListener("ab-sidebar-close", () => {
@@ -1775,6 +1772,24 @@ export default {
     font-size: 12.5px;
     font-weight: 700;
     color: var(--gr);
+    display: none;
+}
+@media (min-width: 480px) {
+    .amis-count-pill {
+        display: block;
+    }
+}
+
+.amis-btn-add-short {
+    display: none;
+}
+@media (max-width: 420px) {
+    .amis-btn-add-full {
+        display: none;
+    }
+    .amis-btn-add-short {
+        display: inline;
+    }
 }
 
 /* ── Notifications ── */
@@ -1782,51 +1797,65 @@ export default {
     position: relative;
 }
 .amis-notif-btn {
-    background: none;
-    border: none;
+    background: #fff;
+    border: 1px solid var(--grl);
     cursor: pointer;
     color: var(--gr);
-    padding: 6px;
+    width: 40px;
+    height: 40px;
+    padding: 0;
     display: flex;
     align-items: center;
+    justify-content: center;
     position: relative;
-    transition: color 0.18s;
-    border-radius: 8px;
+    transition: color 0.18s, border-color 0.18s, background 0.18s;
+    border-radius: 10px;
 }
 .amis-notif-btn:hover {
     color: var(--or);
+    border-color: var(--or);
+    background: var(--or3);
 }
 .amis-notif-btn svg {
-    width: 22px;
-    height: 22px;
+    width: 21px;
+    height: 21px;
 }
 .amis-notif-badge {
     position: absolute;
-    top: 0;
-    right: 0;
+    top: -5px;
+    right: -5px;
     background: #ef4444;
     color: #fff;
     font-size: 10px;
-    font-weight: 700;
-    min-width: 16px;
-    height: 16px;
+    font-weight: 900;
+    min-width: 18px;
+    height: 18px;
     border-radius: 99px;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0 3px;
+    padding: 0 5px;
+    border: 2px solid #fff;
 }
 .amis-notif-dropdown {
     position: absolute;
-    top: calc(100% + 8px);
+    top: 46px;
     right: 0;
-    width: 300px;
+    width: 340px;
+    max-height: 400px;
+    overflow-y: auto;
     background: var(--wh);
-    border: 1.5px solid var(--grl);
-    border-radius: 14px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    border: 1px solid var(--grl);
+    border-radius: 12px;
+    box-shadow: 0 12px 34px rgba(28, 20, 18, 0.14);
     z-index: 100;
     overflow: hidden;
+}
+@media (max-width: 480px) {
+    .amis-notif-dropdown {
+        width: calc(100vw - 32px);
+        right: -40px;
+    }
 }
 .amis-notif-header {
     display: flex;
@@ -1986,12 +2015,21 @@ export default {
     border: 1.5px solid var(--grl);
     background: #f8f4f0;
     border-radius: 8px;
-    padding: 8px 12px;
+    padding: 7px 8px;
     font-family: "Poppins", sans-serif;
-    font-size: 13px;
+    font-size: 12px;
     color: var(--dk);
     outline: none;
     cursor: pointer;
+    width: 100%;
+    min-width: 0;
+}
+@media (min-width: 600px) {
+    .amis-select {
+        font-size: 13px;
+        padding: 8px 12px;
+        width: auto;
+    }
 }
 .amis-select:focus {
     border-color: var(--or);
@@ -1999,30 +2037,46 @@ export default {
 
 /* ── Tabs ── */
 .amis-tabs {
-    display: flex;
-    gap: 0;
-    overflow-x: auto;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
     background: var(--wh);
     border: 1.5px solid var(--grl);
     border-radius: 12px;
     padding: 4px;
     margin-bottom: 20px;
 }
+@media (max-width: 480px) {
+    .amis-tabs {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
 .amis-tab {
-    padding: 8px 16px;
+    padding: 6px 4px;
     background: none;
     border: none;
     border-radius: 8px;
     font-family: "Poppins", sans-serif;
-    font-size: 13px;
+    font-size: 10px;
     font-weight: 600;
     color: var(--gr);
     cursor: pointer;
-    white-space: nowrap;
+    white-space: normal;
+    word-break: break-word;
     display: flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    gap: 3px;
     transition: all 0.18s;
+    text-align: center;
+    overflow: hidden;
+    line-height: 1.2;
+}
+@media (min-width: 600px) {
+    .amis-tab {
+        font-size: 13px;
+        padding: 8px 12px;
+    }
 }
 .amis-tab:hover {
     color: var(--dk);
@@ -2034,9 +2088,17 @@ export default {
 .amis-tab-count {
     background: var(--grl);
     border-radius: 99px;
-    padding: 1px 7px;
-    font-size: 11px;
+    padding: 1px 6px;
+    font-size: 10px;
     color: var(--gr);
+    font-weight: 700;
+    flex-shrink: 0;
+}
+@media (min-width: 600px) {
+    .amis-tab-count {
+        font-size: 11px;
+        padding: 1px 7px;
+    }
 }
 .amis-tab.active .amis-tab-count {
     background: var(--or);
@@ -2084,9 +2146,7 @@ export default {
     border-radius: 16px;
     padding: 16px;
     cursor: pointer;
-    transition:
-        box-shadow 0.18s,
-        transform 0.18s;
+    transition: box-shadow 0.18s, transform 0.18s;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -2322,6 +2382,14 @@ export default {
     background: var(--or);
     color: #fff;
 }
+.amis-btn-green {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(34, 197, 94, 0.3);
+}
+.amis-btn-green:hover:not(:disabled) {
+    filter: brightness(1.06);
+}
 .amis-btn-orange:hover {
     background: var(--or2);
 }
@@ -2437,10 +2505,22 @@ export default {
     overflow-y: auto;
     flex: 1;
 }
+@media (max-width: 480px) {
+    .amis-modal-body {
+        padding: 14px 14px;
+    }
+    .amis-modal-header {
+        padding: 14px 14px;
+    }
+    .amis-modal-footer {
+        padding: 12px 14px;
+    }
+}
 .amis-modal-footer {
     display: flex;
     gap: 10px;
     justify-content: flex-end;
+    flex-wrap: wrap;
     padding: 14px 20px;
     border-top: 1.5px solid var(--grl);
     flex-shrink: 0;
@@ -2715,6 +2795,13 @@ export default {
     gap: 8px;
     z-index: 9999;
 }
+@media (max-width: 520px) {
+    .amis-toast-container {
+        bottom: 16px;
+        right: 12px;
+        left: 12px;
+    }
+}
 .amis-toast {
     background: var(--dk);
     color: #fff;
@@ -2725,6 +2812,11 @@ export default {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
     animation: fadeUp 0.25s ease;
     max-width: 320px;
+}
+@media (max-width: 520px) {
+    .amis-toast {
+        max-width: 100%;
+    }
 }
 .amis-toast.success {
     background: #16a34a;

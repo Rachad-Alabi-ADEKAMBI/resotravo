@@ -1,4 +1,4 @@
-<template>
+﻿<template>
     <div class="ctr-wrap">
         <!-- ══════════════ TOPBAR ══════════════ -->
         <div class="ctr-topbar">
@@ -13,7 +13,6 @@
                 <div>
                     <div class="ctr-page-title">Mon espace prestataire</div>
                     <div class="ctr-page-sub">
-                        {{ greeting }},
                         <strong>{{ contractor.full_name }}</strong>
                     </div>
                 </div>
@@ -51,7 +50,7 @@
                             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                         </svg>
                         <span class="ctr-notif-badge" v-if="unreadCount > 0">
-                            {{ unreadCount > 9 ? "9+" : unreadCount }}
+                            {{ unreadCount }}
                         </span>
                     </button>
                     <div class="ctr-notif-dropdown" v-if="notifOpen">
@@ -105,7 +104,7 @@
                         Dossier en cours de validation
                     </div>
                     <div class="ctr-banner-sub">
-                        Votre dossier a été soumis. L'équipe Resotravo le
+                        Votre dossier a été soumis. L'équipe Mesotravo le
                         vérifie sous 24-48h. Déposez tous vos documents pour
                         accélérer la validation.
                     </div>
@@ -145,7 +144,7 @@
                 <div class="ctr-banner-icon">✅</div>
                 <div>
                     <div class="ctr-banner-title">
-                        Profil certifié Resotravo
+                        Profil certifié Mesotravo
                     </div>
                     <div class="ctr-banner-sub">
                         Vous pouvez accepter des missions et apparaître dans les
@@ -189,8 +188,8 @@
                 <!-- Missions -->
                 <div class="ctr-card ctr-card-main">
                     <div class="ctr-card-header">
-                        <h3>📋 Mes missions</h3>
-                        <div class="ctr-tabs">
+                        <h3>📋 {{ showAvailableMissions ? 'Missions disponibles' : 'Mes missions' }}</h3>
+                        <div class="ctr-tabs" v-if="!showAvailableMissions">
                             <button
                                 class="ctr-tab"
                                 v-for="t in tabs"
@@ -206,6 +205,45 @@
                         </div>
                     </div>
 
+                    <!-- Aperçu missions disponibles (pending ou approved sans accréditation) -->
+                    <template v-if="showAvailableMissions">
+                        <div class="ctr-pending-mission-msg">
+                            🔒 {{ availableMissionsMessage }}
+                        </div>
+                        <div class="ctr-loading" v-if="availableLoading">
+                            <div class="ctr-skeleton-row" v-for="n in 3" :key="n"></div>
+                        </div>
+                        <div class="ctr-empty" v-else-if="availableMissions.length === 0">
+                            <div class="ctr-empty-icon">📭</div>
+                            <div class="ctr-empty-title">Aucune mission disponible pour le moment</div>
+                        </div>
+                        <div class="ctr-mission-list" v-else>
+                            <div
+                                class="ctr-mission-item ctr-mission-item-locked"
+                                v-for="m in availableMissions"
+                                :key="m.id"
+                            >
+                                <div class="ctr-mission-left">
+                                    <div class="ctr-mission-icon">{{ serviceIcon(m.service) }}</div>
+                                    <div>
+                                        <div class="ctr-mission-title">{{ m.service }}</div>
+                                        <div class="ctr-mission-addr">📍 {{ m.address }}</div>
+                                        <div class="ctr-mission-meta">{{ formatDate(m.created_at) }}</div>
+                                        <div class="ctr-mission-imgs" v-if="m.images && m.images.length">
+                                            <img v-for="(url, i) in m.images.slice(0, 4)" :key="i" :src="url" class="ctr-mission-img-thumb" @click.stop="dashLightbox = url" />
+                                            <span class="ctr-mission-imgs-more" v-if="m.images.length > 4">+{{ m.images.length - 4 }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ctr-mission-right">
+                                    <span class="ctr-badge-locked">🔒 Non disponible</span>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Vue normale (prestataire validé avec accréditation) -->
+                    <template v-else>
                     <div class="ctr-loading" v-if="missionsLoading">
                         <div
                             class="ctr-skeleton-row"
@@ -234,13 +272,7 @@
                         </div>
                         <div
                             class="ctr-empty-sub"
-                            v-if="userStatus === 'pending'"
-                        >
-                            Votre dossier est en cours de validation
-                        </div>
-                        <div
-                            class="ctr-empty-sub"
-                            v-else-if="!contractorProfile.available"
+                            v-if="!contractorProfile.available"
                         >
                             Vous êtes indisponible — activez votre disponibilité
                             pour recevoir des missions
@@ -268,6 +300,17 @@
                                     </div>
                                     <div class="ctr-mission-addr">
                                         📍 {{ m.address }}
+                                    </div>
+                                    <!-- Miniatures images -->
+                                    <div class="ctr-mission-imgs" v-if="m.images && m.images.length">
+                                        <img
+                                            v-for="(url, i) in m.images.slice(0, 4)"
+                                            :key="i"
+                                            :src="url"
+                                            class="ctr-mission-img-thumb"
+                                            @click.stop="dashLightbox = url"
+                                        />
+                                        <span class="ctr-mission-imgs-more" v-if="m.images.length > 4">+{{ m.images.length - 4 }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -298,6 +341,7 @@
                             </div>
                         </div>
                     </div>
+                    </template><!-- /v-else approved -->
                 </div>
 
                 <!-- Panel droit -->
@@ -474,7 +518,7 @@
                     <div class="ctr-docs-certified-icon">✅</div>
                     <div>
                         <div class="ctr-docs-certified-title">
-                            Tous vos documents ont été validés par Resotravo !
+                            Tous vos documents ont été validés par Mesotravo !
                         </div>
                         <div class="ctr-docs-certified-sub">
                             Votre profil est certifié. Vous pouvez accepter des
@@ -488,7 +532,7 @@
                     v-if="userStatus !== 'approved'"
                 >
                     ℹ️ Le badge <strong>Profil Certifié</strong> est accordé
-                    uniquement après que l'équipe Resotravo a validé
+                    uniquement après que l'équipe Mesotravo a validé
                     <strong>l'ensemble</strong> de vos documents.
                 </div>
 
@@ -617,321 +661,222 @@
                         &#215;
                     </button>
                 </div>
+                <!-- Barre de progression workflow -->
+                <div class="ctm-workflow">
+                    <div class="ctm-workflow-track">
+                        <div
+                            class="ctm-workflow-fill"
+                            :style="{ width: (stepOf(activeMission) / 12) * 100 + '%' }"
+                        ></div>
+                    </div>
+                    <div class="ctm-wf-steps">
+                        <div
+                            class="ctm-wf-step"
+                            v-for="s in workflowSteps"
+                            :key="s.step"
+                            :class="{
+                                'wf-done': stepOf(activeMission) > s.step,
+                                'wf-current': stepOf(activeMission) === s.step,
+                                'wf-pending': stepOf(activeMission) < s.step,
+                            }"
+                        >
+                            <div class="ctm-wf-dot"></div>
+                            <div class="ctm-wf-label">{{ s.label }}</div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="ctr-modal-body">
-                    <div class="ctr-detail-row">
-                        <span>Statut</span>
-                        <span
-                            class="ctr-badge"
-                            :class="badgeClass(activeMission.status)"
-                            >{{ labelOf(activeMission) }}</span
-                        >
-                    </div>
-                    <div class="ctr-detail-row">
-                        <span>Client</span
-                        ><strong>{{
-                            activeMission.client
-                                ? activeMission.client.name
-                                : "—"
-                        }}</strong>
-                    </div>
-                    <div class="ctr-detail-row">
-                        <span>Adresse</span
-                        ><strong>{{ activeMission.address }}</strong>
-                    </div>
-                    <div class="ctr-detail-row">
-                        <span>Description</span
-                        ><strong>{{ activeMission.description }}</strong>
-                    </div>
-                    <!-- Photos de la mission -->
-                    <div
-                        class="ctr-detail-row ctr-detail-photos"
-                        v-if="
-                            activeMission.images && activeMission.images.length
-                        "
-                    >
-                        <span>Photos</span>
-                        <div class="ctr-dash-images">
-                            <img
-                                v-for="(url, i) in activeMission.images"
-                                :key="i"
-                                :src="url"
-                                @click="dashLightbox = url"
-                                class="ctr-dash-img"
-                            />
-                        </div>
-                    </div>
-                    <div
-                        class="ctr-detail-row"
-                        v-if="activeMission.total_amount"
-                    >
-                        <span>Votre part (90%)</span>
-                        <strong>{{
-                            formatPrice(activeMission.total_amount * 0.9)
-                        }}</strong>
-                    </div>
-                    <div
-                        class="ctr-detail-row"
-                        v-if="activeMission.location_type"
-                    >
-                        <span>Type</span>
-                        <strong>{{
-                            activeMission.location_type === "business"
-                                ? "🏢 Entreprise"
-                                : "🏠 Domicile"
-                        }}</strong>
-                    </div>
+                    <div class="ctm-panel-cols">
 
-                    <!-- Barre progression -->
+                        <!-- ── Colonne infos ── -->
+                        <div class="ctm-info-col">
 
-                    <!-- ── ACTION : Accepter ou refuser ── -->
-                    <div
-                        class="ctm-action-block ctm-action-new"
-                        v-if="activeMission.status === 'assigned'"
-                    >
-                        <div class="ctm-action-new-icon">📬</div>
-                        <div class="ctm-action-new-title">
-                            Nouvelle mission proposée
-                        </div>
-                        <div class="ctm-action-new-sub">
-                            Vous avez 5 minutes pour répondre.
-                        </div>
-                        <div class="ctm-action-row">
-                            <button
-                                class="ctm-btn ctm-btn-red"
-                                @click="openRefuseModal(activeMission)"
-                                :disabled="actionLoading"
-                            >
-                                ✗ Refuser
-                            </button>
-                            <button
-                                class="ctm-btn ctm-btn-green"
-                                @click="updateStatus(activeMission, 'accepted')"
-                                :disabled="actionLoading"
-                            >
-                                <div
-                                    class="ctm-spinner"
-                                    v-if="actionLoading"
-                                ></div>
-                                <span v-else>✓ Accepter</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- ── En route ── -->
-                    <div
-                        class="ctm-action-block"
-                        v-if="
-                            ['accepted', 'contact_made'].includes(
-                                activeMission.status
-                            )
-                        "
-                    >
-                        <p>
-                            🚗 Prêt à partir ? Activez le suivi pour que le
-                            client vous voie.
-                        </p>
-                        <button
-                            class="ctm-btn ctm-btn-orange ctm-btn-full"
-                            @click="updateStatus(activeMission, 'on_the_way')"
-                            :disabled="actionLoading"
-                        >
-                            <div class="ctm-spinner" v-if="actionLoading"></div>
-                            <span v-else>🚗 Je suis en route →</span>
-                        </button>
-                    </div>
-
-                    <!-- ── Arrivé sur place ── -->
-                    <div
-                        class="ctm-action-block"
-                        v-if="
-                            ['on_the_way', 'tracking'].includes(
-                                activeMission.status
-                            )
-                        "
-                    >
-                        <p>📍 Êtes-vous arrivé sur place ?</p>
-                        <button
-                            class="ctm-btn ctm-btn-orange ctm-btn-full"
-                            @click="updateStatus(activeMission, 'in_progress')"
-                            :disabled="actionLoading"
-                        >
-                            <div class="ctm-spinner" v-if="actionLoading"></div>
-                            <span v-else>📍 Je suis arrivé sur place</span>
-                        </button>
-                    </div>
-
-                    <!-- ── Devis (saisie / révision) ── -->
-                    <div
-                        class="ctm-action-block ctm-action-quote"
-                        v-if="
-                            activeMission.status === 'in_progress' ||
-                            (activeMission.status === 'quote_submitted' &&
-                                activeMission.quote?.status === 'rejected')
-                        "
-                    >
-                        <div class="ctm-action-quote-icon">📄</div>
-                        <div class="ctm-action-quote-title">
-                            {{
-                                activeMission.quote?.status === "rejected"
-                                    ? "Devis refusé par le client"
-                                    : "Saisir le devis"
-                            }}
-                        </div>
-                        <div
-                            class="ctm-action-quote-sub"
-                            v-if="
-                                activeMission.quote?.status === 'rejected' &&
-                                activeMission.reported_issue
-                            "
-                        >
-                            ❌ Motif :
-                            <em>« {{ activeMission.reported_issue }} »</em>
-                        </div>
-                        <div
-                            class="ctm-action-quote-sub"
-                            v-else-if="
-                                activeMission.quote?.status === 'rejected'
-                            "
-                        >
-                            ❌ Le client a refusé votre devis. Vous pouvez le
-                            réviser ou abandonner.
-                        </div>
-                        <div class="ctm-action-quote-sub" v-else>
-                            Diagnostiquez la situation et détaillez les pièces
-                            nécessaires.
-                        </div>
-                        <button
-                            class="ctm-btn ctm-btn-orange ctm-btn-full"
-                            @click="openQuoteModal(activeMission)"
-                            style="margin-bottom: 8px"
-                        >
-                            📄
-                            {{
-                                activeMission.quote?.status === "rejected"
-                                    ? "Réviser le devis →"
-                                    : "Saisir le devis →"
-                            }}
-                        </button>
-                        <button
-                            v-if="activeMission.quote?.status === 'rejected'"
-                            class="ctm-btn ctm-btn-ghost ctm-btn-full"
-                            @click="openAbandonModal(activeMission)"
-                            :disabled="actionLoading"
-                        >
-                            🚪 Abandonner la mission
-                        </button>
-                    </div>
-
-                    <!-- ── Devis soumis en attente ── -->
-                    <div
-                        class="ctm-action-block ctm-action-wait"
-                        v-if="
-                            activeMission.status === 'quote_submitted' &&
-                            activeMission.quote?.status !== 'rejected'
-                        "
-                    >
-                        <div class="ctm-action-wait-icon">⏳</div>
-                        <div>
-                            <div class="ctm-action-wait-title">
-                                Devis en attente d'approbation
+                            <!-- Détails mission -->
+                            <div class="ctm-section">
+                                <div class="ctm-section-title">📋 Détails</div>
+                                <div class="ctm-row">
+                                    <span>Type</span>
+                                    <strong>{{ activeMission.location_type === 'business' ? '🏢 Entreprise' : '🏠 Domicile' }}</strong>
+                                </div>
+                                <div class="ctm-row">
+                                    <span>Adresse</span>
+                                    <strong>{{ activeMission.address }}</strong>
+                                </div>
+                                <div class="ctm-row" v-if="activeMission.description">
+                                    <span>Description</span>
+                                    <strong>{{ activeMission.description }}</strong>
+                                </div>
+                                <div class="ctm-row" v-if="activeMission.total_amount">
+                                    <span>Votre part (90%)</span>
+                                    <strong class="ctm-val-green">{{ formatPrice(activeMission.total_amount * 0.9) }}</strong>
+                                </div>
                             </div>
-                            <div class="ctm-action-wait-sub">
-                                Le client doit approuver votre devis pour
-                                démarrer les travaux.
+
+                            <!-- Photos -->
+                            <div class="ctm-section" v-if="activeMission.images && activeMission.images.length">
+                                <div class="ctm-section-title">📷 Photos</div>
+                                <div class="ctr-dash-images">
+                                    <img v-for="(url, i) in activeMission.images" :key="i" :src="url" @click="dashLightbox = url" class="ctr-dash-img" />
+                                </div>
                             </div>
+
+                            <!-- Distance -->
+                            <div class="ctm-distance-block" v-if="activeMission.status === 'assigned' && activeMission.latitude && activeMission.longitude">
+                                <div v-if="contractorGeo.loading" class="ctm-distance-loading">
+                                    <span class="ctm-spinner"></span> Localisation en cours...
+                                </div>
+                                <div v-else-if="missionDistance !== null" class="ctm-distance-value">
+                                    📍
+                                    <template v-if="missionDistance < 1">Vous êtes à <strong>{{ Math.round(missionDistance * 1000) }} m</strong> du client</template>
+                                    <template v-else>Vous êtes à <strong>{{ missionDistance.toFixed(1) }} km</strong> du client</template>
+                                </div>
+                                <div v-else-if="contractorGeo.error === 'denied'" class="ctm-distance-error">🔒 Activez la géolocalisation dans votre navigateur.</div>
+                                <div v-else-if="contractorGeo.error" class="ctm-distance-error">
+                                    Impossible d'obtenir votre position.
+                                    <button class="ctm-retry-btn" @click="requestGeoAndComputeDistance">Réessayer</button>
+                                </div>
+                            </div>
+
+                            <!-- Client -->
+                            <div class="ctm-section" v-if="activeMission.client">
+                                <div class="ctm-section-title">👤 Client</div>
+                                <div class="ctm-row">
+                                    <span>Nom</span>
+                                    <strong>
+                                        {{ activeMission.client.name }}
+                                        <span v-if="activeMission.client.is_verified" class="ctm-verified-badge">✅ Identité vérifiée</span>
+                                    </strong>
+                                </div>
+                                <div class="ctm-row">
+                                    <span>Contact</span>
+                                    <strong class="ctm-masked">🔒 Numéro masqué</strong>
+                                </div>
+                            </div>
+
+                            <!-- Résumé devis -->
+                            <div class="ctm-section ctm-quote-summary" v-if="activeMission.quote && activeMission.quote.status !== 'draft'">
+                                <div class="ctm-section-title">
+                                    📄 Devis {{ activeMission.quote.version > 1 ? 'v' + activeMission.quote.version : '' }}
+                                </div>
+                                <div class="ctm-row" v-for="item in activeMission.quote.items" :key="item.id">
+                                    <span>{{ item.description }}</span>
+                                    <strong>{{ formatPrice(item.quantity * item.unit_price) }}</strong>
+                                </div>
+                                <div class="ctm-row ctm-quote-total">
+                                    <span>Total</span>
+                                    <strong class="ctm-val-green">{{ formatPrice(activeMission.quote.amount_incl_tax) }}</strong>
+                                </div>
+                                <div class="ctm-quote-summary-footer">
+                                    <div class="ctm-quote-status-badge" :class="effectiveQuoteStatus(activeMission)">
+                                        {{ quoteStatusLabel(effectiveQuoteStatus(activeMission)) }}
+                                    </div>
+                                    <button class="ctm-quote-pdf-btn" @click="downloadQuotePdf(activeMission)" title="Télécharger PDF">⬇ PDF</button>
+                                </div>
+                            </div>
+
                         </div>
-                    </div>
 
-                    <!-- ── Travaux terminés ── -->
-                    <div
-                        class="ctm-action-block"
-                        v-if="activeMission.status === 'order_placed'"
-                    >
-                        <p>
-                            🔨 Le client a approuvé votre devis. Marquez les
-                            travaux comme terminés.
-                        </p>
-                        <button
-                            class="ctm-btn ctm-btn-orange ctm-btn-full"
-                            @click="
-                                updateStatus(activeMission, 'awaiting_confirm')
-                            "
-                            :disabled="actionLoading"
-                        >
-                            <div class="ctm-spinner" v-if="actionLoading"></div>
-                            <span v-else>✓ Travaux terminés</span>
-                        </button>
-                    </div>
+                        <!-- ── Colonne actions ── -->
+                        <div class="ctm-actions-col">
 
-                    <!-- ── Att. confirmation ── -->
-                    <div
-                        class="ctm-action-block ctm-action-wait"
-                        v-if="activeMission.status === 'awaiting_confirm'"
-                    >
-                        <div class="ctm-action-wait-icon">⏳</div>
-                        <div>
-                            <div class="ctm-action-wait-title">
-                                En attente du client
+                            <!-- Proposée : accepter / refuser -->
+                            <div class="ctm-action-block ctm-action-new" v-if="activeMission.status === 'assigned'">
+                                <div class="ctm-action-new-icon">📬</div>
+                                <div class="ctm-action-new-title">Nouvelle mission proposée</div>
+                                <div class="ctm-action-new-sub">Vous avez 5 minutes pour répondre.</div>
+                                <div class="ctm-action-row">
+                                    <button class="ctm-btn ctm-btn-red" @click="openRefuseModal(activeMission)" :disabled="actionLoading">✗ Refuser</button>
+                                    <button class="ctm-btn ctm-btn-green" @click="updateStatus(activeMission, 'accepted')" :disabled="actionLoading">
+                                        <div class="ctm-spinner" v-if="actionLoading"></div>
+                                        <span v-else>✓ Accepter</span>
+                                    </button>
+                                </div>
                             </div>
-                            <div class="ctm-action-wait-sub">
-                                Le client doit confirmer la fin des travaux pour
-                                déclencher votre paiement.
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- ── Terminée / clôturée ── -->
-                    <div
-                        class="ctm-action-block ctm-action-done"
-                        v-if="
-                            ['completed', 'closed'].includes(
-                                activeMission.status
-                            )
-                        "
-                    >
-                        <div class="ctm-action-done-icon">🎉</div>
-                        <div>
-                            <div class="ctm-action-done-title">
-                                Mission
-                                {{
-                                    activeMission.status === "closed"
-                                        ? "clôturée"
-                                        : "terminée"
-                                }}
+                            <!-- En route -->
+                            <div class="ctm-action-block" v-if="['accepted', 'contact_made'].includes(activeMission.status)">
+                                <p>🚗 Prêt à partir ? Informez le client en cliquant sur le bouton ci-dessous.</p>
+                                <button class="ctm-btn ctm-btn-orange ctm-btn-full" @click="updateStatus(activeMission, 'on_the_way')" :disabled="actionLoading">
+                                    <div class="ctm-spinner" v-if="actionLoading"></div>
+                                    <span v-else>🚗 Je suis en route →</span>
+                                </button>
                             </div>
-                            <div
-                                class="ctm-action-done-sub"
-                                v-if="activeMission.status === 'closed'"
-                            >
-                                Votre paiement de
-                                {{
-                                    formatPrice(
-                                        activeMission.total_amount * 0.9
-                                    )
-                                }}
-                                a été effectué.
+
+                            <!-- Arrivé sur place -->
+                            <div class="ctm-action-block" v-if="['on_the_way', 'tracking'].includes(activeMission.status)">
+                                <p>📍 Êtes-vous arrivé sur place ?</p>
+                                <button class="ctm-btn ctm-btn-orange ctm-btn-full" @click="updateStatus(activeMission, 'in_progress')" :disabled="actionLoading">
+                                    <div class="ctm-spinner" v-if="actionLoading"></div>
+                                    <span v-else>📍 Je suis arrivé sur place</span>
+                                </button>
                             </div>
+
+                            <!-- Devis à saisir / réviser -->
+                            <div class="ctm-action-block ctm-action-quote" v-if="activeMission.status === 'in_progress' || (activeMission.status === 'quote_submitted' && activeMission.quote?.status === 'rejected')">
+                                <div class="ctm-action-quote-icon">📄</div>
+                                <div class="ctm-action-quote-title">{{ activeMission.quote?.status === 'rejected' ? 'Devis refusé par le client' : 'Saisir le devis' }}</div>
+                                <div class="ctm-action-quote-sub" v-if="activeMission.quote?.status === 'rejected' && activeMission.reported_issue">
+                                    ❌ Motif : <em>« {{ activeMission.reported_issue }} »</em>
+                                </div>
+                                <div class="ctm-action-quote-sub" v-else-if="activeMission.quote?.status === 'rejected'">
+                                    ❌ Le client a refusé votre devis. Vous pouvez le réviser ou abandonner.
+                                </div>
+                                <div class="ctm-action-quote-sub" v-else>Diagnostiquez la situation et détaillez les pièces nécessaires.</div>
+                                <button class="ctm-btn ctm-btn-orange ctm-btn-full" @click="openQuoteModal(activeMission)" style="margin-bottom:8px">
+                                    📄 {{ activeMission.quote?.status === 'rejected' ? 'Réviser le devis →' : 'Saisir le devis →' }}
+                                </button>
+                                <button v-if="activeMission.quote?.status === 'rejected'" class="ctm-btn ctm-btn-ghost ctm-btn-full" @click="openAbandonModal(activeMission)" :disabled="actionLoading">
+                                    🚪 Abandonner la mission
+                                </button>
+                            </div>
+
+                            <!-- Devis soumis en attente -->
+                            <div class="ctm-action-block ctm-action-wait" v-if="activeMission.status === 'quote_submitted' && activeMission.quote?.status !== 'rejected'">
+                                <div class="ctm-action-wait-icon">⏳</div>
+                                <div>
+                                    <div class="ctm-action-wait-title">Devis en attente d'approbation</div>
+                                    <div class="ctm-action-wait-sub">Le client doit approuver votre devis pour démarrer les travaux.</div>
+                                </div>
+                            </div>
+
+                            <!-- Commande passée : travaux terminés -->
+                            <div class="ctm-action-block" v-if="activeMission.status === 'order_placed'">
+                                <p>🔨 Le client a approuvé votre devis. Marquez les travaux comme terminés lorsque tout est fini.</p>
+                                <button class="ctm-btn ctm-btn-orange ctm-btn-full" @click="updateStatus(activeMission, 'awaiting_confirm')" :disabled="actionLoading">
+                                    <div class="ctm-spinner" v-if="actionLoading"></div>
+                                    <span v-else>✓ Travaux terminés</span>
+                                </button>
+                            </div>
+
+                            <!-- Att. confirmation -->
+                            <div class="ctm-action-block ctm-action-wait" v-if="activeMission.status === 'awaiting_confirm'">
+                                <div class="ctm-action-wait-icon">⏳</div>
+                                <div>
+                                    <div class="ctm-action-wait-title">En attente du client</div>
+                                    <div class="ctm-action-wait-sub">Le client doit confirmer la fin des travaux pour déclencher votre paiement.</div>
+                                </div>
+                            </div>
+
+                            <!-- Terminée / clôturée -->
+                            <div class="ctm-action-block ctm-action-done" v-if="['completed', 'closed'].includes(activeMission.status)">
+                                <div class="ctm-action-done-icon">🎉</div>
+                                <div>
+                                    <div class="ctm-action-done-title">Mission {{ activeMission.status === 'closed' ? 'clôturée' : 'terminée' }}</div>
+                                    <div class="ctm-action-done-sub" v-if="activeMission.status === 'closed'">
+                                        Votre paiement de {{ formatPrice(activeMission.total_amount * 0.9) }} a été effectué.
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 </div>
                 <div class="ctr-modal-footer">
-                    <button
-                        class="ctm-btn ctm-btn-ghost"
-                        @click="activeMission = null"
-                    >
-                        Fermer
-                    </button>
-                    <button
-                        class="ctm-btn ctm-btn-chat"
-                        @click="chatMissionId = activeMission.id"
-                        v-if="activeMission.status !== 'pending'"
-                    >
+                    <button class="ctm-btn ctm-btn-ghost" @click="activeMission = null">Fermer</button>
+                    <button class="ctm-btn ctm-btn-chat" @click="chatMissionId = activeMission.id" v-if="activeMission.status !== 'pending'">
                         💬 Messages
-                        <span
-                            class="ctr-chat-badge"
-                            v-if="unreadByMission[activeMission.id] > 0"
-                            >{{ unreadByMission[activeMission.id] }}</span
-                        >
+                        <span class="ctr-chat-badge" v-if="unreadByMission[activeMission.id] > 0">{{ unreadByMission[activeMission.id] }}</span>
                     </button>
                 </div>
             </div>
@@ -1131,6 +1076,31 @@
                             >
                         </div>
                     </div>
+
+                    <!-- Tarif diagnostic -->
+                    <div class="ctr-schedule-section">
+                        <div class="ctr-schedule-section-title">
+                            💰 Mon tarif diagnostic
+                        </div>
+                        <div class="ctr-schedule-sub" style="font-size:12px;color:var(--grm);margin-bottom:8px;">
+                            Montant pré-rempli dans vos devis. Mesotravo retient 30% sur le diagnostic.
+                        </div>
+                        <div class="ctr-diag-fee-row">
+                            <input
+                                type="number"
+                                class="ctr-input"
+                                min="0"
+                                step="500"
+                                v-model.number="scheduleModal.diagnostic_fee"
+                                placeholder="Ex : 5000"
+                            />
+                            <span class="ctr-fee-unit">FCFA</span>
+                        </div>
+                        <div class="ctr-fee-hint" v-if="scheduleModal.diagnostic_fee > 0">
+                            Votre net : <strong>{{ formatPrice(scheduleModal.diagnostic_fee * 0.7) }}</strong>
+                            · Mesotravo : {{ formatPrice(scheduleModal.diagnostic_fee * 0.3) }}
+                        </div>
+                    </div>
                 </div>
                 <div class="ctr-modal-footer">
                     <button
@@ -1140,7 +1110,7 @@
                         Annuler
                     </button>
                     <button
-                        class="ctr-btn ctr-btn-orange"
+                        class="ctr-btn ctr-btn-orange success-action"
                         @click="saveSchedule"
                         :disabled="scheduleModal.loading"
                     >
@@ -1222,21 +1192,32 @@
                 </div>
 
                 <div class="ctm-modal-body ctm-modal-body-quote">
-                    <!-- Diagnostic -->
-                    <div class="ctm-quote-field">
-                        <label class="ctm-quote-label"
-                            >🔍 Diagnostic
-                            <span class="ctm-optional">(optionnel)</span></label
-                        >
-                        <textarea
-                            class="ctm-quote-textarea"
-                            v-model="quoteModal.diagnosis"
-                            placeholder="Décrivez ce que vous avez constaté sur place…"
-                            rows="3"
-                        ></textarea>
+                    <!-- ── 1. DIAGNOSTIC ── -->
+                    <div class="ctm-qblock">
+                        <div class="ctm-qblock-title">
+                            🔍 Diagnostic
+                            <span class="ctm-commission-tag">{{ commissionDiagnostic }}% Mesotravo</span>
+                        </div>
+                        <div class="ctm-diag-amount-row">
+                            <div class="ctm-diag-amount-val">
+                                {{ formatPrice(quoteModal.diagnostic_fee || 0) }}
+                            </div>
+                            <div class="ctm-diag-amount-hint">
+                                Montant défini par l'administrateur
+                            </div>
+                        </div>
+                        <div class="ctm-qfield" style="margin-top:6px">
+                            <label class="ctm-qlabel">Notes <span class="ctm-optional">(optionnel)</span></label>
+                            <textarea
+                                class="ctm-qtextarea"
+                                v-model="quoteModal.diagnosis"
+                                placeholder="Décrivez ce que vous avez constaté sur place…"
+                                rows="2"
+                            ></textarea>
+                        </div>
                     </div>
 
-                    <!-- Lignes pièces/matériaux -->
+                    <!-- ── 2. PIÈCES & MATÉRIAUX ── -->
                     <div class="ctm-quote-section">
                         <div class="ctm-quote-section-header">
                             <span class="ctm-quote-section-title"
@@ -1306,12 +1287,13 @@
                         </div>
                     </div>
 
-                    <!-- Main d'œuvre -->
+                    <!-- ── 3. MAIN D'ŒUVRE ── -->
                     <div class="ctm-quote-section">
                         <div class="ctm-quote-section-header">
-                            <span class="ctm-quote-section-title"
-                                >🛠️ Main d'œuvre</span
-                            >
+                            <span class="ctm-quote-section-title">
+                                🛠️ Main d'œuvre
+                                <span class="ctm-commission-tag">{{ commissionMainOeuvre }}% Mesotravo</span>
+                            </span>
                         </div>
                         <div class="ctm-quote-labor-row">
                             <div class="ctm-quote-field ctm-field-flex">
@@ -1341,25 +1323,35 @@
                         </div>
                     </div>
 
-                    <!-- Total récapitulatif -->
-                    <div class="ctm-quote-recap">
-                        <div class="ctm-quote-recap-row">
+                    <!-- ── 4. RÉCAPITULATIF ── -->
+                    <div class="ctm-recap">
+                        <div class="ctm-recap-row" v-if="quoteModal.diagnostic_fee > 0">
+                            <span>Diagnostic</span>
+                            <div class="ctm-recap-vals">
+                                <span class="ctm-recap-net-line">Votre part : {{ formatPrice((quoteModal.diagnostic_fee || 0) * (1 - commissionDiagnostic / 100)) }}</span>
+                                <strong>{{ formatPrice(quoteModal.diagnostic_fee || 0) }}</strong>
+                            </div>
+                        </div>
+                        <div class="ctm-recap-row" v-if="partsSubtotal > 0">
                             <span>Pièces & matériaux</span>
-                            <strong>{{ formatPrice(partsSubtotal) }}</strong>
+                            <div class="ctm-recap-vals">
+                                <strong>{{ formatPrice(partsSubtotal) }}</strong>
+                            </div>
                         </div>
-                        <div class="ctm-quote-recap-row">
+                        <div class="ctm-recap-row" v-if="(quoteModal.labor.unit_price || 0) > 0">
                             <span>Main d'œuvre</span>
-                            <strong>{{
-                                formatPrice(quoteModal.labor.unit_price || 0)
-                            }}</strong>
+                            <div class="ctm-recap-vals">
+                                <span class="ctm-recap-net-line">Votre part : {{ formatPrice((quoteModal.labor.unit_price || 0) * (1 - commissionMainOeuvre / 100)) }}</span>
+                                <strong>{{ formatPrice(quoteModal.labor.unit_price || 0) }}</strong>
+                            </div>
                         </div>
-                        <div class="ctm-quote-recap-total">
+                        <div class="ctm-recap-divider"></div>
+                        <div class="ctm-recap-total">
                             <span>Total devis</span>
                             <strong>{{ formatPrice(quoteTotal) }}</strong>
                         </div>
-                        <div class="ctm-quote-recap-net">
-                            Votre part (90%) :
-                            <strong>{{ formatPrice(quoteTotal * 0.9) }}</strong>
+                        <div class="ctm-recap-net-total">
+                            💰 Votre net estimé : <strong>{{ formatPrice(contractorNet) }}</strong>
                         </div>
                     </div>
 
@@ -1378,7 +1370,7 @@
                         Annuler
                     </button>
                     <button
-                        class="ctm-btn ctm-btn-ghost ctm-btn-draft"
+                        class="ctm-btn ctm-btn-ghost ctm-btn-draft success-action"
                         @click="submitQuote('draft')"
                         :disabled="quoteModal.loading || !quoteIsValid"
                     >
@@ -1430,7 +1422,7 @@
                     >
                         Vous confirmez ne plus pouvoir réaliser cette mission
                         suite au refus du devis. Elle sera signalée à l'équipe
-                        Resotravo.
+                        Mesotravo.
                     </p>
                     <label
                         class="ctm-form-label"
@@ -1541,6 +1533,9 @@ export default {
             default: () => ({ approved: 0, total: 5, percentage: 0 }),
         },
         documentsData: { type: Array, default: () => [] },
+        diagnosticFee:        { type: Number, default: 5000 },
+        commissionDiagnostic: { type: Number, default: 10 },
+        commissionMainOeuvre: { type: Number, default: 10 },
         routes: {
             type: Object,
             default: () => ({
@@ -1568,6 +1563,8 @@ export default {
         return {
             tab: "all",
             activeMission: null,
+            contractorGeo: { latitude: null, longitude: null, loading: false, error: null },
+            missionDistance: null,
             wipVisible: false,
             wipFeature: "",
             sidebarOpen: false,
@@ -1578,6 +1575,21 @@ export default {
             toasts: [],
             toastId: 0,
             actionLoading: false,
+
+            workflowSteps: [
+                { step: 1, label: "En attente" },
+                { step: 2, label: "Proposée" },
+                { step: 3, label: "Acceptée" },
+                { step: 4, label: "Contact établi" },
+                { step: 5, label: "En route" },
+                { step: 6, label: "Suivi" },
+                { step: 7, label: "Sur place" },
+                { step: 8, label: "Devis soumis" },
+                { step: 9, label: "Commande passée" },
+                { step: 10, label: "Att. confirmation" },
+                { step: 11, label: "Terminée" },
+                { step: 12, label: "Clôturée" },
+            ],
 
             // ── Quote modal ──────────────────────────────────────
             quoteModal: {
@@ -1603,6 +1615,9 @@ export default {
             missions: [],
             missionsLoading: true,
             missionsError: null,
+
+            availableMissions: [],
+            availableLoading: false,
 
             notifications: [],
             notifOpen: false,
@@ -1676,13 +1691,6 @@ export default {
             };
         },
 
-        greeting() {
-            const h = new Date().getHours();
-            if (h < 12) return "Bonjour";
-            if (h < 18) return "Bon après-midi";
-            return "Bonsoir";
-        },
-
         accreditationLabel() {
             return (
                 {
@@ -1692,6 +1700,19 @@ export default {
                     both: "🏠 Domicile + 🏢 Entreprise",
                 }[this.contractorProfile.accreditation] ?? "Aucune"
             );
+        },
+
+        showAvailableMissions() {
+            if (this.userStatus === 'pending') return true;
+            if (this.userStatus === 'approved' && this.contractorProfile.accreditation === 'none') return true;
+            return false;
+        },
+
+        availableMissionsMessage() {
+            if (this.userStatus === 'pending') {
+                return 'Merci de faire vérifier vos documents et obtenir une accréditation pour accepter ces missions.';
+            }
+            return 'Vous devez obtenir des accréditations pour postuler aux missions.';
         },
 
         docProgress() {
@@ -1805,9 +1826,15 @@ export default {
         },
         quoteTotal() {
             return (
+                (Number(this.quoteModal.diagnostic_fee) || 0) +
                 this.partsSubtotal +
                 (Number(this.quoteModal.labor.unit_price) || 0)
             );
+        },
+        contractorNet() {
+            const diagNet  = (Number(this.quoteModal.diagnostic_fee) || 0) * (1 - this.commissionDiagnostic / 100);
+            const laborNet = (Number(this.quoteModal.labor.unit_price) || 0) * (1 - this.commissionMainOeuvre / 100);
+            return diagNet + this.partsSubtotal + laborNet;
         },
         quoteIsValid() {
             const hasValidPart = this.quoteModal.partLines.some(
@@ -1837,6 +1864,22 @@ export default {
                 this.missionsError = "Impossible de charger les missions.";
             } finally {
                 this.missionsLoading = false;
+            }
+        },
+
+        async fetchAvailableMissions() {
+            if (!this.routes.missions_available) return;
+            this.availableLoading = true;
+            try {
+                const res = await fetch(this.routes.missions_available, {
+                    headers: { Accept: "application/json" },
+                });
+                if (!res.ok) throw new Error();
+                this.availableMissions = await res.json();
+            } catch {
+                this.availableMissions = [];
+            } finally {
+                this.availableLoading = false;
             }
         },
 
@@ -1950,6 +1993,7 @@ export default {
                 ).substring(0, 5),
                 working_days: [...(this.contractorProfile.working_days ?? [])],
                 radius_km: this.contractorProfile.radius_km ?? 10,
+                diagnostic_fee: Number(this.contractorProfile.diagnostic_fee ?? 0),
                 loading: false,
             };
         },
@@ -1966,6 +2010,7 @@ export default {
                     end_time: this.scheduleModal.end_time,
                     working_days: this.scheduleModal.working_days,
                     radius_km: this.scheduleModal.radius_km,
+                    diagnostic_fee: Number(this.scheduleModal.diagnostic_fee ?? 0),
                 };
                 console.log("[Horaires] URL    :", this.routes.availability);
                 console.log(
@@ -2009,6 +2054,7 @@ export default {
                 this.contractorProfile.working_days =
                     this.scheduleModal.working_days;
                 this.contractorProfile.radius_km = this.scheduleModal.radius_km;
+                this.contractorProfile.diagnostic_fee = this.scheduleModal.diagnostic_fee;
                 this.scheduleModal.visible = false;
                 this.showToast(
                     "✅ Horaires mis à jour avec succès.",
@@ -2351,7 +2397,75 @@ export default {
 
         openMission(m) {
             this.activeMission = m;
+            this.missionDistance = null;
+            this.requestGeoAndComputeDistance();
         },
+
+        haversineKm(lat1, lng1, lat2, lng2) {
+            const R = 6371;
+            const dLat = ((lat2 - lat1) * Math.PI) / 180;
+            const dLng = ((lng2 - lng1) * Math.PI) / 180;
+            const a =
+                Math.sin(dLat / 2) ** 2 +
+                Math.cos((lat1 * Math.PI) / 180) *
+                    Math.cos((lat2 * Math.PI) / 180) *
+                    Math.sin(dLng / 2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        },
+
+        async requestGeoAndComputeDistance() {
+            const m = this.activeMission;
+            if (!m?.latitude || !m?.longitude) return;
+
+            const compute = (lat, lng) => {
+                this.missionDistance = this.haversineKm(
+                    lat, lng,
+                    parseFloat(m.latitude),
+                    parseFloat(m.longitude)
+                );
+                this.contractorGeo.error = null;
+            };
+
+            if (this.contractorGeo.latitude !== null && this.contractorGeo.longitude !== null) {
+                compute(this.contractorGeo.latitude, this.contractorGeo.longitude);
+                return;
+            }
+
+            if (!navigator.geolocation) {
+                this.contractorGeo.error = 'unavailable';
+                return;
+            }
+
+            this.contractorGeo.loading = true;
+            this.contractorGeo.error = null;
+
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    this.contractorGeo.latitude = pos.coords.latitude;
+                    this.contractorGeo.longitude = pos.coords.longitude;
+                    this.contractorGeo.loading = false;
+                    compute(pos.coords.latitude, pos.coords.longitude);
+                },
+                (err) => {
+                    this.contractorGeo.loading = false;
+                    const map = { 1: 'denied', 2: 'unavailable', 3: 'timeout' };
+                    this.contractorGeo.error = map[err.code] ?? 'unavailable';
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        },
+        stepOf(m) {
+            if (m.step !== undefined && m.step !== null)
+                return parseInt(m.step) || 1;
+            const map = {
+                pending: 1, assigned: 2, accepted: 3, contact_made: 4,
+                on_the_way: 5, tracking: 6, in_progress: 7,
+                quote_submitted: 8, order_placed: 9, awaiting_confirm: 10,
+                completed: 11, closed: 12,
+            };
+            return map[m.status] ?? 1;
+        },
+
         scrollToDocs() {
             this.$refs.docsSection?.scrollIntoView({ behavior: "smooth" });
         },
@@ -2391,18 +2505,22 @@ export default {
                 existingQuote &&
                 ["submitted", "rejected"].includes(existingQuote.status);
 
+            const existingDiagFee = existingQuote?.items?.find(
+                (i) => i.type === "diagnostic"
+            )?.unit_price ?? this.diagnosticFee ?? 0;
+
             this.quoteModal = {
                 visible: true,
                 mission: { ...mission },
                 isRevision,
                 diagnosis: existingQuote?.diagnosis ?? "",
+                diagnostic_fee: Number(existingDiagFee),
                 labor: {
                     description: "Main d'œuvre",
                     unit_price:
                         existingQuote?.items?.find((i) => i.type === "labor")
                             ?.unit_price ?? 0,
                 },
-                // Pré-remplir les lignes si révision
                 partLines: existingQuote?.items
                     ? existingQuote.items
                           .filter((i) => i.type === "part")
@@ -2416,8 +2534,7 @@ export default {
                 loading: false,
                 error: null,
                 _lineId: existingQuote?.items
-                    ? existingQuote.items.filter((i) => i.type === "part")
-                          .length
+                    ? existingQuote.items.filter((i) => i.type === "part").length
                     : 0,
             };
         },
@@ -2537,6 +2654,23 @@ export default {
             }
         },
 
+        downloadQuotePdf(mission) {
+            const quote = mission.quote;
+            if (!quote) return;
+            const typeLabels = { diagnostic: "Diagnostic", part: "Fourniture", labor: "Main d'œuvre", travel: "Déplacement", other: "Autre" };
+            const typeBg    = { diagnostic: "#f97316", part: "#3b82f6", labor: "#10b981", travel: "#8b5cf6", other: "#6b7280" };
+            const lines = (quote.items ?? []).map((i) => {
+                const total = parseFloat(i.quantity) * parseFloat(i.unit_price);
+                const tl = typeLabels[i.type] ?? i.type;
+                const bg = typeBg[i.type] ?? "#6b7280";
+                return `<tr><td><span style="background:${bg};color:#fff;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700;margin-right:8px;">${tl}</span>${i.description}</td><td style="text-align:center;">${i.quantity}</td><td style="text-align:right;">${this.formatPrice(i.unit_price)}</td><td style="text-align:right;font-weight:700;">${this.formatPrice(total)}</td></tr>`;
+            }).join("");
+            const clientName = mission.client?.name ?? '';
+            const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Devis #${quote.id}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;color:#1c1412;padding:32px 40px;max-width:800px;margin:0 auto}.print-btn{display:block;margin:0 auto 24px;padding:10px 28px;background:#f97316;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:18px;border-bottom:2px solid #f97316}.brand{font-size:24px;font-weight:900;color:#f97316}.brand em{color:#1c1412;font-style:normal}.meta{font-size:12px;color:#7c6a5a;text-align:right;line-height:1.8}.meta strong{color:#1c1412;font-size:14px;display:block}.section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#7c6a5a;margin:20px 0 8px}.info-row{font-size:13px;color:#7c6a5a;margin-bottom:4px}.info-row strong{color:#1c1412}.diag-box{background:#fff7ed;border-left:3px solid #f97316;padding:10px 14px;font-size:13px;color:#7c6a5a;margin:16px 0;border-radius:0 6px 6px 0}table{width:100%;border-collapse:collapse;margin:10px 0}thead th{background:#f8f4f0;font-size:10px;font-weight:700;text-transform:uppercase;color:#7c6a5a;padding:10px 12px;text-align:left}tbody td{padding:9px 12px;border-bottom:1px solid #f0e9e4;font-size:13px}tfoot td{padding:14px 12px;font-weight:700;font-size:15px;border-top:2px solid #f97316}tfoot td:last-child{text-align:right;color:#f97316}.note{margin-top:28px;padding:12px 16px;background:#f8f4f0;border-radius:6px;font-size:11px;color:#7c6a5a}.footer{margin-top:24px;text-align:center;font-size:10px;color:#b0a09a;padding-top:14px;border-top:1px solid #e8ddd4}@media print{.print-btn{display:none!important}}</style></head><body><button class="print-btn" onclick="window.print()">⬇ Enregistrer en PDF</button><div class="header"><div><div class="brand">Meso<em>Travo</em></div></div><div class="meta"><strong>Devis n°${quote.id}${quote.version > 1 ? ' — v' + quote.version : ''}</strong>Mission #${mission.id} · ${mission.service}<br>Émis le ${new Date().toLocaleDateString('fr-FR')}</div></div><div class="section-label">Détails</div><div class="info-row">📍 Adresse : <strong>${mission.address}</strong></div>${clientName ? `<div class="info-row">👤 Client : <strong>${clientName}</strong></div>` : ''}${quote.diagnosis ? `<div class="diag-box"><strong>🔍 Diagnostic</strong><br>${quote.diagnosis}</div>` : ''}<div class="section-label">Lignes du devis</div><table><thead><tr><th>Désignation</th><th>Qté</th><th>Prix unitaire</th><th>Total</th></tr></thead><tbody>${lines}</tbody><tfoot><tr><td colspan="3">Total TTC</td><td>${this.formatPrice(quote.amount_incl_tax)}</td></tr></tfoot></table><div class="note">⚠️ Ce devis est soumis à approbation via Mesotravo. Aucun paiement hors-plateforme n'est autorisé.</div><div class="footer">Mesotravo.com</div></body></html>`;
+            const win = window.open('', '_blank', 'width=860,height=720');
+            if (win) { win.document.write(html); win.document.close(); }
+        },
+
         quoteStatusLabel(status) {
             const map = {
                 draft: "📝 Brouillon",
@@ -2608,7 +2742,7 @@ export default {
                 this.abandonModal.visible = false;
                 this.activeMission = null;
                 this.showToast(
-                    "Mission abandonnée. L'équipe Resotravo a été notifiée.",
+                    "Mission abandonnée. L'équipe Mesotravo a été notifiée.",
                     "success"
                 );
             } catch {
@@ -2855,7 +2989,11 @@ export default {
         });
         this.localDocProgress = { ...this.docProgressData };
 
-        this.fetchMissions();
+        if (this.showAvailableMissions) {
+            this.fetchAvailableMissions();
+        } else {
+            this.fetchMissions();
+        }
         this.fetchNotifications();
         this.notifInterval = setInterval(
             () => this.fetchNotifications(),
@@ -3435,6 +3573,34 @@ export default {
     font-size: 12px;
     color: var(--gr);
     margin-top: 1px;
+}
+.ctr-mission-imgs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+}
+.ctr-mission-img-thumb {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 1px solid rgba(0,0,0,0.08);
+    transition: opacity 0.15s;
+}
+.ctr-mission-img-thumb:hover { opacity: 0.8; }
+.ctr-mission-imgs-more {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    background: rgba(0,0,0,0.07);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #555;
 }
 .ctr-mission-right {
     display: flex;
@@ -4176,6 +4342,32 @@ export default {
     color: var(--or);
     min-width: 50px;
     text-align: right;
+}
+
+/* TARIF DIAGNOSTIC */
+.ctr-diag-fee-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.ctr-diag-fee-row .ctr-input {
+    flex: 1;
+    max-width: 180px;
+}
+.ctr-fee-unit {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--gr);
+    white-space: nowrap;
+}
+.ctr-fee-hint {
+    font-size: 12px;
+    color: var(--grm);
+    margin-top: 4px;
+}
+.ctr-fee-hint strong {
+    color: var(--green);
+    font-weight: 700;
 }
 
 /* FORM */
@@ -4935,4 +5127,168 @@ export default {
 .ctm-toast.error {
     background: #dc2626;
 }
+
+/* ── Missions disponibles — prestataire en attente ── */
+.ctr-pending-mission-msg {
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    color: #78350f;
+    margin-bottom: 14px;
+    line-height: 1.4;
+}
+.ctr-mission-item-locked {
+    opacity: 0.6;
+    pointer-events: none;
+    cursor: default;
+}
+.ctr-badge-locked {
+    background: #e5e7eb;
+    color: #6b7280;
+    font-size: 0.72rem;
+    padding: 3px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+/* ── Workflow progress ── */
+.ctm-workflow {
+    padding: 12px 16px 14px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #faf7f5;
+}
+.ctm-workflow-track {
+    height: 5px; background: #e5e7eb; border-radius: 99px; overflow: hidden; margin-bottom: 12px;
+}
+.ctm-workflow-fill {
+    height: 100%; background: linear-gradient(90deg, #f97316, #ea580c); border-radius: 99px; transition: width 0.5s;
+}
+.ctm-wf-steps {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px 4px; position: relative;
+}
+@media (min-width: 400px) { .ctm-wf-steps { grid-template-columns: repeat(6, 1fr); } }
+.ctm-wf-step { display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative; }
+.ctm-wf-step:not(:last-child)::after {
+    content: ""; position: absolute; top: 7px; left: calc(50% + 8px);
+    width: calc(100% - 16px); height: 2px; background: #e5e7eb;
+}
+.ctm-wf-step.wf-done:not(:last-child)::after { background: #f97316; }
+.ctm-wf-dot {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2.5px solid #e5e7eb; background: #fff; transition: all 0.25s; flex-shrink: 0; z-index: 1;
+}
+.ctm-wf-step.wf-done .ctm-wf-dot { background: #f97316; border-color: #f97316; }
+.ctm-wf-step.wf-current .ctm-wf-dot {
+    background: #f97316; border-color: #ea580c;
+    box-shadow: 0 0 0 4px rgba(249,115,22,0.2); transform: scale(1.25);
+}
+.ctm-wf-label {
+    font-size: 9px; font-weight: 700; color: #9ca3af;
+    text-align: center; line-height: 1.2; max-width: 48px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ctm-wf-step.wf-done .ctm-wf-label { color: #ea580c; }
+.ctm-wf-step.wf-current .ctm-wf-label { color: #f97316; font-weight: 800; }
+
+/* ── Distance block ── */
+.ctm-distance-block {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin: 10px 0;
+    font-size: 0.9rem;
+    color: #1e40af;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 38px;
+}
+.ctm-distance-value strong { color: #ea580c; font-weight: 700; }
+.ctm-distance-loading { display: flex; align-items: center; gap: 8px; color: #64748b; }
+.ctm-distance-error { color: #b91c1c; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ctm-spinner {
+    width: 14px; height: 14px;
+    border: 2px solid #cbd5e1; border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: ctm-spin 0.7s linear infinite;
+    display: inline-block; flex-shrink: 0;
+}
+@keyframes ctm-spin { to { transform: rotate(360deg); } }
+.ctm-retry-btn {
+    background: #1d4ed8; color: #fff; border: none;
+    border-radius: 6px; padding: 3px 10px; font-size: 0.8rem; cursor: pointer;
+}
+.ctm-retry-btn:hover { background: #1e40af; }
+
+/* ══ MODAL DEVIS — styles manquants dans le dashboard ══ */
+.ctm-modal-subtitle { font-size: 12px; color: var(--gr); margin-top: 2px }
+.ctm-modal-close { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--gr); flex-shrink: 0 }
+.ctm-modal-body { padding: 18px 22px }
+.ctm-modal-footer { padding: 14px 22px; border-top: 2px solid var(--grl); display: flex; gap: 8px; justify-content: flex-end; background: #faf7f4; border-radius: 0 0 18px 18px }
+.ctm-modal-quote { max-width: 600px }
+.ctm-modal-header-inner { display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 0 }
+.ctm-modal-header-icon { font-size: 26px; flex-shrink: 0; margin-top: 2px }
+.ctm-modal-body-quote { padding: 14px; display: flex; flex-direction: column; gap: 12px }
+@media (min-width: 480px) { .ctm-modal-body-quote { padding: 18px 22px; gap: 14px } }
+.ctm-modal-footer-quote { gap: 8px; flex-wrap: wrap }
+.ctm-modal-footer-quote .ctm-btn { flex: 1; min-width: 100px; justify-content: center }
+
+.ctm-qblock { background: var(--wh); border: 1.5px solid var(--grl); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px }
+.ctm-qblock-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap }
+.ctm-qblock-title { font-size: 13px; font-weight: 800; color: var(--dk); display: flex; align-items: center; gap: 8px; flex-wrap: wrap }
+.ctm-commission-tag { font-size: 10px; font-weight: 700; background: #fff7ed; color: var(--or2); border: 1px solid #fed7aa; border-radius: 99px; padding: 1px 7px }
+.ctm-add-line-btn { font-size: 12px; font-weight: 700; color: var(--or); background: var(--or3); border: 1.5px solid #fed7aa; border-radius: 8px; padding: 5px 12px; cursor: pointer; font-family: "Poppins", sans-serif; transition: all 0.15s; white-space: nowrap; flex-shrink: 0 }
+.ctm-add-line-btn:hover { background: #ffedd5 }
+
+.ctm-qfield { display: flex; flex-direction: column; gap: 5px }
+.ctm-qlabel { font-size: 11.5px; font-weight: 700; color: var(--gr) }
+.ctm-optional { font-weight: 400; color: var(--grm) }
+.ctm-qtextarea { border: 1.5px solid var(--grl); border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: "Poppins", sans-serif; color: var(--dk); resize: vertical; width: 100%; box-sizing: border-box; background: #f8f4f0; transition: border 0.15s }
+.ctm-qtextarea:focus { outline: none; border-color: var(--or); background: #fff }
+
+.ctm-diag-amount-row { background: #f8f4f0; border: 1.5px solid var(--grl); border-radius: 8px; padding: 10px 14px }
+.ctm-diag-amount-val { font-size: 18px; font-weight: 800; color: var(--or) }
+.ctm-diag-amount-hint { font-size: 11px; color: var(--grm); margin-top: 3px }
+
+.ctm-quote-section { background: var(--wh); border: 1.5px solid var(--grl); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px }
+.ctm-quote-section-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap }
+.ctm-quote-section-title { font-size: 13px; font-weight: 800; color: var(--dk); display: flex; align-items: center; gap: 8px }
+.ctm-quote-table-head { display: grid; grid-template-columns: 1fr 60px 110px 90px 28px; gap: 6px; font-size: 10.5px; font-weight: 700; color: var(--grm); text-transform: uppercase; letter-spacing: .5px; padding: 0 2px }
+.ctm-quote-line { display: grid; grid-template-columns: 1fr 60px 110px 90px 28px; gap: 6px; align-items: center }
+.ctm-quote-input { border: 1.5px solid var(--grl); border-radius: 8px; padding: 7px 9px; font-size: 12.5px; font-family: "Poppins", sans-serif; color: var(--dk); background: #f8f4f0; width: 100%; box-sizing: border-box; transition: border .15s }
+.ctm-quote-input:focus { outline: none; border-color: var(--or); background: #fff }
+.ctm-quote-line-total { font-size: 12.5px; font-weight: 700; color: var(--dk); text-align: right }
+.ctm-quote-del-btn { width: 26px; height: 26px; border-radius: 50%; border: none; background: #fee2e2; color: #dc2626; cursor: pointer; font-size: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; padding: 0; transition: background .15s }
+.ctm-quote-del-btn:hover { background: #fca5a5 }
+.ctm-quote-empty-lines { font-size: 12.5px; color: var(--grm); text-align: center; padding: 12px; background: #f8f4f0; border-radius: 8px }
+
+.ctm-quote-labor-row { display: flex; flex-direction: column; gap: 8px }
+@media (min-width: 400px) { .ctm-quote-labor-row { flex-direction: row; align-items: flex-end } .ctm-quote-field.ctm-field-flex { flex: 1 } .ctm-quote-field.ctm-field-amount { width: 140px; flex-shrink: 0 } }
+.ctm-quote-field { display: flex; flex-direction: column; gap: 4px }
+.ctm-quote-label { font-size: 11.5px; font-weight: 700; color: var(--gr) }
+
+.ctm-recap { background: linear-gradient(135deg,#fff7ed,#fffbf5); border: 2px solid #fed7aa; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px }
+.ctm-recap-row { display: flex; justify-content: space-between; align-items: flex-start; font-size: 13px; color: var(--gr); gap: 8px }
+.ctm-recap-row > span:first-child { flex-shrink: 0 }
+.ctm-recap-vals { display: flex; flex-direction: column; align-items: flex-end; gap: 1px }
+.ctm-recap-vals strong { font-weight: 700; color: var(--dk); font-size: 13px }
+.ctm-recap-net-line { font-size: 10.5px; color: #16a34a; font-weight: 600 }
+.ctm-recap-divider { height: 2px; background: #fed7aa; border-radius: 99px }
+.ctm-recap-total { display: flex; justify-content: space-between; font-size: 15px; font-weight: 800; color: var(--dk) }
+.ctm-recap-net-total { font-size: 12px; color: var(--gr); text-align: right }
+.ctm-recap-net-total strong { color: #16a34a; font-weight: 700 }
+
+.ctm-quote-error { background: #fee2e2; border-radius: 10px; padding: 10px 14px; font-size: 13px; color: #dc2626; font-weight: 600 }
+.ctm-btn-draft { border: 1.5px solid var(--grl) !important; color: var(--gr) !important }
+.ctm-spinner-dark { border-color: rgba(0,0,0,.15); border-top-color: var(--gr) }
+
+/* ══ Computed styles partagés ══ */
+.col-desc { grid-column: 1 }
+.col-qty  { grid-column: 2; text-align: center }
+.col-price{ grid-column: 3; text-align: right }
+.col-total{ grid-column: 4; text-align: right }
+.col-del  { grid-column: 5 }
 </style>

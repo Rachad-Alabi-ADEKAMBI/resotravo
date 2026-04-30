@@ -1,6 +1,6 @@
 <template>
     <div class="amis-wrap">
-        <!-- ══════════════ TOPBAR ══════════════ -->
+        <!-- -------------- TOPBAR -------------- -->
         <div class="amis-topbar">
             <div class="amis-topbar-left">
                 <button
@@ -13,7 +13,7 @@
                 <div>
                     <div class="amis-page-title">Gestion des Talents</div>
                     <div class="amis-page-sub">
-                        {{ greeting }}, <strong>{{ user.name }}</strong>
+                        <strong>{{ user.name }}</strong>
                     </div>
                 </div>
             </div>
@@ -39,7 +39,7 @@
                             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                         </svg>
                         <span class="amis-notif-badge" v-if="unreadCount > 0">{{
-                            unreadCount > 9 ? "9+" : unreadCount
+                            unreadCount
                         }}</span>
                     </button>
                     <div class="amis-notif-dropdown" v-if="notifOpen">
@@ -84,9 +84,9 @@
             </div>
         </div>
 
-        <!-- ══════════════ CONTENU ══════════════ -->
+        <!-- -------------- CONTENU -------------- -->
         <div class="amis-content">
-            <!-- ── STATS ── -->
+            <!-- -- STATS -- -->
             <div class="at-stats-row">
                 <div class="at-stat" v-for="s in statCards" :key="s.label">
                     <div class="at-stat-icon">{{ s.icon }}</div>
@@ -97,16 +97,16 @@
                 </div>
             </div>
 
-            <!-- ── FILTRES ── -->
+            <!-- -- FILTRES -- -->
             <div class="amis-filters-bar">
                 <div class="amis-filters-left">
                     <div class="amis-search-wrap">
-                        <span class="amis-search-icon">🔍</span>
+                        <span class="amis-search-icon">??</span>
                         <input
                             class="amis-search"
                             type="text"
                             v-model="search"
-                            placeholder="Rechercher nom, email, domaine…"
+                            placeholder="Rechercher nom, email, domaine�"
                             @input="currentPage = 1"
                         />
                     </div>
@@ -131,17 +131,17 @@
                         v-model="filterAvailability"
                         @change="currentPage = 1"
                     >
-                        <option value="">Toutes disponibilités</option>
+                        <option value="">Toutes disponibilit�s</option>
                         <option value="immediate">
-                            Disponible immédiatement
+                            Disponible imm�diatement
                         </option>
                         <option value="parttime">Temps partiel</option>
-                        <option value="mission">Mission spécifique</option>
+                        <option value="mission">Mission sp�cifique</option>
                     </select>
                 </div>
             </div>
 
-            <!-- ── TABS ── -->
+            <!-- -- TABS -- -->
             <div class="amis-tabs">
                 <button
                     class="amis-tab"
@@ -158,32 +158,32 @@
                 </button>
             </div>
 
-            <!-- ── LOADER ── -->
+            <!-- -- LOADER -- -->
             <div class="ac-grid" v-if="loading">
                 <div class="ac-skeleton" v-for="n in 6" :key="n"></div>
             </div>
 
-            <!-- ── ERREUR ── -->
+            <!-- -- ERREUR -- -->
             <div class="amis-alert-error" v-else-if="loadError">
-                ⚠️ {{ loadError }}
+                ?? {{ loadError }}
                 <button
                     class="amis-btn amis-btn-ghost amis-btn-sm"
                     @click="fetchApplications"
                 >
-                    Réessayer
+                    R�essayer
                 </button>
             </div>
 
-            <!-- ── VIDE ── -->
+            <!-- -- VIDE -- -->
             <div class="amis-empty" v-else-if="pagedApplications.length === 0">
-                <div class="amis-empty-icon">🎓</div>
-                <div class="amis-empty-title">Aucun dossier trouvé</div>
+                <div class="amis-empty-icon">??</div>
+                <div class="amis-empty-title">Aucun dossier trouv�</div>
                 <div class="amis-empty-sub">
                     Modifiez vos filtres ou revenez plus tard.
                 </div>
             </div>
 
-            <!-- ── GRILLE CARTES ── -->
+            <!-- -- GRILLE CARTES -- -->
             <div class="ac-grid" v-else>
                 <div
                     class="ac-card"
@@ -192,7 +192,7 @@
                     :class="{ 'ac-card-pending': a.status === 'pending' }"
                     @click="openDetail(a)"
                 >
-                    <!-- En-tête -->
+                    <!-- En-t�te -->
                     <div class="ac-card-head">
                         <div
                             class="ac-avatar"
@@ -218,7 +218,7 @@
                     <div class="ac-card-stats">
                         <div class="ac-cstat">
                             <span class="ac-cstat-val">{{
-                                a.level ?? "—"
+                                a.level ?? "�"
                             }}</span>
                             <span class="ac-cstat-lbl">Niveau</span>
                         </div>
@@ -232,7 +232,7 @@
                         </div>
                     </div>
 
-                    <!-- Chips domaine + disponibilité -->
+                    <!-- Chips domaine + disponibilit� -->
                     <div class="ac-card-chips">
                         <span class="at-domain-chip">{{ a.domain }}</span>
                         <span class="ac-chip ac-chip-avail">{{
@@ -245,7 +245,7 @@
                         class="at-reject-inline"
                         v-if="a.status === 'rejected' && a.reject_reason"
                     >
-                        💬 <em>{{ a.reject_reason }}</em>
+                        ?? <em>{{ a.reject_reason }}</em>
                     </div>
 
                     <!-- Actions rapides -->
@@ -256,21 +256,21 @@
                             @click.stop="quickApprove(a)"
                             :disabled="actionLoading === a.id"
                         >
-                            ✅ Approuver
+                            ? Approuver
                         </button>
                         <button
                             class="amis-btn amis-btn-red amis-btn-xs"
                             v-if="a.status === 'pending'"
                             @click.stop="openRejectModal(a)"
                         >
-                            ❌ Refuser
+                            ? Refuser
                         </button>
                         <button
                             class="amis-btn amis-btn-ghost amis-btn-xs"
                             v-if="a.status === 'approved'"
                             @click.stop="openSuspendModal(a)"
                         >
-                            🔒 Suspendre
+                            ?? Suspendre
                         </button>
                         <button
                             class="amis-btn amis-btn-orange amis-btn-xs"
@@ -278,27 +278,27 @@
                             @click.stop="quickApprove(a)"
                             :disabled="actionLoading === a.id"
                         >
-                            🔄 Ré-approuver
+                            ?? R�-approuver
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- ── PAGINATION ── -->
+            <!-- -- PAGINATION -- -->
             <div class="ac-pagination" v-if="totalFiltered > 0">
                 <button
                     class="ac-page-btn"
                     @click="currentPage = 1"
                     :disabled="currentPage === 1"
                 >
-                    «
+                    �
                 </button>
                 <button
                     class="ac-page-btn"
                     @click="currentPage--"
                     :disabled="currentPage === 1"
                 >
-                    ‹
+                    �
                 </button>
                 <button
                     class="ac-page-btn"
@@ -314,17 +314,17 @@
                     @click="currentPage++"
                     :disabled="currentPage === totalPages"
                 >
-                    ›
+                    �
                 </button>
                 <button
                     class="ac-page-btn"
                     @click="currentPage = totalPages"
                     :disabled="currentPage === totalPages"
                 >
-                    »
+                    �
                 </button>
                 <span class="ac-page-info">
-                    Page {{ currentPage }}/{{ totalPages }} ·
+                    Page {{ currentPage }}/{{ totalPages }} �
                     {{ totalFiltered }} dossier{{
                         totalFiltered > 1 ? "s" : ""
                     }}
@@ -333,7 +333,7 @@
         </div>
         <!-- end amis-content -->
 
-        <!-- ══════════════ MODAL DOSSIER COMPLET ══════════════ -->
+        <!-- -------------- MODAL DOSSIER COMPLET -------------- -->
         <div
             class="amis-modal-overlay"
             v-if="activeApp"
@@ -353,7 +353,7 @@
                             </span>
                         </h3>
                         <div class="amis-modal-sub">
-                            Dossier #{{ activeApp.id }} · Soumis le
+                            Dossier #{{ activeApp.id }} � Soumis le
                             {{ activeApp.created_at }}
                         </div>
                     </div>
@@ -366,7 +366,7 @@
                         <div class="amis-detail-col">
                             <div class="amis-detail-section">
                                 <div class="amis-detail-section-title">
-                                    👤 Informations personnelles
+                                    ?? Informations personnelles
                                 </div>
                                 <div class="amis-detail-row">
                                     <span>Nom complet</span
@@ -377,13 +377,13 @@
                                     ><strong>{{ activeApp.email }}</strong>
                                 </div>
                                 <div class="amis-detail-row">
-                                    <span>Téléphone</span
+                                    <span>T�l�phone</span
                                     ><strong>{{ activeApp.phone }}</strong>
                                 </div>
                             </div>
                             <div class="amis-detail-section">
                                 <div class="amis-detail-section-title">
-                                    🎓 Profil professionnel
+                                    ?? Profil professionnel
                                 </div>
                                 <div class="amis-detail-row">
                                     <span>Titre</span
@@ -398,11 +398,11 @@
                                     ><strong>{{ activeApp.level }}</strong>
                                 </div>
                                 <div class="amis-detail-row">
-                                    <span>Expérience</span
+                                    <span>Exp�rience</span
                                     ><strong>{{ activeApp.exp }} ans</strong>
                                 </div>
                                 <div class="amis-detail-row">
-                                    <span>Disponibilité</span
+                                    <span>Disponibilit�</span
                                     ><strong>{{
                                         activeApp.availability
                                     }}</strong>
@@ -410,7 +410,7 @@
                             </div>
                             <div class="amis-detail-section">
                                 <div class="amis-detail-section-title">
-                                    📝 À propos
+                                    ?? � propos
                                 </div>
                                 <p class="at-bio">{{ activeApp.bio }}</p>
                             </div>
@@ -419,7 +419,7 @@
                                 v-if="activeApp.linkedin || activeApp.portfolio"
                             >
                                 <div class="amis-detail-section-title">
-                                    🔗 Liens
+                                    ?? Liens
                                 </div>
                                 <div
                                     class="amis-detail-row"
@@ -453,14 +453,14 @@
                                     activeApp.reject_reason
                                 "
                             >
-                                💬 <strong>Motif du refus :</strong>
+                                ?? <strong>Motif du refus :</strong>
                                 {{ activeApp.reject_reason }}
                             </div>
                         </div>
                         <div class="amis-detail-col">
                             <div class="amis-detail-section">
                                 <div class="amis-detail-section-title">
-                                    🏫 Diplômes
+                                    ?? Dipl�mes
                                 </div>
                                 <div
                                     class="at-diploma-item"
@@ -468,17 +468,17 @@
                                     :key="i"
                                 >
                                     <div class="at-diploma-title">
-                                        🎓 {{ d.title }}
+                                        ?? {{ d.title }}
                                     </div>
                                     <div class="at-diploma-meta">
-                                        {{ d.school }} · {{ d.year }}
+                                        {{ d.school }} � {{ d.year }}
                                     </div>
                                 </div>
                                 <div
                                     class="at-empty-sub"
                                     v-if="!activeApp.diplomas?.length"
                                 >
-                                    Aucun diplôme renseigné.
+                                    Aucun dipl�me renseign�.
                                 </div>
                             </div>
                             <div
@@ -486,7 +486,7 @@
                                 v-if="activeApp.certifications?.length"
                             >
                                 <div class="amis-detail-section-title">
-                                    🏅 Certifications
+                                    ?? Certifications
                                 </div>
                                 <div class="at-skills-wrap">
                                     <span
@@ -501,7 +501,7 @@
                             </div>
                             <div class="amis-detail-section">
                                 <div class="amis-detail-section-title">
-                                    💼 Expériences professionnelles
+                                    ?? Exp�riences professionnelles
                                 </div>
                                 <div
                                     class="at-exp-item"
@@ -514,7 +514,7 @@
                                             {{ e.role }}
                                         </div>
                                         <div class="at-exp-meta">
-                                            {{ e.company }} · {{ e.period }}
+                                            {{ e.company }} � {{ e.period }}
                                         </div>
                                     </div>
                                 </div>
@@ -522,12 +522,12 @@
                                     class="at-empty-sub"
                                     v-if="!activeApp.experiences?.length"
                                 >
-                                    Aucune expérience renseignée.
+                                    Aucune exp�rience renseign�e.
                                 </div>
                             </div>
                             <div class="amis-detail-section at-actions-section">
                                 <div class="amis-detail-section-title">
-                                    ⚙️ Actions administrateur
+                                    ?? Actions administrateur
                                 </div>
                                 <div class="at-actions-row">
                                     <button
@@ -545,7 +545,7 @@
                                             "
                                         ></div>
                                         <span v-else
-                                            >✅ Approuver le profil</span
+                                            >? Approuver le profil</span
                                         >
                                     </button>
                                     <button
@@ -553,14 +553,14 @@
                                         v-if="activeApp.status === 'pending'"
                                         @click="openRejectModal(activeApp)"
                                     >
-                                        ❌ Refuser
+                                        ? Refuser
                                     </button>
                                     <button
                                         class="amis-btn amis-btn-ghost"
                                         v-if="activeApp.status === 'approved'"
                                         @click="openSuspendModal(activeApp)"
                                     >
-                                        🔒 Suspendre le talent
+                                        ?? Suspendre le talent
                                     </button>
                                     <button
                                         class="amis-btn amis-btn-orange"
@@ -576,7 +576,7 @@
                                                 actionLoading === activeApp.id
                                             "
                                         ></div>
-                                        <span v-else>🔄 Ré-approuver</span>
+                                        <span v-else>?? R�-approuver</span>
                                     </button>
                                 </div>
                             </div>
@@ -594,7 +594,7 @@
             </div>
         </div>
 
-        <!-- ══════════════ MODAL REFUS ══════════════ -->
+        <!-- -------------- MODAL REFUS -------------- -->
         <div
             class="amis-modal-overlay"
             v-if="rejectModal.visible"
@@ -619,9 +619,9 @@
                             margin-bottom: 14px;
                         "
                     >
-                        Vous êtes sur le point de refuser la demande de
+                        Vous �tes sur le point de refuser la demande de
                         <strong>{{ rejectModal.app?.full_name }}</strong
-                        >. Le candidat sera notifié avec le motif indiqué.
+                        >. Le candidat sera notifi� avec le motif indiqu�.
                     </p>
                     <label class="amis-form-label"
                         >Motif du refus
@@ -631,7 +631,7 @@
                         class="amis-textarea"
                         v-model="rejectModal.reason"
                         rows="3"
-                        placeholder="Ex : Niveau d'études insuffisant, dossier incomplet…"
+                        placeholder="Ex : Niveau d'�tudes insuffisant, dossier incomplet�"
                     ></textarea>
                 </div>
                 <div class="amis-modal-footer">
@@ -652,13 +652,13 @@
                             class="amis-spinner"
                             v-if="rejectModal.loading"
                         ></div>
-                        <span v-else>❌ Confirmer le refus</span>
+                        <span v-else>? Confirmer le refus</span>
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- ══════════════ MODAL SUSPENSION ══════════════ -->
+        <!-- -------------- MODAL SUSPENSION -------------- -->
         <div
             class="amis-modal-overlay"
             v-if="suspendModal.visible"
@@ -685,7 +685,7 @@
                     >
                         Suspendre
                         <strong>{{ suspendModal.app?.full_name }}</strong>
-                        masquera son profil de l'Espace Talents et désactivera
+                        masquera son profil de l'Espace Talents et d�sactivera
                         son compte.
                     </p>
                     <label class="amis-form-label"
@@ -696,7 +696,7 @@
                         class="amis-textarea"
                         v-model="suspendModal.reason"
                         rows="3"
-                        placeholder="Ex : Comportement inapproprié, fausses informations…"
+                        placeholder="Ex : Comportement inappropri�, fausses informations�"
                     ></textarea>
                 </div>
                 <div class="amis-modal-footer">
@@ -717,13 +717,13 @@
                             class="amis-spinner"
                             v-if="suspendModal.loading"
                         ></div>
-                        <span v-else>🔒 Confirmer la suspension</span>
+                        <span v-else>?? Confirmer la suspension</span>
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- ══════════════ TOASTS ══════════════ -->
+        <!-- -------------- TOASTS -------------- -->
         <div class="amis-toast-container">
             <div
                 class="amis-toast"
@@ -788,12 +788,6 @@ export default {
     },
 
     computed: {
-        greeting() {
-            const h = new Date().getHours();
-            if (h < 12) return "Bonjour";
-            if (h < 18) return "Bon après-midi";
-            return "Bonsoir";
-        },
 
         userInitials() {
             return (
@@ -809,9 +803,9 @@ export default {
         tabs() {
             return [
                 { key: "all", label: "Tous" },
-                { key: "pending", label: "⏳ En attente" },
-                { key: "approved", label: "✅ Approuvés" },
-                { key: "rejected", label: "❌ Refusés" },
+                { key: "pending", label: "? En attente" },
+                { key: "approved", label: "? Approuv�s" },
+                { key: "rejected", label: "? Refus�s" },
             ];
         },
 
@@ -822,30 +816,30 @@ export default {
         statCards() {
             return [
                 {
-                    icon: "📋",
+                    icon: "??",
                     value: this.applications.length,
                     label: "Total dossiers",
                 },
                 {
-                    icon: "⏳",
+                    icon: "?",
                     value: this.applications.filter(
-                        (a) => a.status === "pending",
+                        (a) => a.status === "pending"
                     ).length,
                     label: "En attente",
                 },
                 {
-                    icon: "✅",
+                    icon: "?",
                     value: this.applications.filter(
-                        (a) => a.status === "approved",
+                        (a) => a.status === "approved"
                     ).length,
                     label: "Talents actifs",
                 },
                 {
-                    icon: "❌",
+                    icon: "?",
                     value: this.applications.filter(
-                        (a) => a.status === "rejected",
+                        (a) => a.status === "rejected"
                     ).length,
-                    label: "Refusés",
+                    label: "Refus�s",
                 },
             ];
         },
@@ -858,7 +852,7 @@ export default {
                 list = list.filter((a) => a.domain === this.filterDomain);
             if (this.filterAvailability)
                 list = list.filter(
-                    (a) => a.availability_raw === this.filterAvailability,
+                    (a) => a.availability_raw === this.filterAvailability
                 );
             if (this.search.trim()) {
                 const q = this.search.toLowerCase();
@@ -867,7 +861,7 @@ export default {
                         a.full_name?.toLowerCase().includes(q) ||
                         a.email?.toLowerCase().includes(q) ||
                         a.domain?.toLowerCase().includes(q) ||
-                        a.title?.toLowerCase().includes(q),
+                        a.title?.toLowerCase().includes(q)
                 );
             }
             return list;
@@ -911,7 +905,7 @@ export default {
                 this.applications = await res.json();
             } catch {
                 this.loadError =
-                    "Impossible de charger les dossiers. Réessayez.";
+                    "Impossible de charger les dossiers. R�essayez.";
             } finally {
                 this.loading = false;
             }
@@ -922,8 +916,8 @@ export default {
             try {
                 await this.updateStatus(app, "approved", null);
                 this.showToast(
-                    `✅ ${app.full_name} approuvé. Compte créé.`,
-                    "success",
+                    `? ${app.full_name} approuv�. Compte cr��.`,
+                    "success"
                 );
                 if (this.activeApp?.id === app.id) this.closeDetail();
             } catch {
@@ -957,9 +951,9 @@ export default {
                 await this.updateStatus(
                     this.rejectModal.app,
                     "rejected",
-                    this.rejectModal.reason,
+                    this.rejectModal.reason
                 );
-                this.showToast("Dossier refusé.", "error");
+                this.showToast("Dossier refus�.", "error");
                 this.rejectModal.visible = false;
                 if (this.activeApp?.id === this.rejectModal.app.id)
                     this.closeDetail();
@@ -977,7 +971,7 @@ export default {
                 await this.updateStatus(
                     this.suspendModal.app,
                     "rejected",
-                    this.suspendModal.reason,
+                    this.suspendModal.reason
                 );
                 this.showToast("Talent suspendu.", "error");
                 this.suspendModal.visible = false;
@@ -996,7 +990,7 @@ export default {
                 ?.getAttribute("content");
             const url = this.routes.talents_status.replace(
                 "{application}",
-                app.id,
+                app.id
             );
             const res = await fetch(url, {
                 method: "PATCH",
@@ -1037,8 +1031,8 @@ export default {
             return (
                 {
                     pending: "En attente",
-                    approved: "Approuvé",
-                    rejected: "Refusé",
+                    approved: "Approuv�",
+                    rejected: "Refus�",
                 }[status] ?? status
             );
         },
@@ -1138,7 +1132,7 @@ export default {
             window.dispatchEvent(
                 new CustomEvent("ab-sidebar-toggle", {
                     detail: { open: this.sidebarOpen },
-                }),
+                })
             );
         },
     },
@@ -1148,7 +1142,7 @@ export default {
         this.fetchNotifications();
         this.notifInterval = setInterval(
             () => this.fetchNotifications(),
-            30000,
+            30000
         );
         document.addEventListener("click", this.handleClickOutside);
         window.addEventListener("ab-sidebar-close", () => {
@@ -1180,6 +1174,7 @@ export default {
     color: var(--dk);
     background: #f8f4f0;
     min-height: 100vh;
+    overflow-x: hidden;
 }
 .amis-topbar {
     background: var(--wh);
@@ -1211,8 +1206,13 @@ export default {
 .amis-topbar-right {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
     flex-shrink: 0;
+}
+@media (min-width: 480px) {
+    .amis-topbar-right {
+        gap: 10px;
+    }
 }
 .amis-page-title {
     font-size: 15px;
@@ -1273,6 +1273,12 @@ export default {
     font-size: 12.5px;
     font-weight: 700;
     color: var(--gr);
+    display: none;
+}
+@media (min-width: 480px) {
+    .amis-count-pill {
+        display: inline-block;
+    }
 }
 .amis-notif-wrap {
     position: relative;
@@ -1428,25 +1434,48 @@ export default {
     color: var(--gr);
     margin-top: 3px;
 }
+/* -- FILTRES -- */
 .amis-filters-bar {
     display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
+    flex-direction: column;
+    gap: 8px;
     background: var(--wh);
     border: 1.5px solid var(--grl);
     border-radius: 12px;
-    padding: 12px 16px;
+    padding: 12px;
     margin-bottom: 14px;
 }
+@media (min-width: 600px) {
+    .amis-filters-bar {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        padding: 12px 16px;
+        gap: 10px;
+    }
+}
 .amis-filters-left {
-    flex: 1;
-    min-width: 200px;
+    width: 100%;
+}
+@media (min-width: 600px) {
+    .amis-filters-left {
+        flex: 1;
+        min-width: 180px;
+    }
 }
 .amis-filters-right {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 8px;
-    align-items: center;
+    width: 100%;
+}
+@media (min-width: 600px) {
+    .amis-filters-right {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        width: auto;
+    }
 }
 .amis-search-wrap {
     display: flex;
@@ -1467,7 +1496,7 @@ export default {
     background: none;
     outline: none;
     font-family: "Poppins", sans-serif;
-    font-size: 13.5px;
+    font-size: 13px;
     color: var(--dk);
     width: 100%;
     padding: 9px 0;
@@ -1476,41 +1505,65 @@ export default {
     border: 1.5px solid var(--grl);
     background: #f8f4f0;
     border-radius: 8px;
-    padding: 8px 12px;
+    padding: 7px 8px;
     font-family: "Poppins", sans-serif;
-    font-size: 13px;
+    font-size: 12px;
     color: var(--dk);
     outline: none;
     cursor: pointer;
+    width: 100%;
+    min-width: 0;
+}
+@media (min-width: 600px) {
+    .amis-select {
+        font-size: 13px;
+        padding: 8px 12px;
+        width: auto;
+    }
 }
 .amis-select:focus {
     border-color: var(--or);
 }
+/* -- TABS -- */
 .amis-tabs {
-    display: flex;
-    gap: 0;
-    overflow-x: auto;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
     background: var(--wh);
     border: 1.5px solid var(--grl);
     border-radius: 12px;
     padding: 4px;
     margin-bottom: 20px;
 }
+@media (max-width: 480px) {
+    .amis-tabs {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
 .amis-tab {
-    padding: 8px 16px;
+    padding: 7px 6px;
     background: none;
     border: none;
     border-radius: 8px;
     font-family: "Poppins", sans-serif;
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 600;
     color: var(--gr);
     cursor: pointer;
     white-space: nowrap;
     display: flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    gap: 4px;
     transition: all 0.18s;
+    text-align: center;
+    overflow: hidden;
+}
+@media (min-width: 600px) {
+    .amis-tab {
+        font-size: 13px;
+        padding: 8px 12px;
+    }
 }
 .amis-tab:hover {
     color: var(--dk);
@@ -1522,9 +1575,16 @@ export default {
 .amis-tab-count {
     background: var(--grl);
     border-radius: 99px;
-    padding: 1px 7px;
-    font-size: 11px;
+    padding: 1px 6px;
+    font-size: 10px;
     font-weight: 700;
+    flex-shrink: 0;
+}
+@media (min-width: 600px) {
+    .amis-tab-count {
+        font-size: 11px;
+        padding: 1px 7px;
+    }
 }
 .amis-tab.active .amis-tab-count {
     background: var(--or);
@@ -1569,12 +1629,12 @@ export default {
     background: var(--wh);
     border: 1.5px solid var(--grl);
     border-radius: 16px;
-    padding: 18px;
+    padding: 14px;
     cursor: pointer;
     transition: all 0.2s;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
 }
 .ac-card:hover {
     border-color: var(--or);
@@ -1587,18 +1647,19 @@ export default {
 .ac-card-head {
     display: flex;
     align-items: flex-start;
-    gap: 12px;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 .ac-avatar {
-    width: 46px;
-    height: 46px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #fff;
     font-weight: 800;
-    font-size: 16px;
+    font-size: 13px;
     flex-shrink: 0;
 }
 .ac-card-headinfo {
@@ -1645,7 +1706,7 @@ export default {
 }
 .ac-cstat-val {
     display: block;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 800;
     color: var(--dk);
     white-space: nowrap;
@@ -1654,7 +1715,7 @@ export default {
 }
 .ac-cstat-lbl {
     display: block;
-    font-size: 10.5px;
+    font-size: 9.5px;
     color: var(--gr);
     margin-top: 1px;
 }
@@ -2131,3 +2192,5 @@ export default {
     }
 }
 </style>
+
+

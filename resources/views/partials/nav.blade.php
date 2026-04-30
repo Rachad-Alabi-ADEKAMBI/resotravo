@@ -6,24 +6,21 @@
 
 @php
     $links = [
-        ['route' => 'home',       'label' => 'Accueil',        'icon' => '🏠', 'href' => route('home')],
-      ['route' => 'services', 'label' => 'Services', 'icon' => '🔧', 'href' => route('home') . '#services'],
-        ['route' => 'talent',     'label' => 'Espace Talents', 'icon' => '🌟', 'href' => route('talent')],
-        ['route' => 'market',     'label' => 'Appels d\'offres','icon' => '📋', 'href' => route('market')],
-        ['route' => 'consulting', 'label' => 'Allô Conseils',  'icon' => '📞', 'href' => route('consulting')],
+        ['route' => 'home',       'label' => 'Accueil',         'icon' => '🏠', 'href' => route('home')],
+        ['route' => 'services',   'label' => 'Services',        'icon' => '🔧', 'href' => route('home') . '#services'],
+        ['route' => 'talent',     'label' => 'Espace Talents',  'icon' => '🌟', 'href' => route('talent')],
+        ['route' => 'market',     'label' => 'Appels d\'offres', 'icon' => '📋', 'href' => route('market')],
+        ['route' => 'consulting', 'label' => 'Allô Conseils',   'icon' => '📞', 'href' => route('consulting')],
     ];
     $current = $active ?? '';
 @endphp
 
 <nav id="main-nav">
-
-    {{-- Logo --}}
     <a class="logo" href="{{ route('home') }}">
-        <div class="logo-mark">R</div>
-        <span class="logo-name">RESO<em>TRAVO</em></span>
+        <div class="logo-mark">M</div>
+        <span class="logo-name">MESO<em>TRAVO</em></span>
     </a>
 
-    {{-- Liens desktop --}}
     <div class="nav-links">
         @foreach ($links as $link)
             <a href="{{ $link['href'] }}"
@@ -34,7 +31,6 @@
         @endforeach
     </div>
 
-    {{-- CTA desktop --}}
     <div class="nav-cta">
         @guest
             <a class="btn btn-outline" href="{{ route('login') }}">Se connecter</a>
@@ -49,17 +45,13 @@
         @endauth
     </div>
 
-    {{-- Hamburger --}}
     <button class="hamburger" id="hamburger"
             aria-label="Menu" aria-expanded="false" aria-controls="nav-mobile">
         <span></span><span></span><span></span>
     </button>
-
 </nav>
 
-{{-- Menu mobile --}}
 <div class="nav-mobile" id="nav-mobile" aria-hidden="true">
-
     @foreach ($links as $link)
         <a href="{{ $link['href'] }}"
            class="{{ $current === $link['route'] ? 'active' : '' }}">
@@ -80,19 +72,14 @@
             </form>
         @endauth
     </div>
-
 </div>
 
-{{-- Overlay --}}
 <div class="nav-overlay" id="nav-overlay"></div>
 
-
 <style>
-/* Icones dans les liens desktop */
 .nav-links a { display:inline-flex;align-items:center;gap:5px }
 .nav-icon    { font-size:14px;line-height:1 }
 </style>
-
 
 <script>
 (function () {
@@ -143,7 +130,6 @@
         nav.classList.toggle('scrolled', window.scrollY > 10);
     }, { passive: true });
 
-    /* Scroll vers #services depuis une autre page */
     (function () {
         if (window.location.hash !== '#services') return;
         var n = 0;
@@ -159,6 +145,5 @@
             if (++n >= 20) clearInterval(t);
         }, 100);
     }());
-
 }());
 </script>

@@ -22,15 +22,21 @@
     <meta name="format-detection" content="telephone=no" />
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    <link rel="icon" type="image/png" href="{{ asset('favicon-96x96.png') }}" sizes="96x96" />
+<link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}" />
+<link rel="shortcut icon" href="{{ asset('favicon.ico') }}" />
+<link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}" />
+<link rel="manifest" href="{{ asset('site.webmanifest') }}" />
+
     {{-- Mobile / PWA --}}
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="ResoTravo" />
+    <meta name="apple-mobile-web-app-title" content="Mesotravo" />
     <meta name="theme-color" content="#1C1412" />
 
 
-    <title>@yield('title', 'Tableau de bord') — ResoTravo</title>
+    <title>@yield('title', 'Tableau de bord') — Mesotravo</title>
 
     {{-- Fonts --}}
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -38,8 +44,48 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap"
           rel="stylesheet" />
 
+    @php $iconMode = \App\Models\Setting::get('site_icon_mode', 'current'); @endphp
+    @if ($iconMode === 'fontawesome')
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    @endif
+    <script>
+        window.MESOTRAVO_ICON_MODE = @json($iconMode);
+    </script>
+
+    {{-- Leaflet.js (carte OpenStreetMap) --}}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
     {{-- Vite : charge resources/js/app.js et resources/css/app.css --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    <style>
+        #mesotravo-app { visibility: hidden; }
+        #mesotravo-loader {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            background: #fff;
+            color: var(--dk);
+            font-family: 'Poppins', sans-serif;
+            font-size: 15px;
+            text-align: center;
+            padding: 18px;
+        }
+        #Mesotravo-loader.hidden { display: none; }
+        #Mesotravo-loader .loader-ring {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 4px solid rgba(249, 115, 22, .2);
+            border-top-color: var(--or);
+            animation: loader-rotate 1s linear infinite;
+        }
+        @keyframes loader-rotate { to { transform: rotate(1turn); } }
+    </style>
 
     <style>
         /* ── RESET ── */
@@ -59,6 +105,8 @@
             --grl: #E8DDD4;
             --grm: #8A7D78;
             --wh:  #FFFFFF;
+            --success: #22C55E;
+            --success2: #16A34A;
 
             /* Sidebar */
             --sidebar-w: 250px;
@@ -153,6 +201,36 @@
             flex-shrink: 0;
             border: 2px solid var(--or);
         }
+
+        .success-action,
+        .pm-btn-submit,
+        .acfg-btn-green,
+        .amis-btn-green,
+        .aac-btn-green,
+        .amk-btn-green,
+        .av-btn-green,
+        .clm-btn-green,
+        .ctm-btn-green,
+        .ctr-btn-green {
+            background: linear-gradient(135deg, var(--success), var(--success2)) !important;
+            border-color: var(--success2) !important;
+            color: #fff !important;
+            box-shadow: 0 8px 22px rgba(34, 197, 94, .26) !important;
+        }
+
+        .success-action:hover:not(:disabled),
+        .pm-btn-submit:hover:not(:disabled),
+        .acfg-btn-green:hover:not(:disabled),
+        .amis-btn-green:hover:not(:disabled),
+        .aac-btn-green:hover:not(:disabled),
+        .amk-btn-green:hover:not(:disabled),
+        .av-btn-green:hover:not(:disabled),
+        .clm-btn-green:hover:not(:disabled),
+        .ctm-btn-green:hover:not(:disabled),
+        .ctr-btn-green:hover:not(:disabled) {
+            background: linear-gradient(135deg, #16A34A, #15803D) !important;
+            border-color: #15803D !important;
+        }
     </style>
 
     @yield('styles')
@@ -203,7 +281,12 @@
             default      => null,
         };
     @endphp
-    <div class="ab-main" id="resotravo-app" data-photo="{{ $photoUrl }}">
+    <div id="Mesotravo-loader">
+        <div class="loader-ring"></div>
+        <div>Chargement…</div>
+    </div>
+
+    <div class="ab-main" id="mesotravo-app" data-photo="{{ $photoUrl }}">
         @yield('content')
     </div>
 
@@ -255,7 +338,7 @@
 
 <script>
 (function () {
-    var photoUrl = document.getElementById('resotravo-app')?.dataset?.photo;
+    var photoUrl = document.getElementById('mesotravo-app')?.dataset?.photo;
     if (!photoUrl) return;
 
     // Toutes les classes d'avatar utilisées dans les composants Vue
@@ -289,7 +372,7 @@
     var observer = new MutationObserver(function () {
         injectPhotos();
     });
-    observer.observe(document.getElementById('resotravo-app') || document.body, {
+    observer.observe(document.getElementById('mesotravo-app') || document.body, {
         childList: true,
         subtree:   true,
     });
@@ -459,5 +542,10 @@
 </script>
 
 @yield('scripts')
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+@include('partials.cookie-banner')
+
 </body>
 </html>

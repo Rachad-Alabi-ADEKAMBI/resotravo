@@ -1,4 +1,4 @@
-<template>
+﻿<template>
     <div class="ar-wrap">
         <!-- ══════════════════════════════════
              TOPBAR
@@ -15,7 +15,7 @@
                 <div>
                     <div class="ar-page-title">Revenus & Finances</div>
                     <div class="ar-page-sub">
-                        {{ greeting }}, <strong>{{ user.name }}</strong>
+                        <strong>{{ user.name }}</strong>
                     </div>
                 </div>
             </div>
@@ -70,7 +70,7 @@
                             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                         </svg>
                         <span class="ar-notif-badge" v-if="unreadCount > 0">{{
-                            unreadCount > 9 ? "9+" : unreadCount
+                            unreadCount
                         }}</span>
                     </button>
                     <div class="ar-notif-dropdown" v-if="notifOpen">
@@ -278,7 +278,7 @@
                                 <td data-label="Date" class="ar-date">
                                     {{
                                         formatDate(
-                                            m.completed_at ?? m.created_at,
+                                            m.completed_at ?? m.created_at
                                         )
                                     }}
                                 </td>
@@ -436,13 +436,6 @@ export default {
     },
 
     computed: {
-        greeting() {
-            const h = new Date().getHours();
-            if (h < 12) return "Bonjour";
-            if (h < 18) return "Bon après-midi";
-            return "Bonsoir";
-        },
-
         userInitials() {
             return (this.user.name || "")
                 .split(" ")
@@ -489,7 +482,7 @@ export default {
         totalPages() {
             return Math.max(
                 1,
-                Math.ceil(this.allFiltered.length / this.perPage),
+                Math.ceil(this.allFiltered.length / this.perPage)
             );
         },
 
@@ -497,12 +490,14 @@ export default {
             const total = this.allFiltered.length;
             const from = Math.min(
                 (this.currentPage - 1) * this.perPage + 1,
-                total,
+                total
             );
             const to = Math.min(this.currentPage * this.perPage, total);
             return total === 0
                 ? "Aucun résultat"
-                : `${from}–${to} sur ${total} transaction${total > 1 ? "s" : ""}`;
+                : `${from}–${to} sur ${total} transaction${
+                      total > 1 ? "s" : ""
+                  }`;
         },
 
         visiblePages() {
@@ -551,7 +546,7 @@ export default {
             window.dispatchEvent(
                 new CustomEvent("ab-sidebar-toggle", {
                     detail: { open: !isOpen },
-                }),
+                })
             );
         },
 
@@ -611,7 +606,7 @@ export default {
                     m.total_amount ? (m.total_amount * 0.1).toFixed(0) : 0,
                     m.total_amount ? (m.total_amount * 0.9).toFixed(0) : 0,
                     this.statusLabel(m.status),
-                ].join(";"),
+                ].join(";")
             );
 
             const csv = [headers.join(";"), ...lines].join("\n");
@@ -621,7 +616,9 @@ export default {
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = `resotravo_revenus_${this.period}_${new Date().toISOString().slice(0, 10)}.csv`;
+            a.download = `Mesotravo_revenus_${this.period}_${new Date()
+                .toISOString()
+                .slice(0, 10)}.csv`;
             a.click();
             URL.revokeObjectURL(url);
         },
@@ -681,11 +678,11 @@ export default {
                     (n) => ({
                         ...n,
                         ago: this.timeAgo(n.created_at),
-                    }),
+                    })
                 );
-                this.unreadCount = this.notifications.filter(
-                    (n) => !n.read,
-                ).length;
+                this.unreadCount =
+                    data.unread_count ??
+                    this.notifications.filter((n) => !n.read).length;
             } catch (_) {
             } finally {
                 this.notifLoading = false;
@@ -729,7 +726,7 @@ export default {
                 this.unreadCount = Math.max(0, this.unreadCount - 1);
             }
             this.notifOpen = false;
-            if (n.url) window.location.href = n.url;
+            
         },
 
         handleOutsideClick(e) {

@@ -1,7 +1,7 @@
 {{-- resources/views/pages/back/admin/services.blade.php --}}
 @extends('layouts.back')
 
-@section('title', 'Catalogue des Services — Resotravo')
+@section('title', 'Catalogue des Services — Mesotravo')
 
 @php $active = 'services'; @endphp
 

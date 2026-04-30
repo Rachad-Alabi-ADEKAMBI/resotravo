@@ -171,7 +171,7 @@ class TalentController extends Controller
         $application = TalentApplication::create($data);
 
         return response()->json([
-            'message' => 'Votre dossier a été soumis. L\'équipe Resotravo vous contactera sous 48h.',
+            'message' => 'Votre dossier a été soumis. L\'équipe Mesotravo vous contactera sous 48h.',
             'id'      => $application->id,
         ], 201);
     }

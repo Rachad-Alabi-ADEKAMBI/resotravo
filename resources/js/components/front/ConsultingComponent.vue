@@ -1,4 +1,4 @@
-<template>
+﻿<template>
     <div class="consulting-page">
         <!-- ═══════════ HERO ═══════════ -->
         <section class="ac-hero">
@@ -11,13 +11,13 @@
                     Gratuit pour tous les inscrits · Disponible 24h/24
                 </div>
                 <h1 class="au1">
-                    Allo Conseils<br />
+                    Allô Conseils<br />
                     <span class="hl">votre assistant</span><br />
-                    Resotravo
+                    Mesotravo
                 </h1>
                 <p class="ac-hero-desc au2">
                     Posez vos questions et obtenez une orientation immédiate.<br />
-                    En cas de besoin, un agent humain Resotravo prend le relais.
+                    En cas de besoin, un agent humain Mesotravo prend le relais.
                 </p>
                 <div class="ac-hero-steps au3">
                     <div class="ac-step-pill">
@@ -131,8 +131,8 @@
                             <div class="ac-agent-name">
                                 {{
                                     activeTicket?.human_assigned
-                                        ? "Agent Resotravo"
-                                        : "Agent IA Resotravo"
+                                        ? "Agent Mesotravo"
+                                        : "Agent IA Mesotravo"
                                 }}
                             </div>
                             <div class="ac-agent-status">
@@ -160,8 +160,8 @@
                                 <div class="ac-chat-name">
                                     {{
                                         activeTicket?.human_assigned
-                                            ? "Agent Resotravo"
-                                            : "Agent IA Resotravo"
+                                            ? "Agent Mesotravo"
+                                            : "Agent IA Mesotravo"
                                     }}
                                 </div>
                                 <div class="ac-chat-mode">
@@ -230,11 +230,9 @@
                         <!-- Écran d'accueil (pas de ticket actif) -->
                         <div class="ac-welcome" v-if="!activeTicket">
                             <div class="ac-welcome-icon">💬</div>
-                            <h3>
-                                Bonjour{{ userName ? ", " + userName : "" }} !
-                            </h3>
+                            <h3>{{ userName ? userName : "Bienvenue" }} !</h3>
                             <p>
-                                Je suis l'assistant Resotravo. Comment puis-je
+                                Je suis l'assistant Mesotravo. Comment puis-je
                                 vous aider ?
                             </p>
                             <div class="ac-suggestions">
@@ -262,7 +260,7 @@
                                 <div class="ac-msg-avatar">🤖</div>
                                 <div class="ac-msg-bubble">
                                     <p>
-                                        Bonjour ! Je suis l'assistant Resotravo.
+                                        Bonjour ! Je suis l'assistant Mesotravo.
                                         Comment puis-je vous aider ?
                                     </p>
                                     <div class="ac-suggestions">
@@ -326,7 +324,7 @@
                                             >
                                                 {{
                                                     msg.sender_name ||
-                                                    "Agent Resotravo"
+                                                    "Agent Mesotravo"
                                                 }}
                                             </div>
                                             {{ msg.body }}
@@ -395,7 +393,7 @@
                             v-else-if="
                                 activeTicket &&
                                 ['resolved', 'closed'].includes(
-                                    activeTicket.status,
+                                    activeTicket.status
                                 )
                             "
                         >
@@ -451,13 +449,13 @@
                                             0,
                                             3 -
                                                 (activeTicket.ia_message_count ||
-                                                    0),
+                                                    0)
                                         )
                                     }}
                                     message(s) avant transfert automatique
                                 </span>
                                 <span v-else-if="activeTicket?.human_assigned">
-                                    Vous êtes en ligne avec un agent Resotravo
+                                    Vous êtes en ligne avec un agent Mesotravo
                                 </span>
                                 <span v-else
                                     >Appuyez sur Entrée pour envoyer</span
@@ -495,7 +493,7 @@
         <section class="sec">
             <div class="sec-tag reveal">Exemples de questions</div>
             <div class="sec-title reveal reveal-d1">
-                Allo Conseils répond à tout
+                Allô Conseils répond à tout
             </div>
             <div class="sec-sub reveal reveal-d2">
                 Orientation, choix du bon prestataire, aide à la rédaction d'un
@@ -524,7 +522,7 @@
             <div class="cta-inner reveal">
                 <h2>Besoin d'un conseil ?</h2>
                 <p>
-                    Allo Conseils est gratuit et accessible à tout moment depuis
+                    Allô Conseils est gratuit et accessible à tout moment depuis
                     votre espace personnel.
                 </p>
                 <div class="cta-btns">
@@ -620,7 +618,7 @@ export default {
                 {
                     icon: "🧑",
                     title: "Transfert agent humain",
-                    desc: "Après 3 messages ou sur demande, un agent Resotravo prend le relais.",
+                    desc: "Après 3 messages ou sur demande, un agent Mesotravo prend le relais.",
                 },
             ],
 
@@ -639,7 +637,7 @@ export default {
                 {
                     icon: "👷",
                     question:
-                        "Comment devenir prestataire certifié sur Resotravo ?",
+                        "Comment devenir prestataire certifié sur Mesotravo ?",
                     tag: "Inscription",
                 },
                 {
@@ -666,7 +664,7 @@ export default {
                 },
                 {
                     icon: "🌿",
-                    question: "Est-ce que Resotravo couvre le jardinage ?",
+                    question: "Est-ce que Mesotravo couvre le jardinage ?",
                     tag: "Services",
                 },
             ],
@@ -710,7 +708,7 @@ export default {
             try {
                 const url = this.routes.tickets_messages.replace(
                     "{ticket}",
-                    ticket.id,
+                    ticket.id
                 );
                 const res = await fetch(url, {
                     headers: { Accept: "application/json" },
@@ -738,7 +736,7 @@ export default {
             try {
                 const url = this.routes.tickets_messages.replace(
                     "{ticket}",
-                    this.activeTicket.id,
+                    this.activeTicket.id
                 );
                 const res = await fetch(url, {
                     headers: { Accept: "application/json" },
@@ -823,7 +821,7 @@ export default {
                     clearInterval(this.pollInterval);
                     this.pollInterval = setInterval(
                         () => this.pollMessages(),
-                        10000,
+                        10000
                     );
                     return;
                 }
@@ -831,7 +829,7 @@ export default {
                 // Envoyer message sur ticket existant
                 const url = this.routes.tickets_send.replace(
                     "{ticket}",
-                    this.activeTicket.id,
+                    this.activeTicket.id
                 );
                 const res = await fetch(url, {
                     method: "POST",
@@ -852,7 +850,7 @@ export default {
                 if (data.ticket) {
                     this.activeTicket = data.ticket;
                     const idx = this.tickets.findIndex(
-                        (t) => t.id === data.ticket.id,
+                        (t) => t.id === data.ticket.id
                     );
                     if (idx !== -1) this.tickets.splice(idx, 1, data.ticket);
                 }
@@ -937,7 +935,7 @@ export default {
             try {
                 const url = this.routes.tickets_human.replace(
                     "{ticket}",
-                    this.activeTicket.id,
+                    this.activeTicket.id
                 );
                 const res = await fetch(url, {
                     method: "PATCH",
@@ -1008,11 +1006,11 @@ export default {
                                 io.unobserve(e.target);
                             }
                         }),
-                    { threshold: 0.08, rootMargin: "0px 0px -30px 0px" },
+                    { threshold: 0.08, rootMargin: "0px 0px -30px 0px" }
                 );
                 document
                     .querySelectorAll(
-                        ".reveal:not(.revealed),.reveal-left:not(.revealed),.reveal-right:not(.revealed)",
+                        ".reveal:not(.revealed),.reveal-left:not(.revealed),.reveal-right:not(.revealed)"
                     )
                     .forEach((el) => io.observe(el));
             }, 150);
@@ -1909,9 +1907,7 @@ export default {
     color: var(--or);
     font-weight: 600;
     opacity: 0;
-    transition:
-        opacity 0.2s,
-        transform 0.2s;
+    transition: opacity 0.2s, transform 0.2s;
     transform: translateX(-4px);
 }
 .ac-usecase:hover .ac-usecase-arrow {
@@ -1977,9 +1973,7 @@ export default {
 .reveal-right {
     opacity: 0;
     transform: translateY(24px);
-    transition:
-        opacity 0.55s ease,
-        transform 0.55s ease;
+    transition: opacity 0.55s ease, transform 0.55s ease;
 }
 .reveal-left {
     transform: translateX(-28px);

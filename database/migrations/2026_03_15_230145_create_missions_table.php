@@ -67,7 +67,7 @@ return new class extends Migration
 
             // ── Payment ──────────────────────────────────────────────
             $table->decimal('total_amount', 10, 2)->nullable();
-            $table->decimal('commission',   10, 2)->nullable(); // 10% Resotravo
+            $table->decimal('commission',   10, 2)->nullable(); // 10% Mesotravo
             $table->string('momo_transaction_id')->nullable();
             $table->timestamp('paid_at')->nullable();
             $table->string('invoice_path')->nullable();

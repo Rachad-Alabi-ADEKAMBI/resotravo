@@ -3,14 +3,14 @@
         <!-- ══════════════ SIDEBAR ══════════════ -->
         <div class="rc-sidebar">
             <div class="rc-sidebar-logo">
-                <div class="rc-logo-mark">R</div>
-                <span class="rc-logo-name">RESO<em>TRAVO</em></span>
+                <div class="rc-logo-mark">M</div>
+                <span class="rc-logo-name">MESO<em>TRAVO</em></span>
             </div>
             <span class="rc-pro-badge">PRESTATAIRE</span>
             <h2 class="rc-sidebar-title">Inscription Prestataire</h2>
             <p class="rc-sidebar-sub">
-                Rejoignez le réseau de prestataires certifiés Resotravo et commencez
-                à recevoir des missions.
+                Rejoignez le réseau de prestataires certifiés Mesotravo et
+                commencez à recevoir des missions.
             </p>
 
             <div class="rc-steps-list">
@@ -42,6 +42,13 @@
         <!-- ══════════════ MAIN ══════════════ -->
         <div class="rc-main">
             <div class="rc-card">
+                <!-- Bouton Google -->
+                <a :href="routes.google_auth" class="rc-google-btn">
+                    <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.14 0 5.95 1.08 8.17 2.85l6.1-6.1C34.46 3.39 29.5 1.5 24 1.5 14.81 1.5 6.97 6.96 3.13 14.72l7.11 5.52C12.04 14.1 17.56 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24c0-1.64-.15-3.22-.42-4.75H24v9h12.7c-.55 2.98-2.19 5.5-4.66 7.19l7.2 5.59C43.32 37.09 46.5 30.97 46.5 24z"/><path fill="#FBBC05" d="M10.24 28.24A14.44 14.44 0 0 1 9.5 24c0-1.47.25-2.89.7-4.23l-7.11-5.52A22.46 22.46 0 0 0 1.5 24c0 3.68.88 7.15 2.44 10.22l6.3-5.98z"/><path fill="#34A853" d="M24 46.5c5.5 0 10.13-1.82 13.51-4.94l-7.2-5.59c-1.84 1.24-4.2 1.97-6.31 1.97-6.44 0-11.96-4.6-13.76-10.74l-6.3 5.98C6.97 41.04 14.81 46.5 24 46.5z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
+                    S'inscrire avec Google
+                </a>
+                <div class="rc-or-divider"><span>ou avec un email</span></div>
+
                 <!-- Barre de progression -->
                 <div class="rc-progress">
                     <div class="rc-progress-track">
@@ -96,14 +103,19 @@
 
                         <div class="rc-field">
                             <label>Téléphone <span class="req">*</span></label>
-                            <input
-                                class="rc-input"
-                                :class="{ err: errors.phone }"
-                                type="tel"
-                                v-model="form.phone"
-                                placeholder="+229 97 XX XX XX"
-                                autocomplete="tel"
-                            />
+                            <div class="rc-phone-wrap">
+                                <span class="rc-phone-prefix">+229 01</span>
+                                <input
+                                    class="rc-input rc-phone-input"
+                                    :class="{ err: errors.phone }"
+                                    type="tel"
+                                    v-model="form.phone"
+                                    placeholder="97 XX XX XX"
+                                    autocomplete="tel"
+                                    maxlength="8"
+                                    @input="form.phone = form.phone.replace(/\D/g, '').slice(0, 8)"
+                                />
+                            </div>
                             <div class="rc-err" v-if="errors.phone">
                                 {{ errors.phone }}
                             </div>
@@ -196,21 +208,17 @@
                     </div>
                 </div>
 
-                <!-- ── ÉTAPE 2 : Spécialités ── -->
+                <!-- ── ÉTAPE 2 : Spécialité ── -->
                 <div v-if="step === 2">
-                    <div class="rc-step-title">Spécialité(s)</div>
+                    <div class="rc-step-title">Spécialité</div>
                     <div class="rc-step-desc">
-                        Sélectionnez votre domaine principal et vos spécialités
-                        secondaires.
-                        <strong>{{
-                            form.specialty || "Aucune principale choisie"
-                        }}</strong>
+                        Sélectionnez votre domaine de compétence principal.
                     </div>
 
                     <!-- Spécialité principale -->
                     <div class="rc-field" style="margin-bottom: 20px">
                         <label
-                            >Spécialité principale
+                            >Spécialité
                             <span class="req">*</span></label
                         >
                         <select
@@ -219,7 +227,7 @@
                             :class="{ err: errors.specialty }"
                         >
                             <option value="">
-                                Sélectionner votre spécialité principale...
+                                Sélectionner votre spécialité...
                             </option>
                             <option
                                 v-for="s in specialtyList"
@@ -231,28 +239,6 @@
                         </select>
                         <div class="rc-err" v-if="errors.specialty">
                             {{ errors.specialty }}
-                        </div>
-                    </div>
-
-                    <!-- Spécialités secondaires -->
-                    <div class="rc-field">
-                        <label
-                            >Spécialités secondaires
-                            <span class="rc-optional">(optionnel)</span></label
-                        >
-                        <div class="rc-tags-wrap">
-                            <div
-                                class="rc-tag"
-                                v-for="s in specialtyList"
-                                :key="s"
-                                :class="{
-                                    selected: form.specialties.includes(s),
-                                    disabled: s === form.specialty,
-                                }"
-                                @click="toggleSpec(s)"
-                            >
-                                {{ s }}
-                            </div>
                         </div>
                     </div>
 
@@ -537,8 +523,8 @@
                             <p>
                                 Les présentes Conditions Générales d'Utilisation
                                 (CGU) régissent l'utilisation de la plateforme
-                                <strong>Resotravo</strong>, accessible à
-                                l'adresse <strong>resotravo.bj</strong>.
+                                <strong>Mesotravo</strong>, accessible à
+                                l'adresse <strong>mesotravo.bj</strong>.
                             </p>
                             <p>
                                 En créant un compte ou en utilisant nos
@@ -553,12 +539,12 @@
                                 d'application
                             </h4>
                             <p>
-                                Resotravo est une plateforme numérique de mise
+                                Mesotravo est une plateforme numérique de mise
                                 en relation entre des Clients (particuliers et
                                 entreprises), des Prestataires (artisans et
                                 ouvriers spécialisés) et des Talents
                                 (professionnels qualifiés BAC+3 minimum).
-                                Resotravo agit en qualité d'intermédiaire et ne
+                                Mesotravo agit en qualité d'intermédiaire et ne
                                 peut être considéré comme partie aux contrats
                                 conclus entre Clients et Prestataires ou
                                 Talents.
@@ -569,8 +555,8 @@
                             <h4><span class="cgu-num">02</span> Définitions</h4>
                             <p>
                                 <strong>Plateforme</strong> : le site web et les
-                                services Resotravo accessibles via
-                                resotravo.bj.<br />
+                                services Mesotravo accessibles via
+                                mesotravo.bj.<br />
                                 <strong>Client</strong> : toute personne
                                 physique ou morale inscrite en qualité de
                                 client.<br />
@@ -580,7 +566,7 @@
                                 <strong>Mission</strong> : toute intervention
                                 commandée par un Client via la plateforme.<br />
                                 <strong>Commission</strong> : rémunération de
-                                Resotravo fixée à 10% du montant de chaque
+                                Mesotravo fixée à 10% du montant de chaque
                                 mission réalisée.
                             </p>
                         </div>
@@ -602,7 +588,7 @@
                                 Chaque utilisateur est seul responsable de la
                                 confidentialité de ses identifiants. En cas de
                                 perte ou de compromission, l'utilisateur doit
-                                contacter immédiatement Resotravo.
+                                contacter immédiatement Mesotravo.
                             </p>
                         </div>
 
@@ -652,10 +638,10 @@
                             </h4>
                             <p>
                                 Le paiement s'effectue exclusivement via MTN
-                                MoMo. Resotravo prélève une commission de 10%
+                                MoMo. Mesotravo prélève une commission de 10%
                                 sur chaque prestation réalisée. Le prestataire
                                 perçoit 90% du montant du devis approuvé. Tout
-                                paiement hors-plateforme dégage Resotravo de
+                                paiement hors-plateforme dégage Mesotravo de
                                 toute responsabilité.
                             </p>
                         </div>
@@ -665,10 +651,10 @@
                                 <span class="cgu-num">07</span> Responsabilités
                             </h4>
                             <p>
-                                Resotravo est un intermédiaire de mise en
+                                Mesotravo est un intermédiaire de mise en
                                 relation. La responsabilité des interventions
                                 incombe exclusivement aux prestataires.
-                                Resotravo ne garantit pas les résultats des
+                                Mesotravo ne garantit pas les résultats des
                                 interventions mais s'engage à mettre en relation
                                 des prestataires vérifiés et certifiés.
                             </p>
@@ -682,7 +668,7 @@
                             <p>
                                 L'ensemble des contenus de la plateforme (logo,
                                 textes, interface) est la propriété exclusive de
-                                Resotravo. Toute reproduction sans autorisation
+                                Mesotravo. Toute reproduction sans autorisation
                                 est interdite.
                             </p>
                         </div>
@@ -708,7 +694,7 @@
                                 sanctions
                             </h4>
                             <p>
-                                Resotravo se réserve le droit de suspendre ou
+                                Mesotravo se réserve le droit de suspendre ou
                                 supprimer tout compte en cas de violation des
                                 CGU, de fausses informations, de comportement
                                 frauduleux ou de paiement hors plateforme.
@@ -721,7 +707,7 @@
                                 CGU
                             </h4>
                             <p>
-                                Resotravo se réserve le droit de modifier les
+                                Mesotravo se réserve le droit de modifier les
                                 présentes CGU à tout moment. Les utilisateurs
                                 seront informés par email et/ou notification. La
                                 poursuite de l'utilisation vaut acceptation des
@@ -738,7 +724,7 @@
                                 Les présentes CGU sont soumises au droit
                                 béninois. Tout litige sera soumis à la
                                 compétence exclusive des juridictions du Bénin.
-                                Resotravo peut jouer un rôle de médiateur sous
+                                Mesotravo peut jouer un rôle de médiateur sous
                                 2h après signalement.
                             </p>
                         </div>
@@ -746,8 +732,8 @@
                         <div class="cgu-article">
                             <h4><span class="cgu-num">13</span> Contact</h4>
                             <p>
-                                🌐 <strong>resotravo.bj</strong><br />
-                                ✉️ contact@resotravo.bj<br />
+                                🌐 <strong>mesotravo.bj</strong><br />
+                                ✉️ contact@mesotravo.bj<br />
                                 📞 +229 01 96 66 36 44<br />
                                 💬 WhatsApp : +229 01 96 66 36 44<br />
                                 📍 Cotonou, Bénin
@@ -850,23 +836,23 @@ export default {
 
             sidebarSteps: [
                 "Informations personnelles",
-                "Spécialités",
+                "Spécialité",
                 "Mot de passe",
             ],
 
             form: {
-                first_name: "Clim",
-                last_name: "Life",
-                phone: "014587895",
-                email: "xnetwork32@gmail.com",
-                intervention_zone: "Cotonou",
-                experience_years: 2,
-                city: "Cotonou",
-                bio: "Je suis compétent, très",
-                specialty: "Plomberie",
-                specialties: ["Climatisation"],
-                password: "Password1",
-                password_confirmation: "Password1",
+                first_name: "",
+                last_name: "",
+                phone: "",
+                email: "",
+                intervention_zone: "",
+                experience_years: "",
+                city: "",
+                bio: "",
+                specialty: "",
+                specialties: [],
+                password: "",
+                password_confirmation: "",
                 cgv: false,
             },
 
@@ -978,8 +964,8 @@ export default {
                     this.errors.first_name = "First name is required.";
                 if (!this.form.last_name.trim())
                     this.errors.last_name = "Last name is required.";
-                if (this.form.phone.replace(/\D/g, "").length < 8)
-                    this.errors.phone = "Invalid phone number.";
+                if (this.form.phone.replace(/\D/g, "").length !== 8)
+                    this.errors.phone = "Le numéro doit contenir exactement 8 chiffres.";
                 if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.form.email))
                     this.errors.email = "Invalid email address.";
                 if (!this.form.intervention_zone.trim())
@@ -1021,7 +1007,7 @@ export default {
             console.log(
                 `[RegisterContractorComponent] validate() step ${this.step} →`,
                 valid ? "OK" : "ERRORS",
-                this.errors,
+                this.errors
             );
             return valid;
         },
@@ -1044,7 +1030,7 @@ export default {
             const payload = {
                 first_name: this.form.first_name,
                 last_name: this.form.last_name,
-                phone: this.form.phone,
+                phone: "01" + this.form.phone.replace(/\D/g, ""),
                 email: this.form.email,
                 intervention_zone: this.form.intervention_zone,
                 experience_years: this.form.experience_years,
@@ -1057,7 +1043,7 @@ export default {
             };
 
             console.log(
-                "[RegisterContractorComponent] ── REQUÊTE ──────────────────────",
+                "[RegisterContractorComponent] ── REQUÊTE ──────────────────────"
             );
             console.log("[RegisterContractorComponent] Route   :", route);
             console.log("[RegisterContractorComponent] Méthode :", "POST");
@@ -1067,7 +1053,7 @@ export default {
                 password_confirmation: "***",
             });
             console.log(
-                "[RegisterContractorComponent] ────────────────────────────────",
+                "[RegisterContractorComponent] ────────────────────────────────"
             );
 
             this.loading = true;
@@ -1076,18 +1062,18 @@ export default {
                 const response = await window.axios.post(route, payload);
 
                 console.log(
-                    "[RegisterContractorComponent] ── RÉPONSE ──────────────────────",
+                    "[RegisterContractorComponent] ── RÉPONSE ──────────────────────"
                 );
                 console.log(
                     "[RegisterContractorComponent] Status :",
-                    response.status,
+                    response.status
                 );
                 console.log(
                     "[RegisterContractorComponent] Data   :",
-                    response.data,
+                    response.data
                 );
                 console.log(
-                    "[RegisterContractorComponent] ────────────────────────────────",
+                    "[RegisterContractorComponent] ────────────────────────────────"
                 );
 
                 this.step = 4;
@@ -1096,19 +1082,19 @@ export default {
                 const data = err?.response?.data;
 
                 console.error(
-                    "[RegisterContractorComponent] ── ERREUR ───────────────────────",
+                    "[RegisterContractorComponent] ── ERREUR ───────────────────────"
                 );
                 console.error(
                     "[RegisterContractorComponent] Status  :",
-                    status,
+                    status
                 );
                 console.error("[RegisterContractorComponent] Data    :", data);
                 console.error(
                     "[RegisterContractorComponent] Message :",
-                    err?.message,
+                    err?.message
                 );
                 console.error(
-                    "[RegisterContractorComponent] ────────────────────────────────",
+                    "[RegisterContractorComponent] ────────────────────────────────"
                 );
 
                 this.errorModal.visible = true;
@@ -1331,6 +1317,39 @@ export default {
     }
 }
 
+/* GOOGLE BTN */
+.rc-google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 11px 16px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fff;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: #374151;
+    text-decoration: none;
+    margin-bottom: 14px;
+    transition: background 0.2s, border-color 0.2s;
+}
+.rc-google-btn:hover { background: #f9fafb; border-color: #d1d5db; }
+.rc-or-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+}
+.rc-or-divider::before,
+.rc-or-divider::after {
+    content: '';
+    flex: 1;
+    border-top: 1px solid #e5e7eb;
+}
+.rc-or-divider span { font-size: 0.8rem; color: #9ca3af; white-space: nowrap; }
+
 /* PROGRESS */
 .rc-progress {
     margin-bottom: 28px;
@@ -1413,9 +1432,7 @@ export default {
     font-size: 14px;
     font-family: "Poppins", sans-serif;
     outline: none;
-    transition:
-        border-color 0.2s,
-        box-shadow 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
     color: var(--dk, #1c1412);
     background: var(--cr, #fef3e2);
 }
@@ -1429,6 +1446,28 @@ export default {
 }
 .rc-input::placeholder {
     color: var(--grm, #8a7d78);
+}
+/* ── Phone prefix ── */
+.rc-phone-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0;
+}
+.rc-phone-prefix {
+    padding: 11px 12px;
+    background: var(--grl, #e8ddd4);
+    border: 2px solid var(--grl, #e8ddd4);
+    border-right: none;
+    border-radius: 9px 0 0 9px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--dk, #1c1412);
+    white-space: nowrap;
+    font-family: "Poppins", sans-serif;
+}
+.rc-phone-input {
+    border-radius: 0 9px 9px 0 !important;
+    letter-spacing: 1px;
 }
 .rc-textarea {
     min-height: 80px;
@@ -1587,11 +1626,11 @@ export default {
 
 /* MODAL CGU */
 .rc-modal-cgu {
-    max-width: 620px;
+    max-width: 860px;
     padding: 0;
     display: flex;
     flex-direction: column;
-    max-height: 90vh;
+    max-height: 94vh;
     overflow: hidden;
 }
 .rc-modal-cgu-header {

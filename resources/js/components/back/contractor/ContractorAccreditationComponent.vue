@@ -1,4 +1,4 @@
-<template>
+﻿<template>
     <div class="cac-wrap">
         <!-- ══════════════ TOPBAR ══════════════ -->
         <div class="cac-topbar">
@@ -13,7 +13,7 @@
                 <div>
                     <div class="cac-page-title">Mon accréditation</div>
                     <div class="cac-page-sub">
-                        {{ greeting }}, <strong>{{ user.name }}</strong>
+                        <strong>{{ user.name }}</strong>
                     </div>
                 </div>
             </div>
@@ -35,7 +35,7 @@
                             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                         </svg>
                         <span class="cac-notif-badge" v-if="unreadCount > 0">
-                            {{ unreadCount > 9 ? "9+" : unreadCount }}
+                            {{ unreadCount }}
                         </span>
                     </button>
                     <div class="cac-notif-dropdown" v-if="notifOpen">
@@ -140,7 +140,7 @@
                         </div>
                         <div class="cac-card-desc">
                             Autorise les interventions en milieu professionnel.
-                            Délivrée exclusivement par l'équipe Resotravo après
+                            Délivrée exclusivement par l'équipe Mesotravo après
                             vérification complémentaire.
                         </div>
                     </div>
@@ -233,7 +233,7 @@
                         </div>
                         <div class="cac-request-desc">
                             Pour obtenir l'accréditation Entreprise, envoyez une
-                            demande à l'équipe Resotravo. Une vérification
+                            demande à l'équipe Mesotravo. Une vérification
                             complémentaire sera effectuée avant attribution.
                         </div>
                         <button
@@ -261,7 +261,7 @@
                         </div>
                         <div class="cac-alert-sub">
                             Les accréditations sont attribuées après validation
-                            complète de votre dossier par l'équipe Resotravo.
+                            complète de votre dossier par l'équipe Mesotravo.
                             <a
                                 :href="routes.dossier_page"
                                 class="cac-alert-link"
@@ -284,7 +284,7 @@
                     <div>
                         <h3>Demande d'accréditation Entreprise</h3>
                         <div class="cac-modal-sub">
-                            Votre demande sera examinée par l'équipe Resotravo
+                            Votre demande sera examinée par l'équipe Mesotravo
                         </div>
                     </div>
                     <button
@@ -392,12 +392,6 @@ export default {
     },
 
     computed: {
-        greeting() {
-            const h = new Date().getHours();
-            if (h < 12) return "Bonjour";
-            if (h < 18) return "Bon après-midi";
-            return "Bonsoir";
-        },
         userInitials() {
             return (
                 (this.user.name ?? "")
@@ -479,7 +473,7 @@ export default {
             this.requestModal.loading = true;
             try {
                 const csrf = document.querySelector(
-                    'meta[name="csrf-token"]',
+                    'meta[name="csrf-token"]'
                 )?.content;
                 const res = await fetch(this.routes.accreditation_request, {
                     method: "POST",
@@ -496,13 +490,13 @@ export default {
                 this.requestSent = true;
                 this.requestModal.visible = false;
                 this.showToast(
-                    "✅ Demande envoyée ! L'équipe Resotravo va examiner votre dossier.",
-                    "success",
+                    "✅ Demande envoyée ! L'équipe Mesotravo va examiner votre dossier.",
+                    "success"
                 );
             } catch {
                 this.showToast(
                     "Erreur lors de l'envoi de la demande.",
-                    "error",
+                    "error"
                 );
             } finally {
                 this.requestModal.loading = false;
@@ -532,7 +526,7 @@ export default {
         async openNotif(n) {
             if (!n.read) {
                 const csrf = document.querySelector(
-                    'meta[name="csrf-token"]',
+                    'meta[name="csrf-token"]'
                 )?.content;
                 await fetch(
                     this.routes.notifications_read.replace("{id}", n.id),
@@ -542,17 +536,17 @@ export default {
                             "X-CSRF-TOKEN": csrf,
                             Accept: "application/json",
                         },
-                    },
+                    }
                 );
                 n.read = true;
                 this.unreadCount = Math.max(0, this.unreadCount - 1);
             }
             this.notifOpen = false;
-            if (n.url) window.location.href = n.url;
+            
         },
         async markAllRead() {
             const csrf = document.querySelector(
-                'meta[name="csrf-token"]',
+                'meta[name="csrf-token"]'
             )?.content;
             await fetch(this.routes.notifications_all, {
                 method: "PATCH",
@@ -576,7 +570,7 @@ export default {
             window.dispatchEvent(
                 new CustomEvent("ab-sidebar-toggle", {
                     detail: { open: this.sidebarOpen },
-                }),
+                })
             );
         },
 
@@ -594,7 +588,7 @@ export default {
         this.fetchNotifications();
         this.notifInterval = setInterval(
             () => this.fetchNotifications(),
-            30000,
+            30000
         );
         document.addEventListener("click", this.handleClickOutside);
         window.addEventListener("ab-sidebar-close", () => {

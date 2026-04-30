@@ -1,6 +1,6 @@
 @extends('layouts.back')
 
-@section('title', 'Gestion des Prestataires — Resotravo')
+@section('title', 'Gestion des Prestataires — Mesotravo')
 
 @section('content')
 

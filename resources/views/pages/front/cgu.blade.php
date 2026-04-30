@@ -24,19 +24,20 @@
         <div class="legal-toc">
             <h3>Sommaire</h3>
             <ol>
-                <li><a href="#article-1">Objet et champ d'application</a></li>
-                <li><a href="#article-2">Definitions</a></li>
-                <li><a href="#article-3">Inscription et acces a la plateforme</a></li>
-                <li><a href="#article-4">Acccreditation des prestataires</a></li>
-                <li><a href="#article-5">Fonctionnement des missions</a></li>
-                <li><a href="#article-6">Paiement et commission</a></li>
-                <li><a href="#article-7">Responsabilites</a></li>
-                <li><a href="#article-8">Propriete intellectuelle</a></li>
-                <li><a href="#article-9">Protection des donnees</a></li>
-                <li><a href="#article-10">Resiliation et sanctions</a></li>
-                <li><a href="#article-11">Modification des CGU</a></li>
-                <li><a href="#article-12">Droit applicable et litiges</a></li>
-                <li><a href="#article-13">Contact</a></li>
+                <li><a href="#article-1">Objet de la plateforme</a></li>
+                <li><a href="#article-2">Statut de la plateforme</a></li>
+                <li><a href="#article-3">Creation et utilisation des comptes</a></li>
+                <li><a href="#article-4">Deroulement d'une mission</a></li>
+                <li><a href="#article-5">Devis, prix et paiement</a></li>
+                <li><a href="#article-6">Commission de la plateforme</a></li>
+                <li><a href="#article-7">Obligations des artisans</a></li>
+                <li><a href="#article-8">Obligations des clients</a></li>
+                <li><a href="#article-9">Avis, notation et reputation</a></li>
+                <li><a href="#article-10">Litiges et mediation</a></li>
+                <li><a href="#article-11">Responsabilite</a></li>
+                <li><a href="#article-12">Donnees, fiscalite et conformite</a></li>
+                <li><a href="#article-13">Suspension et resiliation</a></li>
+                <li><a href="#article-14">Droit applicable et juridiction</a></li>
             </ol>
         </div>
 
@@ -46,10 +47,10 @@
             <div class="legal-intro">
                 <p>
                     Les presentes Conditions Generales d'Utilisation (CGU) regissent l'utilisation de la
-                    plateforme <strong>Resotravo</strong>, accessible a l'adresse
-                    <strong>resotravo.bj</strong>, editee par la societe Resotravo,
-                    dont le contact est disponible au <strong>+229 01 96 66 36 44</strong>
-                    et par WhatsApp au <strong>+229 01 96 66 36 44</strong>.
+                    plateforme <strong>MESOTRAVO</strong>, accessible a l'adresse
+                    <strong>Mesotravo.com</strong>, editee par la societe Mesotravo,
+                    dont le contact est disponible au <strong>+229 01 90 00 36 26</strong>
+                    et par WhatsApp au <strong>+229 01 90 00 36 26</strong>.
                 </p>
                 <p>
                     En creant un compte ou en utilisant nos services, vous acceptez sans reserve l'integralite
@@ -59,216 +60,215 @@
 
             <!-- Article 1 -->
             <div class="legal-article" id="article-1">
-                <h2><span class="art-num">01</span> Objet et champ d'application</h2>
+                <h2><span class="art-num">01</span> Objet de la plateforme</h2>
                 <p>
-                    Resotravo est une plateforme numerique de mise en relation entre :
+                    MESOTRAVO est une plateforme numerique de mise en relation entre :
                 </p>
                 <ul>
-                    <li><strong>Des Clients</strong> (particuliers et entreprises) ayant besoin de services de bricolage, maintenance, expertise ou travaux specialises ;</li>
-                    <li><strong>Des Prestataires</strong> (artisans et ouvriers specialises) proposes dans le catalogue de services ;</li>
-                    <li><strong>Des Talents</strong> (professionnels hautement qualifies, BAC+3 minimum) accessibles via l'Espace Talents ;</li>
-                    <li><strong>Des Entreprises</strong> souhaitant publier des appels d'offres.</li>
+                    <li>des clients recherchant des services ou travaux a domicile,</li>
+                    <li>des artisans independants exercant legalement une activite professionnelle.</li>
                 </ul>
-                <p>
-                    Resotravo agit en qualite d'intermediaire et ne peut etre considere comme partie aux contrats conclus entre Clients et Prestataires ou Talents.
-                </p>
+                <div class="legal-warning">
+                    La plateforme n'execute aucun travail et n'emploie aucun artisan.<br>
+                    Le contrat de prestation est conclu directement entre le client et l'artisan, conformement au droit en vigueur en Republique du Benin et au droit OHADA.
+                </div>
             </div>
 
             <!-- Article 2 -->
             <div class="legal-article" id="article-2">
-                <h2><span class="art-num">02</span> Definitions</h2>
-                <div class="legal-defs">
-                    <div class="legal-def"><strong>Plateforme</strong> : le site web et les services Resotravo accessibles via resotravo.bj.</div>
-                    <div class="legal-def"><strong>Client</strong> : toute personne physique ou morale inscrite en qualite de client (particulier ou entreprise).</div>
-                    <div class="legal-def"><strong>Prestataire</strong> : tout professionnel inscrit pour proposer ses services d'artisan ou d'ouvrier specialise.</div>
-                    <div class="legal-def"><strong>Talent</strong> : tout professionnel qualifie (BAC+3 minimum) inscrit dans l'Espace Talents.</div>
-                    <div class="legal-def"><strong>Mission</strong> : toute intervention commandee par un Client aupres d'un Prestataire via la plateforme.</div>
-                    <div class="legal-def"><strong>Devis</strong> : proposition chiffree soumise par le Prestataire et approuvee par le Client avant execution des travaux.</div>
-                    <div class="legal-def"><strong>Commission</strong> : remuneration de Resotravo fixee a 10% du montant de chaque mission realisee.</div>
-                    <div class="legal-def"><strong>Badge Certifie</strong> : certification attribuee par Resotravo apres verification administrative du dossier du Prestataire.</div>
-                    <div class="legal-def"><strong>Accreditation</strong> : autorisation donnee par Resotravo au Prestataire d'intervenir en milieu DOMICILE et/ou ENTREPRISE.</div>
-                </div>
+                <h2><span class="art-num">02</span> Statut de la plateforme</h2>
+                <p>La plateforme agit uniquement comme intermediaire technique et commercial :</p>
+                <ul>
+                    <li>organisation des echanges,</li>
+                    <li>suivi de la mission,</li>
+                    <li>securisation du paiement via un prestataire agree.</li>
+                </ul>
+                <p>Elle n'est pas responsable de :</p>
+                <ul>
+                    <li>la qualite technique des travaux,</li>
+                    <li>les dommages materiels lies a l'intervention,</li>
+                    <li>les relations personnelles entre les parties.</li>
+                </ul>
+                <p>Cette clarification est exigee pour toute plateforme e-commerce au Benin.</p>
             </div>
 
             <!-- Article 3 -->
             <div class="legal-article" id="article-3">
-                <h2><span class="art-num">03</span> Inscription et acces a la plateforme</h2>
-                <h3>3.1 Conditions d'inscription</h3>
-                <p>L'inscription est ouverte a toute personne physique majeure ou morale disposant d'une adresse email valide. L'utilisateur s'engage a fournir des informations exactes, completes et a les maintenir a jour.</p>
-                <p>La creation d'un compte est gratuite. L'inscription donne acces aux fonctionnalites de base de la plateforme.</p>
+                <h2><span class="art-num">03</span> Creation et utilisation des comptes</h2>
 
-                <h3>3.2 Securite du compte</h3>
-                <p>Chaque utilisateur est seul responsable de la confidentialite de ses identifiants. Resotravo ne pourra etre tenu responsable de tout acces non autorise resultat de la negligence de l'utilisateur.</p>
-                <p>En cas de perte ou de compromission des identifiants, l'utilisateur doit contacter immediatement Resotravo via :</p>
+                <h3>Clients</h3>
                 <ul>
-                    <li>Site : <strong>resotravo.bj</strong></li>
-                    <li>Telephone : <strong>+229 01 96 66 36 44</strong></li>
-                    <li>WhatsApp : <strong>+229 01 96 66 36 44</strong></li>
+                    <li>Inscription gratuite.</li>
+                    <li>Les informations fournies doivent etre exactes.</li>
+                    <li>Toute tentative de fraude, de non-paiement ou de contournement entraine la suspension du compte.</li>
                 </ul>
 
-                <h3>3.3 Verification OTP</h3>
-                <p>Lors de l'inscription, un code de verification OTP (6 chiffres, valable 10 minutes) est envoye par email ou SMS. Cette etape est obligatoire pour activer le compte.</p>
+                <h3>Artisans</h3>
+                <p>L'artisan declare :</p>
+                <ul>
+                    <li>etre professionnel independant declare (personne physique ou morale),</li>
+                    <li>etre autorise a exercer son metier,</li>
+                    <li>disposer des assurances professionnelles necessaires (si applicables),</li>
+                    <li>repondre personnellement de ses actes et de son travail.</li>
+                </ul>
+                <p>La plateforme peut verifier les informations et refuser ou suspendre un compte sans justification extensive.</p>
             </div>
 
             <!-- Article 4 -->
             <div class="legal-article" id="article-4">
-                <h2><span class="art-num">04</span> Accreditation des prestataires</h2>
-                <h3>4.1 Pieces requises</h3>
-                <p>Tout prestataire souhaitant accepter des missions doit soumettre les documents suivants :</p>
-                <ol>
-                    <li>Carte nationale d'identite (CNI) ou passeport en cours de validite</li>
-                    <li>Photo d'identite recente</li>
-                    <li>Attestation de residence (moins de 3 mois)</li>
-                    <li>Casier judiciaire (Bulletin n°3)</li>
-                    <li>Copie du CIP (Certificat d'Identification Personnelle)</li>
-                    <li>Diplome ou attestation de qualification</li>
-                </ol>
-
-                <h3>4.2 Types d'accreditation</h3>
-                <ul>
-                    <li><strong>Accreditation DOMICILE</strong> : accordee automatiquement apres validation du dossier. Permet les interventions chez les particuliers.</li>
-                    <li><strong>Accreditation ENTREPRISE</strong> : delivree exclusivement par decision de l'administrateur Resotravo apres verification complementaire. Permet les interventions en milieu professionnel.</li>
-                </ul>
-
-                <h3>4.3 Obligations du prestataire</h3>
-                <p>Le prestataire s'engage a : maintenir ses informations a jour, respecter les normes professionnelles, ne jamais solliciter de paiement en dehors de la plateforme, et se comporter de maniere professionnelle lors de chaque intervention.</p>
+                <h2><span class="art-num">04</span> Deroulement d'une mission</h2>
+                <div class="legal-steps">
+                    <div class="legal-step"><div class="legal-step-num">1</div><div>Le client exprime un besoin</div></div>
+                    <div class="legal-step"><div class="legal-step-num">2</div><div>La plateforme propose la mission a un artisan disponible</div></div>
+                    <div class="legal-step"><div class="legal-step-num">3</div><div>L'artisan accepte ou refuse</div></div>
+                    <div class="legal-step"><div class="legal-step-num">4</div><div>Diagnostic sur place (le cas echeant)</div></div>
+                    <div class="legal-step"><div class="legal-step-num">5</div><div>Devis soumis dans l'application</div></div>
+                    <div class="legal-step"><div class="legal-step-num">6</div><div>Acceptation par le client</div></div>
+                    <div class="legal-step"><div class="legal-step-num">7</div><div>Paiement exclusivement via la plateforme</div></div>
+                </div>
+                <div class="legal-warning">
+                    Tout paiement en dehors de la plateforme est interdit pour une mission issue de celle-ci.
+                </div>
             </div>
 
             <!-- Article 5 -->
             <div class="legal-article" id="article-5">
-                <h2><span class="art-num">05</span> Fonctionnement des missions</h2>
-                <h3>5.1 Workflow en 12 etapes</h3>
-                <p>Chaque mission suit un processus structure en 12 etapes validees par le client a chaque jalon :</p>
-                <div class="legal-steps">
-                    <div class="legal-step"><div class="legal-step-num">1</div><div>Creation de la demande par le Client</div></div>
-                    <div class="legal-step"><div class="legal-step-num">2</div><div>Attribution automatique au prestataire le plus proche</div></div>
-                    <div class="legal-step"><div class="legal-step-num">3</div><div>Acceptation de la mission par le Prestataire</div></div>
-                    <div class="legal-step"><div class="legal-step-num">4</div><div>Prise de contact via messagerie integree</div></div>
-                    <div class="legal-step"><div class="legal-step-num">5</div><div>Prestataire marque "En route" — GPS active</div></div>
-                    <div class="legal-step"><div class="legal-step-num">6</div><div>Suivi GPS en temps reel par le Client</div></div>
-                    <div class="legal-step"><div class="legal-step-num">7</div><div>Arrivee sur les lieux — GPS desactive</div></div>
-                    <div class="legal-step"><div class="legal-step-num">8</div><div>Soumission du devis par le Prestataire</div></div>
-                    <div class="legal-step"><div class="legal-step-num">9</div><div>Approbation ou refus du devis par le Client</div></div>
-                    <div class="legal-step"><div class="legal-step-num">10</div><div>Realisation de l'intervention</div></div>
-                    <div class="legal-step"><div class="legal-step-num">11</div><div>Confirmation de fin des travaux par le Client</div></div>
-                    <div class="legal-step"><div class="legal-step-num">12</div><div>Paiement MTN MoMo et cloture de la mission</div></div>
-                </div>
-
-                <h3>5.2 Attribution automatique</h3>
-                <p>Le systeme attribue automatiquement la mission au prestataire certifie le plus proche disposant du meilleur score. En cas de non-reponse sous 5 minutes, la mission est reassignee.</p>
-
-                <h3>5.3 Devis et modifications</h3>
-                <p>Aucune etape ne peut etre franchie sans la confirmation explicite du Client. Si des imprévus surviennent en cours d'intervention, le Prestataire peut soumettre un devis modifie. Une nouvelle approbation du Client est requise.</p>
+                <h2><span class="art-num">05</span> Devis, prix et paiement</h2>
+                <ul>
+                    <li>Les prix sont librement fixes par l'artisan.</li>
+                    <li>Le client valide obligatoirement le devis avant travaux.</li>
+                    <li>Le paiement est effectue via un prestataire de paiement agree BCEAO / UEMOA (Mobile Money, carte, etc.).</li>
+                    <li>La plateforme ne conserve pas les fonds, mais les fait transiter de maniere securisee.</li>
+                </ul>
             </div>
 
             <!-- Article 6 -->
             <div class="legal-article" id="article-6">
-                <h2><span class="art-num">06</span> Paiement et commission</h2>
-                <h3>6.1 Principe du paiement post-travaux</h3>
+                <h2><span class="art-num">06</span> Commission de la plateforme</h2>
+                <p>La plateforme percoit une commission pour son service.</p>
                 <p>
-                    Le paiement est <strong>exclusivement declenche apres la confirmation de fin des travaux par le Client</strong>.
-                    L'onglet de paiement n'apparait qu'a cette etape. Cette logique protege le Client et reflete les usages locaux.
+                    <strong>Regle simple et claire :</strong> toute mission obtenue grace a la plateforme donne lieu au paiement de la commission,
+                    meme si les parties tentent de finaliser en dehors de celle-ci.
+                    Cette obligation s'applique pour toute relation client–artisan initiee via la plateforme pendant une duree de [X mois].
                 </p>
-
-                <h3>6.2 Modalites de paiement</h3>
-                <p>Le paiement s'effectue via <strong>MTN MoMo</strong>. Le Client recoit une demande de paiement sur son telephone et confirme avec son code PIN.</p>
-
-                <h3>6.3 Repartition</h3>
+                <p>En cas de contournement :</p>
                 <ul>
-                    <li><strong>90%</strong> du montant est verse au Prestataire</li>
-                    <li><strong>10%</strong> est retenu par Resotravo au titre de commission</li>
+                    <li>suspension ou suppression du compte,</li>
+                    <li>blocage des paiements,</li>
+                    <li>exclusion definitive.</li>
                 </ul>
-
-                <h3>6.4 Facture</h3>
-                <p>Une facture PDF est automatiquement generee avec le logo Resotravo, un numero unique, le detail de l'intervention et le cachet PAYE. Elle est envoyee par email au Client et au Prestataire.</p>
-
-                <h3>6.5 Interdiction de paiement hors plateforme</h3>
-                <div class="legal-warning">
-                    N'effectuez jamais de paiement en dehors de la plateforme Resotravo. Tout paiement hors-plateforme degage Resotravo de toute responsabilite concernant la transaction.
-                </div>
             </div>
 
             <!-- Article 7 -->
             <div class="legal-article" id="article-7">
-                <h2><span class="art-num">07</span> Responsabilites</h2>
-                <h3>7.1 Responsabilite de Resotravo</h3>
-                <p>Resotravo s'engage a mettre en oeuvre tous les moyens raisonnables pour assurer la disponibilite de la plateforme et la qualite du service de mise en relation. Cependant, Resotravo ne saurait etre tenu responsable :</p>
+                <h2><span class="art-num">07</span> Obligations specifiques des artisans</h2>
+                <p>L'artisan s'engage a :</p>
                 <ul>
-                    <li>De la qualite des prestations realisees par les Prestataires</li>
-                    <li>Des dommages resultant d'une utilisation frauduleuse ou detournee de la plateforme</li>
-                    <li>Des interruptions de service dues a des causes exterieures (panne reseau, force majeure)</li>
-                    <li>Des paiements effectues en dehors de la plateforme</li>
+                    <li>respecter les delais annonces,</li>
+                    <li>executer les travaux conformement au devis accepte,</li>
+                    <li>adopter un comportement respectueux et professionnel,</li>
+                    <li>respecter les regles de securite au domicile du client.</li>
                 </ul>
-
-                <h3>7.2 Responsabilite des utilisateurs</h3>
-                <p>Chaque utilisateur est seul responsable des informations qu'il fournit et de l'utilisation qu'il fait de la plateforme. Le Client est responsable de verifier l'identite du Prestataire a son arrivee. Le Prestataire est responsable de la qualite de ses interventions et du respect des normes professionnelles en vigueur.</p>
+                <p>La plateforme peut appliquer : avertissement, suspension, dereferencement.</p>
             </div>
 
             <!-- Article 8 -->
             <div class="legal-article" id="article-8">
-                <h2><span class="art-num">08</span> Propriete intellectuelle</h2>
-                <p>L'ensemble des elements composant la plateforme Resotravo (logo, design, code source, contenus, marques) sont la propriete exclusive de Resotravo et sont proteges par les lois applicables en matiere de propriete intellectuelle.</p>
-                <p>Toute reproduction, representation, modification, publication ou adaptation de tout ou partie des elements de la plateforme, quel que soit le moyen ou le procede utilise, est interdite sans l'autorisation prealable ecrite de Resotravo.</p>
+                <h2><span class="art-num">08</span> Obligations des clients</h2>
+                <p>Le client s'engage a :</p>
+                <ul>
+                    <li>fournir des informations exactes,</li>
+                    <li>permettre l'acces au lieu d'intervention,</li>
+                    <li>respecter l'artisan,</li>
+                    <li>proceder au paiement tel que valide.</li>
+                </ul>
+                <p>Toute tentative de fraude ou de pression sur l'artisan entraine la suspension du compte.</p>
             </div>
 
             <!-- Article 9 -->
             <div class="legal-article" id="article-9">
-                <h2><span class="art-num">09</span> Protection des donnees personnelles</h2>
-                <p>Resotravo collecte et traite des donnees personnelles dans le respect de la reglementation applicable. Pour en savoir plus, consultez notre
-                    <a href="{{ route('policy') }}" class="legal-link">Politique de Confidentialite</a>.
-                </p>
-                <p>Les donnees des utilisateurs sont chiffrees et ne sont jamais revendues a des tiers.</p>
+                <h2><span class="art-num">09</span> Avis, notation et reputation</h2>
+                <ul>
+                    <li>Les avis doivent etre honnetes, factuels et respectueux.</li>
+                    <li>Les faux avis ou abus peuvent etre supprimes.</li>
+                    <li>Le systeme de notation conditionne la visibilite des artisans.</li>
+                </ul>
+                <p>C'est un element central de confiance sur la plateforme.</p>
             </div>
 
             <!-- Article 10 -->
             <div class="legal-article" id="article-10">
-                <h2><span class="art-num">10</span> Resiliation et sanctions</h2>
-                <p>Resotravo se reserve le droit de suspendre ou supprimer tout compte en cas de :</p>
+                <h2><span class="art-num">10</span> Litiges et mediation</h2>
                 <ul>
-                    <li>Violation des presentes CGU</li>
-                    <li>Fourniture de fausses informations lors de l'inscription</li>
-                    <li>Comportement frauduleux ou abusif envers d'autres utilisateurs</li>
-                    <li>Paiements effectues en dehors de la plateforme</li>
-                    <li>Note insuffisante repetee ou signalements multiples</li>
-                    <li>Non-respect des normes professionnelles lors des interventions</li>
+                    <li>La plateforme peut intervenir comme facilitateur de dialogue.</li>
+                    <li>Elle peut analyser les elements disponibles dans l'application.</li>
+                    <li>Elle peut decider d'un deblocage, blocage ou remboursement partiel selon les cas.</li>
                 </ul>
-                <p>L'utilisateur peut resigner son compte a tout moment en contactant Resotravo. La resiliation ne donne pas droit au remboursement de commissions deja prelevees.</p>
+                <p>Elle ne remplace pas les tribunaux, mais facilite une resolution amiable.</p>
             </div>
 
             <!-- Article 11 -->
             <div class="legal-article" id="article-11">
-                <h2><span class="art-num">11</span> Modification des CGU</h2>
-                <p>Resotravo se reserve le droit de modifier les presentes CGU a tout moment. Les utilisateurs seront informes de toute modification substantielle par email et/ou par notification sur la plateforme. La poursuite de l'utilisation de la plateforme apres modification vaut acceptation des nouvelles CGU.</p>
+                <h2><span class="art-num">11</span> Responsabilite</h2>
+                <ul>
+                    <li>Chaque artisan est seul responsable de son travail.</li>
+                    <li>La plateforme n'est pas responsable des dommages materiels ou corporels.</li>
+                    <li>Les utilisateurs reconnaissent utiliser le service a leurs risques contractuels.</li>
+                </ul>
+                <p>Cette clause est conforme au cadre OHADA et e-commerce beninois.</p>
             </div>
 
             <!-- Article 12 -->
             <div class="legal-article" id="article-12">
-                <h2><span class="art-num">12</span> Droit applicable et litiges</h2>
-                <p>Les presentes CGU sont soumises au droit beninois. Tout litige relatif a leur interpretation ou execution sera soumis a la competence exclusive des juridictions du Benin.</p>
-                <p>En cas de litige entre un Client et un Prestataire, Resotravo peut jouer un role de mediateur sans que cela ne constitue une obligation contractuelle. Notre equipe intervient sous 2h apres signalement.</p>
+                <h2><span class="art-num">12</span> Donnees, fiscalite et conformite</h2>
+                <ul>
+                    <li>Les utilisateurs acceptent que certaines informations de transaction puissent etre communiquees aux autorites fiscales, conformement a la loi beninoise en vigueur a partir de 2025.</li>
+                    <li>Les donnees personnelles sont protegees selon les lois beninoises applicables.</li>
+                </ul>
             </div>
 
             <!-- Article 13 -->
             <div class="legal-article" id="article-13">
-                <h2><span class="art-num">13</span> Contact</h2>
+                <h2><span class="art-num">13</span> Suspension et resiliation</h2>
+                <p>La plateforme peut suspendre ou fermer un compte en cas de :</p>
+                <ul>
+                    <li>fraude,</li>
+                    <li>contournement,</li>
+                    <li>comportement dangereux,</li>
+                    <li>non-respect repete des CGU.</li>
+                </ul>
+                <p>L'utilisateur peut fermer son compte a tout moment hors mission en cours.</p>
+            </div>
+
+            <!-- Article 14 -->
+            <div class="legal-article" id="article-14">
+                <h2><span class="art-num">14</span> Droit applicable et juridiction competente</h2>
+                <ul>
+                    <li>Les presentes CGU sont regies par le droit beninois et le droit OHADA.</li>
+                    <li>Tout litige releve des juridictions competentes de la Republique du Benin.</li>
+                </ul>
+            </div>
+
+            <!-- Contact -->
+            <div class="legal-article" id="article-contact">
+                <h2><span class="art-num">📞</span> Contact</h2>
                 <div class="legal-contact-card">
-                    <div class="legal-contact-title">Resotravo</div>
+                    <div class="legal-contact-title">Mesotravo</div>
                     <div class="legal-contact-item">
                         <span>&#x1F310;</span>
-                        <span><a href="https://resotravo.bj" class="legal-link">resotravo.bj</a></span>
+                        <span><a href="https://Mesotravo.com" class="legal-link">Mesotravo.com</a></span>
                     </div>
-
                     <div class="legal-contact-item">
-    <span>&#x2709;&#xFE0F;</span>
-    <span><a href="mailto:contact@resotravo.bj" class="legal-link">contact@resotravo.bj</a></span>
-</div>
+                        <span>&#x2709;&#xFE0F;</span>
+                        <span><a href="mailto:contact@Mesotravo.com" class="legal-link">contact@Mesotravo.com</a></span>
+                    </div>
                     <div class="legal-contact-item">
                         <span>&#x1F4DE;</span>
-                        <span><a href="tel:+22901966363644" class="legal-link">+229 01 96 66 36 44</a></span>
+                        <span><a href="tel:+22901966363644" class="legal-link">+229 01 90 00 36 26</a></span>
                     </div>
                     <div class="legal-contact-item">
                         <span>&#x1F4AC;</span>
-                        <span>WhatsApp : <a href="https://wa.me/22901966363644" class="legal-link">+229 01 96 66 36 44</a></span>
+                        <span>WhatsApp : <a href="https://wa.me/22901966363644" class="legal-link">+229 01 90 00 36 26</a></span>
                     </div>
                     <div class="legal-contact-item">
                         <span>&#x1F4CD;</span>

@@ -1,7 +1,7 @@
 {{-- resources/views/pages/back/admin/disputes.blade.php --}}
 @extends('layouts.back')
 
-@section('title', 'Litiges — Resotravo')
+@section('title', 'Litiges — Mesotravo')
 
 @php $active = 'disputes'; @endphp
 

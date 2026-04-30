@@ -1,5 +1,5 @@
 /**
- * mobile.js — Intégration Capacitor pour ResoTravo
+ * mobile.js — Intégration Capacitor pour mesotravo
  * Chargé uniquement quand l'app tourne dans un contexte natif Capacitor.
  */
 

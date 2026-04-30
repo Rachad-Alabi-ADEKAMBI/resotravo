@@ -236,7 +236,7 @@ class TenderController extends Controller
         $notifBody = match ($data['status']) {
             Tender::STATUS_PUBLISHED => "« {$tender->title} » est maintenant visible par tous les prestataires et Talents.",
             Tender::STATUS_REJECTED  => "« {$tender->title} » n'a pas été validé. Motif : " . ($data['reject_reason'] ?? 'Non précisé'),
-            Tender::STATUS_CLOSED    => "« {$tender->title} » a été clôturé par l'équipe Resotravo.",
+            Tender::STATUS_CLOSED    => "« {$tender->title} » a été clôturé par l'équipe Mesotravo.",
             default => '',
         };
 

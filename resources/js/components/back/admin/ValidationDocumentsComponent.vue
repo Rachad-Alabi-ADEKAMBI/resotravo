@@ -18,20 +18,57 @@
                 </div>
             </div>
             <div class="av-topbar-right">
-                <div class="av-notif-btn">
-                    &#x1F514;
-                    <span class="av-notif-badge" v-if="pendingCount > 0">{{
-                        pendingCount
-                    }}</span>
+                <div class="av-notif-wrap" ref="notifWrap">
+                    <button class="av-notif-btn" @click="toggleNotif" aria-label="Notifications">
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                        </svg>
+                        <span class="av-notif-badge" v-if="unreadCount > 0">{{
+                            unreadCount
+                        }}</span>
+                    </button>
+                    <div class="av-notif-dropdown" v-if="notifOpen">
+                        <div class="av-notif-header">
+                            <span>Notifications</span>
+                            <button
+                                class="av-notif-read-all"
+                                @click="markAllRead"
+                                v-if="unreadCount > 0"
+                            >
+                                Tout lire
+                            </button>
+                        </div>
+                        <div class="av-notif-loading" v-if="notifLoading">
+                            Chargement...
+                        </div>
+                        <div class="av-notif-empty" v-else-if="notifications.length === 0">
+                            Aucune notification
+                        </div>
+                        <div
+                            class="av-notif-item"
+                            v-for="n in notifications"
+                            :key="n.id"
+                            :class="{ unread: !n.read }"
+                            @click="openNotif(n)"
+                        >
+                            <div class="av-notif-dot" v-if="!n.read"></div>
+                            <div class="av-notif-content">
+                                <div class="av-notif-title">{{ n.title }}</div>
+                                <div class="av-notif-body">{{ n.body }}</div>
+                                <div class="av-notif-ago">{{ n.ago }}</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <button
-                    class="av-btn av-btn-orange"
-                    @click="exportCSV"
-                    :disabled="loading.export"
-                >
-                    <div class="av-spinner" v-if="loading.export"></div>
-                    <span v-else>&#8659; Exporter</span>
-                </button>
+                <div class="av-avatar">A</div>
             </div>
         </div>
 
@@ -110,7 +147,7 @@
                         >
                     </h3>
                     <button
-                        class="av-btn av-btn-ghost av-btn-sm"
+                        class="av-btn av-btn-green av-btn-sm"
                         @click="bulkApprove"
                         :disabled="selected.length === 0"
                         :style="{ opacity: selected.length ? 1 : 0.4 }"
@@ -216,7 +253,7 @@
                                     <div class="av-doc-count">
                                         {{
                                             d.documents.filter(
-                                                (x) => x.status === "approved",
+                                                (x) => x.status === "approved"
                                             ).length
                                         }}/{{ d.documents.length }} validés
                                     </div>
@@ -283,7 +320,7 @@
                             <span
                                 >{{
                                     d.documents.filter(
-                                        (x) => x.status === "approved",
+                                        (x) => x.status === "approved"
                                     ).length
                                 }}/{{ d.documents.length }} docs</span
                             >
@@ -350,7 +387,7 @@
                                     :class="activeDossier.user_status"
                                     >{{
                                         userStatusLabel(
-                                            activeDossier.user_status,
+                                            activeDossier.user_status
                                         )
                                     }}</span
                                 >
@@ -387,7 +424,7 @@
                             <span class="av-docs-count">
                                 {{
                                     activeDossier.documents.filter(
-                                        (d) => d.status === "approved",
+                                        (d) => d.status === "approved"
                                     ).length
                                 }}/{{ activeDossier.documents.length }}
                             </span>
@@ -707,6 +744,10 @@ export default {
 
             dossiers: [],
             docLoading: {}, // { [docId]: boolean }
+            notifications: [],
+            unreadCount: 0,
+            notifOpen: false,
+            notifLoading: false,
 
             previewModal: {
                 visible: false,
@@ -755,7 +796,7 @@ export default {
                         d.name.toLowerCase().includes(q) ||
                         d.email.toLowerCase().includes(q) ||
                         d.ref.toLowerCase().includes(q) ||
-                        (d.specialty ?? "").toLowerCase().includes(q),
+                        (d.specialty ?? "").toLowerCase().includes(q)
                 );
             }
 
@@ -811,7 +852,7 @@ export default {
             const route = "/admin/documents/dossiers";
 
             console.log(
-                "[ValidationDocuments] ── REQUÊTE ─────────────────────────────",
+                "[ValidationDocuments] ── REQUÊTE ─────────────────────────────"
             );
             console.log("[ValidationDocuments] Route   :", route);
             console.log("[ValidationDocuments] Méthode :", "GET");
@@ -824,46 +865,46 @@ export default {
                     "non défini",
             });
             console.log(
-                "[ValidationDocuments] ────────────────────────────────────────",
+                "[ValidationDocuments] ────────────────────────────────────────"
             );
 
             try {
                 const response = await window.axios.get(route);
 
                 console.log(
-                    "[ValidationDocuments] ── RÉPONSE ────────────────────────────",
+                    "[ValidationDocuments] ── RÉPONSE ────────────────────────────"
                 );
                 console.log(
                     "[ValidationDocuments] Status    :",
-                    response.status,
+                    response.status
                 );
                 console.log(
                     "[ValidationDocuments] Headers   :",
-                    response.headers,
+                    response.headers
                 );
                 console.log(
                     "[ValidationDocuments] Data type :",
                     typeof response.data,
                     Array.isArray(response.data)
                         ? `(array, ${response.data.length} items)`
-                        : "",
+                        : ""
                 );
                 console.log("[ValidationDocuments] Data      :", response.data);
                 console.log(
-                    "[ValidationDocuments] ────────────────────────────────────────",
+                    "[ValidationDocuments] ────────────────────────────────────────"
                 );
 
                 if (!Array.isArray(response.data)) {
                     console.warn(
-                        "[ValidationDocuments] ⚠️ La réponse n'est pas un tableau — vérifiez le controller",
+                        "[ValidationDocuments] ⚠️ La réponse n'est pas un tableau — vérifiez le controller"
                     );
                     console.warn(
                         "[ValidationDocuments] Type reçu :",
-                        typeof response.data,
+                        typeof response.data
                     );
                     console.warn(
                         "[ValidationDocuments] Contenu   :",
-                        response.data,
+                        response.data
                     );
                     this.dossiers = this.fakeDossiers();
                     return;
@@ -871,7 +912,7 @@ export default {
 
                 if (response.data.length === 0) {
                     console.warn(
-                        "[ValidationDocuments] ⚠️ Aucun dossier retourné par l'API",
+                        "[ValidationDocuments] ⚠️ Aucun dossier retourné par l'API"
                     );
                 }
 
@@ -883,31 +924,31 @@ export default {
                 console.log(
                     "[ValidationDocuments] Dossiers mappés :",
                     this.dossiers.length,
-                    this.dossiers,
+                    this.dossiers
                 );
             } catch (err) {
                 console.error(
-                    "[ValidationDocuments] ── ERREUR ────────────────────────────",
+                    "[ValidationDocuments] ── ERREUR ────────────────────────────"
                 );
                 console.error("[ValidationDocuments] Message :", err.message);
                 console.error(
                     "[ValidationDocuments] Status  :",
-                    err?.response?.status,
+                    err?.response?.status
                 );
                 console.error(
                     "[ValidationDocuments] Data    :",
-                    err?.response?.data,
+                    err?.response?.data
                 );
                 console.error(
                     "[ValidationDocuments] URL     :",
-                    err?.config?.url,
+                    err?.config?.url
                 );
                 console.error("[ValidationDocuments] Objet   :", err);
                 console.error(
-                    "[ValidationDocuments] ────────────────────────────────────────",
+                    "[ValidationDocuments] ────────────────────────────────────────"
                 );
                 console.warn(
-                    "[ValidationDocuments] Chargement des données fictives (fallback)",
+                    "[ValidationDocuments] Chargement des données fictives (fallback)"
                 );
                 this.dossiers = this.fakeDossiers();
             } finally {
@@ -976,16 +1017,16 @@ export default {
             this.docLoading[doc.id] = true;
 
             console.log(
-                `[ValidationDocuments] approveDoc — POST /documents/${doc.id}/approve`,
+                `[ValidationDocuments] approveDoc — POST /documents/${doc.id}/approve`
             );
 
             try {
                 const response = await window.axios.post(
-                    `/documents/${doc.id}/approve`,
+                    `/documents/${doc.id}/approve`
                 );
                 console.log(
                     "[ValidationDocuments] approveDoc — réponse:",
-                    response.data,
+                    response.data
                 );
 
                 doc.status = "approved";
@@ -997,7 +1038,7 @@ export default {
             } catch (err) {
                 console.error(
                     "[ValidationDocuments] approveDoc — erreur:",
-                    err,
+                    err
                 );
                 this.showToast("Erreur lors de la validation.", "error");
             } finally {
@@ -1023,7 +1064,7 @@ export default {
 
             console.log(
                 `[ValidationDocuments] rejectDoc — POST /documents/${doc.id}/reject`,
-                { reason: this.rejectDocModal.reason },
+                { reason: this.rejectDocModal.reason }
             );
 
             try {
@@ -1031,11 +1072,11 @@ export default {
                     `/documents/${doc.id}/reject`,
                     {
                         reason: this.rejectDocModal.reason,
-                    },
+                    }
                 );
                 console.log(
                     "[ValidationDocuments] rejectDoc — réponse:",
-                    response.data,
+                    response.data
                 );
 
                 doc.status = "rejected";
@@ -1066,7 +1107,7 @@ export default {
             };
 
             console.log(
-                `[ValidationDocuments] previewDoc — GET /documents/${doc.id}/download`,
+                `[ValidationDocuments] previewDoc — GET /documents/${doc.id}/download`
             );
 
             try {
@@ -1074,7 +1115,7 @@ export default {
                     `/documents/${doc.id}/download`,
                     {
                         responseType: "blob",
-                    },
+                    }
                 );
 
                 const blob = new Blob([response.data], {
@@ -1093,13 +1134,13 @@ export default {
                     "[ValidationDocuments] previewDoc — blob type:",
                     blob.type,
                     "| isPdf:",
-                    isPdf,
+                    isPdf
                 );
             } catch (err) {
                 console.error(
                     "[ValidationDocuments] previewDoc — erreur:",
                     err?.response?.status,
-                    err,
+                    err
                 );
                 this.previewModal.loading = false;
                 this.previewModal.error =
@@ -1146,7 +1187,7 @@ export default {
         async downloadDoc(doc) {
             this.docLoading[doc.id] = true;
             console.log(
-                `[ValidationDocuments] downloadDoc — GET /documents/${doc.id}/download`,
+                `[ValidationDocuments] downloadDoc — GET /documents/${doc.id}/download`
             );
 
             try {
@@ -1154,7 +1195,7 @@ export default {
                     `/documents/${doc.id}/download`,
                     {
                         responseType: "blob",
-                    },
+                    }
                 );
                 const url = URL.createObjectURL(new Blob([response.data]));
                 const a = document.createElement("a");
@@ -1167,7 +1208,7 @@ export default {
             } catch (err) {
                 console.error(
                     "[ValidationDocuments] downloadDoc — erreur:",
-                    err,
+                    err
                 );
                 this.showToast("Erreur lors du téléchargement.", "error");
             } finally {
@@ -1179,13 +1220,13 @@ export default {
         async approveDossier(d) {
             this.loading.action = true;
             console.log(
-                `[ValidationDocuments] approveDossier — user_id: ${d.id}`,
+                `[ValidationDocuments] approveDossier — user_id: ${d.id}`
             );
 
             try {
                 // 1. Approuver tous les docs pending
                 const pendingDocs = d.documents.filter(
-                    (doc) => doc.status === "pending" && doc.id,
+                    (doc) => doc.status === "pending" && doc.id
                 );
                 for (const doc of pendingDocs) {
                     await window.axios.post(`/documents/${doc.id}/approve`);
@@ -1197,11 +1238,11 @@ export default {
                     `/admin/users/${d.id}/status`,
                     {
                         status: "approved",
-                    },
+                    }
                 );
                 console.log(
                     "[ValidationDocuments] approveDossier — réponse:",
-                    response.data,
+                    response.data
                 );
 
                 // 3. Mettre à jour localement
@@ -1213,7 +1254,7 @@ export default {
             } catch (err) {
                 console.error(
                     "[ValidationDocuments] approveDossier — erreur:",
-                    err,
+                    err
                 );
                 this.showToast("Erreur lors de l'approbation.", "error");
             } finally {
@@ -1225,7 +1266,7 @@ export default {
         async rejectDossier(d) {
             this.loading.action = true;
             console.log(
-                `[ValidationDocuments] rejectDossier — user_id: ${d.id}`,
+                `[ValidationDocuments] rejectDossier — user_id: ${d.id}`
             );
 
             try {
@@ -1233,11 +1274,11 @@ export default {
                     `/admin/users/${d.id}/status`,
                     {
                         status: "rejected",
-                    },
+                    }
                 );
                 console.log(
                     "[ValidationDocuments] rejectDossier — réponse:",
-                    response.data,
+                    response.data
                 );
 
                 d.user_status = "rejected";
@@ -1248,7 +1289,7 @@ export default {
             } catch (err) {
                 console.error(
                     "[ValidationDocuments] rejectDossier — erreur:",
-                    err,
+                    err
                 );
                 this.showToast("Erreur lors du refus.", "error");
             } finally {
@@ -1297,18 +1338,18 @@ export default {
                     .then((r) => {
                         console.log(
                             "[ValidationDocuments] auto-certification ✅ —",
-                            this.activeDossier.name,
+                            this.activeDossier.name
                         );
                         this.showToast(
                             `🏅 ${this.activeDossier.name} — profil certifié automatiquement !`,
-                            "success",
+                            "success"
                         );
                     })
                     .catch((err) =>
                         console.error(
                             "[ValidationDocuments] auto-certification — erreur:",
-                            err,
-                        ),
+                            err
+                        )
                     );
             }
         },
@@ -1328,8 +1369,8 @@ export default {
                             console.error(
                                 "[ValidationDocuments] bulkApprove erreur id:",
                                 id,
-                                err,
-                            ),
+                                err
+                            )
                         );
                     d.user_status = "approved";
                 }
@@ -1337,7 +1378,7 @@ export default {
 
             this.showToast(
                 `${this.selected.length} dossier(s) approuvé(s).`,
-                "success",
+                "success"
             );
             this.selected = [];
         },
@@ -1368,14 +1409,17 @@ export default {
                     d.zone ?? "",
                     this.userStatusLabel(d.user_status),
                     d.created_at,
-                    `${d.documents.filter((x) => x.status === "approved").length}/${d.documents.length}`,
+                    `${
+                        d.documents.filter((x) => x.status === "approved")
+                            .length
+                    }/${d.documents.length}`,
                 ]);
 
                 const csv = [headers, ...rows]
                     .map((r) =>
                         r
                             .map((v) => `"${String(v).replace(/"/g, '""')}"`)
-                            .join(","),
+                            .join(",")
                     )
                     .join("\n");
 
@@ -1385,7 +1429,9 @@ export default {
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
                 a.href = url;
-                a.download = `resotravo_dossiers_${new Date().toISOString().slice(0, 10)}.csv`;
+                a.download = `Mesotravo_dossiers_${new Date()
+                    .toISOString()
+                    .slice(0, 10)}.csv`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -1407,7 +1453,7 @@ export default {
         /* ── Sync doc dans la liste principale ── */
         syncDocToList(doc) {
             const dossier = this.dossiers.find(
-                (d) => d.id === this.activeDossier?.id,
+                (d) => d.id === this.activeDossier?.id
             );
             if (!dossier) return;
             const d = dossier.documents.find((x) => x.id === doc.id);
@@ -1429,8 +1475,75 @@ export default {
             window.dispatchEvent(
                 new CustomEvent("ab-sidebar-toggle", {
                     detail: { open: this.sidebarOpen },
-                }),
+                })
             );
+        },
+
+        /* Notifications */
+        async fetchNotifications() {
+            this.notifLoading = true;
+            try {
+                const res = await fetch("/notifications", {
+                    headers: {
+                        Accept: "application/json",
+                        "X-Requested-With": "XMLHttpRequest",
+                    },
+                });
+                const data = await res.json();
+                this.notifications = data.notifications ?? [];
+                this.unreadCount = data.unread_count ?? 0;
+            } catch {
+                // non bloquant
+            } finally {
+                this.notifLoading = false;
+            }
+        },
+
+        toggleNotif() {
+            this.notifOpen = !this.notifOpen;
+            if (this.notifOpen) this.fetchNotifications();
+        },
+
+        closeNotifOutside(e) {
+            if (this.$refs.notifWrap && !this.$refs.notifWrap.contains(e.target)) {
+                this.notifOpen = false;
+            }
+        },
+
+        async markAllRead() {
+            try {
+                await fetch("/notifications/read-all", {
+                    method: "PATCH",
+                    headers: {
+                        "X-CSRF-TOKEN": document
+                            .querySelector('meta[name="csrf-token"]')
+                            .getAttribute("content"),
+                        Accept: "application/json",
+                        "X-Requested-With": "XMLHttpRequest",
+                    },
+                });
+                this.notifications.forEach((n) => (n.read = true));
+                this.unreadCount = 0;
+            } catch {}
+        },
+
+        async openNotif(n) {
+            if (!n.read) {
+                fetch(`/notifications/${n.id}/read`, {
+                    method: "PATCH",
+                    headers: {
+                        "X-CSRF-TOKEN": document
+                            .querySelector('meta[name="csrf-token"]')
+                            .getAttribute("content"),
+                        Accept: "application/json",
+                        "X-Requested-With": "XMLHttpRequest",
+                    },
+                }).catch(() => {});
+                n.read = true;
+                this.unreadCount = Math.max(0, this.unreadCount - 1);
+            }
+
+            if (n.url) window.location.href = n.url;
         },
 
         /* ── Toast ── */
@@ -1574,10 +1687,18 @@ export default {
     },
 
     mounted() {
-        window.addEventListener("ab-sidebar-close", () => {
+        this.onSidebarClose = () => {
             this.sidebarOpen = false;
-        });
+        };
+        window.addEventListener("ab-sidebar-close", this.onSidebarClose);
+        document.addEventListener("click", this.closeNotifOutside);
         this.loadDossiers();
+        this.fetchNotifications();
+    },
+
+    beforeUnmount() {
+        window.removeEventListener("ab-sidebar-close", this.onSidebarClose);
+        document.removeEventListener("click", this.closeNotifOutside);
     },
 };
 </script>
@@ -1664,10 +1785,13 @@ export default {
 }
 
 /* NOTIF */
+.av-notif-wrap {
+    position: relative;
+}
 .av-notif-btn {
     position: relative;
-    background: var(--cr);
-    border: 2px solid var(--grl);
+    background: #fff;
+    border: 1px solid var(--grl);
     border-radius: 10px;
     width: 40px;
     height: 40px;
@@ -1675,21 +1799,124 @@ export default {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 17px;
+    color: var(--gr);
     flex-shrink: 0;
+    transition: border-color 0.18s, color 0.18s, background 0.18s;
+}
+.av-notif-btn:hover {
+    border-color: var(--or);
+    color: var(--or);
+    background: var(--or3);
+}
+.av-notif-btn svg {
+    width: 21px;
+    height: 21px;
 }
 .av-notif-badge {
     position: absolute;
     top: -5px;
     right: -5px;
-    background: #6366f1;
+    background: #ef4444;
     color: #fff;
-    font-size: 9px;
-    font-weight: 700;
-    padding: 2px 5px;
+    font-size: 10px;
+    font-weight: 900;
+    padding: 0 5px;
     border-radius: 99px;
-    min-width: 16px;
+    min-width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #fff;
+}
+.av-notif-dropdown {
+    position: absolute;
+    top: 46px;
+    right: 0;
+    width: 340px;
+    max-height: 400px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid var(--grl);
+    border-radius: 12px;
+    box-shadow: 0 12px 34px rgba(28, 20, 18, 0.14);
+    z-index: 100;
+}
+.av-notif-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid #f0e9e4;
+    font-size: 14px;
+    font-weight: 900;
+}
+.av-notif-read-all {
+    background: transparent;
+    border: 0;
+    color: var(--or);
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+}
+.av-notif-loading,
+.av-notif-empty {
+    padding: 24px;
     text-align: center;
+    color: var(--grm);
+    font-size: 13px;
+}
+.av-notif-item {
+    display: flex;
+    gap: 10px;
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid #f8f4f0;
+    transition: background 0.15s;
+}
+.av-notif-item:hover {
+    background: #fafafa;
+}
+.av-notif-item.unread {
+    background: #fff8f0;
+}
+.av-notif-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--or);
+    flex-shrink: 0;
+    margin-top: 6px;
+}
+.av-notif-content {
+    min-width: 0;
+}
+.av-notif-title {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--dk);
+}
+.av-notif-body {
+    margin-top: 2px;
+    font-size: 12px;
+    color: #666;
+    line-height: 1.45;
+}
+.av-notif-ago {
+    margin-top: 4px;
+    font-size: 11px;
+    color: #aaa;
+}
+.av-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--or);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 900;
 }
 
 /* BTNS */

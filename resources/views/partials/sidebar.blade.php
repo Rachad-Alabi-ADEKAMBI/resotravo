@@ -27,8 +27,8 @@
     {{-- Logo --}}
     <div class="ab-sidebar-logo">
         <a href="{{ route('home') }}" class="ab-logo">
-            <div class="ab-logo-mark">R</div>
-            <span class="ab-logo-name">RESO<em>TRAVO</em></span>
+            <div class="ab-logo-mark">M</div>
+            <span class="ab-logo-name">MESO<em>TRAVO</em></span>
         </a>
         @if($role === 'admin')
             <span class="ab-role-badge admin">ADMIN</span>
@@ -120,16 +120,19 @@
                 <span class="ab-nav-icon">🔧</span><span>Catalogue services</span>
             </a>
             <a class="ab-nav-item {{ $active === 'consulting' ? 'active' : '' }}" href="{{ route('admin.consulting.page') }}">
-                <span class="ab-nav-icon">💬</span><span>Allo Conseils</span>
+                <span class="ab-nav-icon">💬</span><span>Allô Conseils</span>
             </a>
         </div>
         <div class="ab-nav-section">
             <div class="ab-section-lbl">Outils</div>
-            <a class="ab-nav-item {{ $active === 'messages' ? 'active' : '' }}" href="{{ route('admin.messages') }}" id="sidebar-msg-link">
-                <span class="ab-nav-icon">💬</span><span>Messages<span id="sidebar-msg-count" class="ab-msg-count"></span></span>
-            </a>
             <a class="ab-nav-item {{ $active === 'disputes' ? 'active' : '' }}" href="{{ route('admin.disputes.page') }}">
                 <span class="ab-nav-icon">⚖️</span><span>Litiges</span>
+            </a>
+            <a class="ab-nav-item {{ $active === 'mail' ? 'active' : '' }}" href="{{ route('admin.mail') }}">
+                <span class="ab-nav-icon">@</span><span>Mail</span>
+            </a>
+            <a class="ab-nav-item {{ $active === 'configuration' ? 'active' : '' }}" href="{{ route('admin.configuration') }}">
+                <span class="ab-nav-icon">🔧</span><span>Configuration</span>
             </a>
             <a class="ab-nav-item {{ $active === 'parameters' ? 'active' : '' }}" href="{{ route('admin.parameters') }}">
                 <span class="ab-nav-icon">⚙️</span><span>Paramètres</span>
@@ -156,8 +159,8 @@
 
         {{-- Navigation — toujours visible --}}
         <div class="ab-nav-section">
-            <div class="ab-section-lbl">Espace</div>
             <a class="ab-nav-item {{ $active === 'dashboard' ? 'active' : '' }}" href="{{ route('client.dashboard') }}">
+                <div class="ab-section-lbl">Espace</div>
                 <span class="ab-nav-icon">🏠</span><span>Tableau de bord</span>
             </a>
             <a class="ab-nav-item {{ $active === 'missions' ? 'active' : '' }}" href="{{ route('client.missions.page') }}">
@@ -245,6 +248,9 @@
             <a class="ab-nav-item {{ $active === 'revenus' ? 'active' : '' }}" href="{{ route('contractor.revenus') }}">
                 <span class="ab-nav-icon">💰</span><span>Mes revenus</span>
             </a>
+            <a class="ab-nav-item {{ $active === 'obligations' ? 'active' : '' }}" href="{{ route('contractor.obligations') }}">
+                <span class="ab-nav-icon">🏛️</span><span>Obligations fiscales</span>
+            </a>
         </div>
 
         <div class="ab-nav-section">
@@ -287,7 +293,7 @@
             <div class="ab-user-info">
                 <div class="ab-user-name">{{ $user->name ?? 'Utilisateur' }}</div>
                 <div class="ab-user-role">
-                    @if($role==='admin') Super administrateur
+                    @if($role==='admin') Administrateur
                     @elseif($role==='client') Client
                     @elseif($role==='contractor') Prestataire
                     @elseif($role==='talent') Talent
@@ -384,4 +390,35 @@ function wipClose(){
     document.body.style.overflow='';
 }
 document.addEventListener('keydown',function(e){if(e.key==='Escape')wipClose();});
+
+(function(){
+    function scrollActiveSidebarItem(){
+        var nav = document.querySelector('#ab-sidebar .ab-nav');
+        var active = nav ? nav.querySelector('.ab-nav-item.active') : null;
+        if(!nav || !active) return;
+
+        var navRect = nav.getBoundingClientRect();
+        var activeRect = active.getBoundingClientRect();
+        var target = nav.scrollTop + (activeRect.top - navRect.top) - (nav.clientHeight / 2) + (active.offsetHeight / 2);
+
+        nav.scrollTo({
+            top: Math.max(0, target),
+            behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+        });
+    }
+
+    if(document.readyState === 'loading'){
+        document.addEventListener('DOMContentLoaded', function(){
+            setTimeout(scrollActiveSidebarItem, 80);
+        });
+    }else{
+        setTimeout(scrollActiveSidebarItem, 80);
+    }
+
+    window.addEventListener('ab-sidebar-toggle', function(e){
+        if(e.detail && e.detail.open){
+            setTimeout(scrollActiveSidebarItem, 280);
+        }
+    });
+})();
 </script>

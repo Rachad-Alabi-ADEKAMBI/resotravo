@@ -9,7 +9,7 @@ return new class extends Migration
     /**
      * Table : mission_proposals
      *
-     * Logique métier (CDC Resotravo) :
+     * Logique métier (CDC Mesotravo) :
      * ─ L'admin peut proposer une mission à PLUSIEURS prestataires disponibles simultanément.
      * ─ Chaque prestataire reçoit une ligne dans cette table avec status = 'pending'.
      * ─ Le premier à accepter → son statut passe à 'accepted', les autres → 'superseded'.

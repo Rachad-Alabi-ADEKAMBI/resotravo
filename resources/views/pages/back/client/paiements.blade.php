@@ -1,7 +1,7 @@
 {{-- resources/views/pages/back/client/paiements.blade.php --}}
 @extends('layouts.back')
 
-@section('title', 'Mes paiements — Resotravo')
+@section('title', 'Mes paiements — Mesotravo')
 
 @php $active = 'paiements'; @endphp
 

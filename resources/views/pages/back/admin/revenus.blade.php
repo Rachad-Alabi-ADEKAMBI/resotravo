@@ -1,7 +1,7 @@
 {{-- resources/views/pages/back/admin/revenus.blade.php --}}
 @extends('layouts.back')
 
-@section('title', 'Revenus & Finances — Resotravo Admin')
+@section('title', 'Revenus & Finances — Mesotravo Admin')
 
 @php $active = 'revenus'; @endphp
 

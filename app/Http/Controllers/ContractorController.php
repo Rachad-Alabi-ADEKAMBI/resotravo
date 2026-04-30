@@ -153,26 +153,28 @@ class ContractorController extends Controller
     public function updateDisponibilite(Request $request)
     {
         $request->validate([
-            'available'    => ['required', 'boolean'],
-            'start_time'   => ['nullable', 'date_format:H:i'],
-            'end_time'     => ['nullable', 'date_format:H:i'],
-            'working_days' => ['nullable', 'array'],
+            'available'      => ['required', 'boolean'],
+            'start_time'     => ['nullable', 'date_format:H:i'],
+            'end_time'       => ['nullable', 'date_format:H:i'],
+            'working_days'   => ['nullable', 'array'],
             'working_days.*' => ['string'],
-            'radius_km'    => ['nullable', 'integer', 'min:1', 'max:100'],
+            'radius_km'      => ['nullable', 'integer', 'min:1', 'max:100'],
+            'diagnostic_fee' => ['nullable', 'numeric', 'min:0', 'max:9999999'],
         ]);
 
         $contractor = Contractor::where('user_id', Auth::id())->firstOrFail();
         $contractor->update($request->only([
-            'available', 'start_time', 'end_time', 'working_days', 'radius_km',
+            'available', 'start_time', 'end_time', 'working_days', 'radius_km', 'diagnostic_fee',
         ]));
 
         return response()->json([
-            'message'      => 'Availability updated.',
-            'available'    => $contractor->available,
-            'start_time'   => $contractor->start_time,
-            'end_time'     => $contractor->end_time,
-            'working_days' => $contractor->working_days,
-            'radius_km'    => $contractor->radius_km,
+            'message'        => 'Availability updated.',
+            'available'      => $contractor->available,
+            'start_time'     => $contractor->start_time,
+            'end_time'       => $contractor->end_time,
+            'working_days'   => $contractor->working_days,
+            'radius_km'      => $contractor->radius_km,
+            'diagnostic_fee' => $contractor->diagnostic_fee,
         ]);
     }
 

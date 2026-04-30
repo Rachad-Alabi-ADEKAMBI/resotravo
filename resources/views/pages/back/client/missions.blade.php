@@ -1,7 +1,7 @@
 {{-- resources/views/pages/back/client/missions.blade.php --}}
 @extends('layouts.back')
 
-@section('title', 'Mes commandes — Resotravo')
+@section('title', 'Mes commandes — Mesotravo')
 
 @php $active = 'missions'; @endphp
 
@@ -20,5 +20,6 @@
         :doc-progress-data="{{ json_encode($docProgress) }}"
         :user-status="{{ json_encode($user->status) }}"
         :routes="{{ json_encode($routes) }}"
+        :diagnostic-fee="{{ $diagnosticFee }}"
     ></client-mission-component>
 @endsection

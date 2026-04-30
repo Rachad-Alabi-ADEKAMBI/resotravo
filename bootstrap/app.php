@@ -12,9 +12,14 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
 
+        // Cookie "cookie_consent" cree en JS : ne pas le chiffrer
+        // pour que request()->cookie() puisse le lire cote Blade.
+        $middleware->encryptCookies(except: ['cookie_consent']);
+
         // ── Alias middleware ────────────────────────────────────────
         $middleware->alias([
-            'role' => \App\Http\Middleware\RoleMiddleware::class,
+            'role'  => \App\Http\Middleware\RoleMiddleware::class,
+            'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
         ]);
 
     })

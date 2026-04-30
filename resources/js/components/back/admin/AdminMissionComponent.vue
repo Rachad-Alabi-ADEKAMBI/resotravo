@@ -1,4 +1,4 @@
-<template>
+﻿<template>
     <div class="amis-wrap">
         <!-- ══════════════ TOPBAR ══════════════ -->
         <div class="amis-topbar">
@@ -11,9 +11,9 @@
                     <span></span><span></span><span></span>
                 </button>
                 <div>
-                    <div class="amis-page-title">Gestion des missions</div>
+                    <div class="amis-page-title">Missions</div>
                     <div class="amis-page-sub">
-                        {{ greeting }}, <strong>{{ user.name }}</strong>
+                        <strong>{{ user.name }}</strong>
                     </div>
                 </div>
             </div>
@@ -42,7 +42,7 @@
                             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                         </svg>
                         <span class="amis-notif-badge" v-if="unreadCount > 0">
-                            {{ unreadCount > 9 ? "9+" : unreadCount }}
+                            {{ unreadCount }}
                         </span>
                     </button>
                     <div class="amis-notif-dropdown" v-if="notifOpen">
@@ -182,7 +182,7 @@
                         'ac-row-urgent':
                             m.status === 'pending' && !m.contractor_id,
                         'ac-row-closed': ['completed', 'closed'].includes(
-                            m.status,
+                            m.status
                         ),
                         'ac-row-cancelled': m.status === 'cancelled',
                     }"
@@ -342,28 +342,26 @@
         >
             <div class="amis-modal amis-modal-xl">
                 <div class="amis-modal-header">
-                    <div>
-                        <h3>
-                            {{ activeMission.service }}
-                            <span
-                                class="amis-type-chip"
-                                :class="activeMission.location_type"
-                            >
-                                {{
-                                    activeMission.location_type === "business"
-                                        ? "🏢 Entreprise"
-                                        : "🏠 Domicile"
-                                }}
-                            </span>
-                        </h3>
-                        <div class="amis-modal-sub">
-                            Mission #{{ activeMission.id }} · Créée le
-                            {{ formatDate(activeMission.created_at) }}
+                    <div class="amis-modal-header-left">
+                        <div class="amis-modal-header-icon">📋</div>
+                        <div>
+                            <h3>{{ activeMission.service }}</h3>
+                            <div class="amis-modal-sub">
+                                Mission #{{ activeMission.id }} · Créée le
+                                {{ formatDate(activeMission.created_at) }}
+                            </div>
                         </div>
                     </div>
-                    <button class="amis-modal-close" @click="closeModal">
-                        &#215;
-                    </button>
+                    <div class="amis-modal-header-right">
+                        <span
+                            class="amis-badge"
+                            :class="badgeClass(activeMission.status)"
+                            >{{ labelOf(activeMission) }}</span
+                        >
+                        <button class="amis-modal-close" @click="closeModal">
+                            &#215;
+                        </button>
+                    </div>
                 </div>
 
                 <div class="amis-modal-body">
@@ -381,10 +379,15 @@
                     <div class="amis-step-legend">
                         <span>Étape {{ activeMission.step ?? 0 }}/12</span>
                         <span
-                            class="amis-badge"
-                            :class="badgeClass(activeMission.status)"
-                            >{{ labelOf(activeMission) }}</span
+                            class="amis-type-chip"
+                            :class="activeMission.location_type"
                         >
+                            {{
+                                activeMission.location_type === "business"
+                                    ? "🏢 Entreprise"
+                                    : "🏠 Domicile"
+                            }}
+                        </span>
                     </div>
 
                     <!-- ── Colonnes infos ── -->
@@ -438,7 +441,7 @@
                                     <span>Commission (10%)</span>
                                     <strong class="amis-val-green">{{
                                         formatPrice(
-                                            activeMission.total_amount * 0.1,
+                                            activeMission.total_amount * 0.1
                                         )
                                     }}</strong>
                                 </div>
@@ -449,7 +452,7 @@
                                     <span>Part prestataire (90%)</span>
                                     <strong>{{
                                         formatPrice(
-                                            activeMission.total_amount * 0.9,
+                                            activeMission.total_amount * 0.9
                                         )
                                     }}</strong>
                                 </div>
@@ -468,10 +471,13 @@
                                     <strong>
                                         {{ activeMission.client.name }}
                                         <span
-                                            v-if="activeMission.client.is_verified"
+                                            v-if="
+                                                activeMission.client.is_verified
+                                            "
                                             class="amis-verified-badge"
                                             title="Identité vérifiée"
-                                        >✅ Identité vérifiée</span>
+                                            >✅ Identité vérifiée</span
+                                        >
                                     </strong>
                                 </div>
                                 <div
@@ -719,14 +725,14 @@
                                         :class="{
                                             selected:
                                                 selectedContractors.includes(
-                                                    c.id,
+                                                    c.id
                                                 ),
                                             'already-proposed':
                                                 isAlreadyProposed(c.id),
                                         }"
                                         @click="
                                             !isAlreadyProposed(c.id) &&
-                                            toggleContractor(c.id)
+                                                toggleContractor(c.id)
                                         "
                                     >
                                         <label
@@ -868,7 +874,7 @@
                                         du retrait.
                                     </div>
                                     <button
-                                        class="amis-btn amis-btn-orange"
+                                        class="amis-btn amis-btn-green"
                                         style="width: 100%"
                                         @click="sendProposals"
                                         :disabled="proposalLoading"
@@ -903,7 +909,7 @@
                                         class="amis-btn amis-btn-red amis-btn-sm"
                                         v-if="
                                             !['cancelled', 'closed'].includes(
-                                                activeMission.status,
+                                                activeMission.status
                                             )
                                         "
                                         @click="cancelMission"
@@ -1080,13 +1086,6 @@ export default {
     },
 
     computed: {
-        greeting() {
-            const h = new Date().getHours();
-            if (h < 12) return "Bonjour";
-            if (h < 18) return "Bon après-midi";
-            return "Bonsoir";
-        },
-
         userInitials() {
             return (
                 this.user.name
@@ -1121,13 +1120,11 @@ export default {
                 list = list.filter(
                     (m) =>
                         !m.contractor_id &&
-                        !["closed", "cancelled", "completed"].includes(
-                            m.status,
-                        ),
+                        !["closed", "cancelled", "completed"].includes(m.status)
                 );
             else if (this.activeTab === "closed")
                 list = list.filter((m) =>
-                    ["completed", "closed"].includes(m.status),
+                    ["completed", "closed"].includes(m.status)
                 );
             else if (this.activeTab === "cancelled")
                 list = list.filter((m) => m.status === "cancelled");
@@ -1138,7 +1135,7 @@ export default {
                     list = list.filter((m) => this.isActiveStatus(m.status));
                 else if (this.filterStatus === "closed")
                     list = list.filter((m) =>
-                        ["completed", "closed"].includes(m.status),
+                        ["completed", "closed"].includes(m.status)
                     );
                 else list = list.filter((m) => m.status === this.filterStatus);
             }
@@ -1162,7 +1159,7 @@ export default {
                         m.address?.toLowerCase().includes(q) ||
                         m.client?.name?.toLowerCase().includes(q) ||
                         m.description?.toLowerCase().includes(q) ||
-                        String(m.id).includes(q),
+                        String(m.id).includes(q)
                 );
             }
 
@@ -1202,13 +1199,13 @@ export default {
                     c.first_name?.toLowerCase().includes(q) ||
                     c.last_name?.toLowerCase().includes(q) ||
                     c.specialty?.toLowerCase().includes(q) ||
-                    c.city?.toLowerCase().includes(q),
+                    c.city?.toLowerCase().includes(q)
             );
         },
 
         allFilteredAvailableSelected() {
             const selectable = this.filteredAvailableContractors.filter(
-                (c) => !this.isAlreadyProposed(c.id),
+                (c) => !this.isAlreadyProposed(c.id)
             );
             return (
                 selectable.length > 0 &&
@@ -1274,7 +1271,7 @@ export default {
                 });
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
-                this.missions = Array.isArray(data) ? data : (data.data ?? []);
+                this.missions = Array.isArray(data) ? data : data.data ?? [];
             } catch {
                 this.missionsError = "Impossible de charger les missions.";
             } finally {
@@ -1302,12 +1299,12 @@ export default {
                 const data = await res.json();
                 this.availableContractors = Array.isArray(data)
                     ? data
-                    : (data.data ?? []);
+                    : data.data ?? [];
                 this.availableLoaded = true;
             } catch {
                 this.showToast(
                     "Erreur lors du chargement des prestataires.",
-                    "error",
+                    "error"
                 );
             } finally {
                 this.availableLoading = false;
@@ -1357,7 +1354,7 @@ export default {
             if (this.allFilteredAvailableSelected) {
                 // Désélectionner tout
                 this.selectedContractors = this.selectedContractors.filter(
-                    (id) => !selectable.includes(id),
+                    (id) => !selectable.includes(id)
                 );
             } else {
                 // Sélectionner tout
@@ -1373,11 +1370,11 @@ export default {
 
             try {
                 const csrf = document.querySelector(
-                    'meta[name="csrf-token"]',
+                    'meta[name="csrf-token"]'
                 )?.content;
                 const url = this.routes.missions_propose.replace(
                     "{id}",
-                    this.activeMission.id,
+                    this.activeMission.id
                 );
                 const res = await fetch(url, {
                     method: "POST",
@@ -1395,7 +1392,7 @@ export default {
                 if (!res.ok) {
                     this.showToast(
                         data.message ?? "Erreur lors de l'envoi.",
-                        "error",
+                        "error"
                     );
                     return;
                 }
@@ -1413,7 +1410,7 @@ export default {
 
                 // Mettre à jour dans la liste globale
                 const idx = this.missions.findIndex(
-                    (m) => m.id === this.activeMission.id,
+                    (m) => m.id === this.activeMission.id
                 );
                 if (idx !== -1)
                     this.missions.splice(idx, 1, {
@@ -1424,8 +1421,10 @@ export default {
                 this.selectedContractors = [];
                 const count = newProposals.length;
                 this.showToast(
-                    `📤 Proposition envoyée à ${count} prestataire${count > 1 ? "s" : ""}. Le premier à accepter sera assigné.`,
-                    "success",
+                    `📤 Proposition envoyée à ${count} prestataire${
+                        count > 1 ? "s" : ""
+                    }. Le premier à accepter sera assigné.`,
+                    "success"
                 );
 
                 // Recharger la liste des disponibles pour mettre à jour les statuts
@@ -1433,7 +1432,7 @@ export default {
             } catch {
                 this.showToast(
                     "Erreur réseau lors de l'envoi des propositions.",
-                    "error",
+                    "error"
                 );
             } finally {
                 this.proposalLoading = false;
@@ -1454,11 +1453,11 @@ export default {
             this.cancelConfirm.loading = true;
             try {
                 const csrf = document.querySelector(
-                    'meta[name="csrf-token"]',
+                    'meta[name="csrf-token"]'
                 )?.content;
                 const url = this.routes.missions_cancel.replace(
                     "{id}",
-                    this.cancelConfirm.mission.id,
+                    this.cancelConfirm.mission.id
                 );
                 const res = await fetch(url, {
                     method: "PATCH",
@@ -1478,7 +1477,7 @@ export default {
                     updated.mission ?? {
                         ...this.cancelConfirm.mission,
                         status: "cancelled",
-                    },
+                    }
                 );
                 if (this.activeMission?.id === this.cancelConfirm.mission.id) {
                     this.activeMission = {
@@ -1489,7 +1488,7 @@ export default {
                 this.cancelConfirm.visible = false;
                 this.showToast(
                     "Mission annulée. Le client a été notifié.",
-                    "success",
+                    "success"
                 );
             } catch {
                 this.showToast("Erreur lors de l'annulation.", "error");
@@ -1503,11 +1502,11 @@ export default {
             this.actionLoading = true;
             try {
                 const csrf = document.querySelector(
-                    'meta[name="csrf-token"]',
+                    'meta[name="csrf-token"]'
                 )?.content;
                 const url = this.routes.missions_cancel.replace(
                     "{id}",
-                    this.activeMission.id,
+                    this.activeMission.id
                 );
                 const res = await fetch(url, {
                     method: "PATCH",
@@ -1528,7 +1527,7 @@ export default {
                 this.updateMissionInList(this.activeMission);
                 this.showToast(
                     "Mission rouverte et repassée en attente.",
-                    "success",
+                    "success"
                 );
             } catch {
                 this.showToast("Erreur lors de la réouverture.", "error");
@@ -1575,19 +1574,17 @@ export default {
                     .length;
             if (key === "active")
                 return this.missions.filter((m) =>
-                    this.isActiveStatus(m.status),
+                    this.isActiveStatus(m.status)
                 ).length;
             if (key === "unassigned")
                 return this.missions.filter(
                     (m) =>
                         !m.contractor_id &&
-                        !["closed", "cancelled", "completed"].includes(
-                            m.status,
-                        ),
+                        !["closed", "cancelled", "completed"].includes(m.status)
                 ).length;
             if (key === "closed")
                 return this.missions.filter((m) =>
-                    ["completed", "closed"].includes(m.status),
+                    ["completed", "closed"].includes(m.status)
                 ).length;
             if (key === "cancelled")
                 return this.missions.filter((m) => m.status === "cancelled")
@@ -1712,7 +1709,7 @@ export default {
             window.dispatchEvent(
                 new CustomEvent("ab-sidebar-toggle", {
                     detail: { open: this.sidebarOpen },
-                }),
+                })
             );
         },
 
@@ -1741,11 +1738,11 @@ export default {
         async openNotif(n) {
             if (!n.read) {
                 const csrf = document.querySelector(
-                    'meta[name="csrf-token"]',
+                    'meta[name="csrf-token"]'
                 )?.content;
                 const url = this.routes.notifications_read.replace(
                     "{id}",
-                    n.id,
+                    n.id
                 );
                 await fetch(url, {
                     method: "PATCH",
@@ -1762,7 +1759,7 @@ export default {
 
         async markAllRead() {
             const csrf = document.querySelector(
-                'meta[name="csrf-token"]',
+                'meta[name="csrf-token"]'
             )?.content;
             await fetch(this.routes.notifications_all, {
                 method: "PATCH",
@@ -1787,7 +1784,7 @@ export default {
         this.fetchNotifications();
         this.notifInterval = setInterval(
             () => this.fetchNotifications(),
-            30000,
+            30000
         );
         document.addEventListener("click", this.handleClickOutside);
         window.addEventListener("ab-sidebar-close", () => {
@@ -1829,45 +1826,72 @@ export default {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 16px;
+    padding: 0 14px;
     position: sticky;
     top: 0;
     z-index: 40;
-    gap: 10px;
+    gap: 8px;
+    /* overflow:hidden interdit ici — tuerait la topbar-right */
 }
 @media (min-width: 600px) {
     .amis-topbar {
         height: 64px;
         padding: 0 24px;
+        gap: 12px;
     }
 }
 .amis-topbar-left {
     display: flex;
     align-items: center;
-    gap: 12px;
-    min-width: 0;
+    gap: 10px;
+    /* flex: 1 mais limité : ne prend pas plus que ce qu'il reste après la right */
     flex: 1;
-    overflow: hidden;
+    min-width: 0;
+    overflow: hidden; /* clip le texte, pas le layout — ok ici car sur le left seulement */
 }
 .amis-topbar-right {
     display: flex;
     align-items: center;
-    gap: 10px;
-    flex-shrink: 0;
+    gap: 6px;
+    flex-shrink: 0; /* jamais rétréci */
+    min-width: 80px; /* garantie : toujours au moins cloche + avatar */
+}
+@media (min-width: 480px) {
+    .amis-topbar-right {
+        gap: 10px;
+        min-width: auto;
+    }
 }
 .amis-page-title {
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 800;
     color: var(--dk);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    /* max-width calculé pour laisser place à la right */
+    max-width: calc(100vw - 180px);
+}
+@media (min-width: 480px) {
+    .amis-page-title {
+        font-size: 14px;
+        max-width: calc(100vw - 220px);
+    }
+}
+@media (min-width: 600px) {
+    .amis-page-title {
+        font-size: 15px;
+        max-width: none;
+    }
 }
 .amis-page-sub {
     font-size: 11px;
     color: var(--gr);
     margin-top: 1px;
     display: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 @media (min-width: 480px) {
     .amis-page-sub {
@@ -1920,6 +1944,13 @@ export default {
     font-size: 12.5px;
     font-weight: 700;
     color: var(--gr);
+    display: none;
+}
+@media (min-width: 480px) {
+    .amis-count-pill {
+        display: inline-flex;
+        align-items: center;
+    }
 }
 
 /* ── NOTIFICATIONS ── */
@@ -1965,7 +1996,7 @@ export default {
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
-    width: 320px;
+    width: min(320px, calc(100vw - 32px));
     background: var(--wh);
     border: 1.5px solid var(--grl);
     border-radius: 14px;
@@ -2045,70 +2076,117 @@ export default {
 
 /* ── CONTENT ── */
 .amis-content {
-    padding: 24px;
+    padding: 12px;
     max-width: 1400px;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
+}
+@media (min-width: 600px) {
+    .amis-content {
+        padding: 20px 24px;
+        gap: 14px;
+    }
 }
 
 /* ── FILTRES ── */
 .amis-filters-bar {
     background: var(--wh);
-    border-radius: 14px;
-    padding: 14px 16px;
+    border: 1.5px solid var(--grl);
+    border-radius: 12px;
+    padding: 12px;
     display: flex;
-    gap: 12px;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    flex-direction: column;
+    gap: 8px;
+}
+@media (min-width: 600px) {
+    .amis-filters-bar {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        padding: 12px 16px;
+        gap: 10px;
+    }
 }
 .amis-filters-left {
-    flex: 1;
-    min-width: 200px;
+    width: 100%;
+}
+@media (min-width: 600px) {
+    .amis-filters-left {
+        flex: 1;
+        min-width: 180px;
+        width: auto;
+    }
 }
 .amis-filters-right {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 8px;
-    flex-wrap: wrap;
+    width: 100%;
+}
+.amis-filters-right .amis-select:first-child {
+    grid-column: span 2;
+}
+@media (min-width: 600px) {
+    .amis-filters-right {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        width: auto;
+    }
+    .amis-filters-right .amis-select:first-child {
+        grid-column: auto;
+    }
 }
 .amis-search-wrap {
-    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f8f4f0;
+    border: 1.5px solid var(--grl);
+    border-radius: 8px;
+    padding: 0 12px;
+    width: 100%;
+    box-sizing: border-box;
 }
 .amis-search-icon {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
     font-size: 14px;
+    color: var(--gr);
+    flex-shrink: 0;
 }
 .amis-search {
-    width: 100%;
-    border: 2px solid var(--grl);
-    border-radius: 10px;
-    padding: 9px 14px 9px 34px;
-    font-size: 13.5px;
+    border: none;
+    background: none;
+    outline: none;
     font-family: "Poppins", sans-serif;
+    font-size: 13px;
     color: var(--dk);
-    transition: border 0.15s;
-    box-sizing: border-box;
-    min-width: 240px;
+    width: 100%;
+    padding: 9px 0;
 }
 .amis-search:focus {
     outline: none;
-    border-color: var(--or);
 }
 .amis-select {
-    border: 2px solid var(--grl);
-    border-radius: 10px;
-    padding: 8px 12px;
-    font-size: 13px;
+    border: 1.5px solid var(--grl);
+    background: #f8f4f0;
+    border-radius: 8px;
+    padding: 7px 8px;
+    font-size: 12px;
     font-family: "Poppins", sans-serif;
     color: var(--dk);
-    background: var(--wh);
     cursor: pointer;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+@media (min-width: 600px) {
+    .amis-select {
+        font-size: 13px;
+        padding: 8px 12px;
+        width: auto;
+    }
 }
 .amis-select:focus {
     outline: none;
@@ -2117,48 +2195,69 @@ export default {
 
 /* ── TABS ── */
 .amis-tabs {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    background: var(--wh);
+    border: 1.5px solid var(--grl);
+    border-radius: 12px;
+    padding: 4px;
+}
+@media (min-width: 480px) {
+    .amis-tabs {
+        grid-template-columns: repeat(6, 1fr);
+    }
 }
 .amis-tab {
-    padding: 8px 16px;
-    border-radius: 10px;
-    border: 2px solid transparent;
-    background: var(--wh);
-    font-size: 13px;
-    font-weight: 700;
+    padding: 7px 6px;
+    background: none;
+    border: none;
+    border-radius: 8px;
+    font-family: "Poppins", sans-serif;
+    font-size: 11px;
+    font-weight: 600;
     color: var(--gr);
     cursor: pointer;
-    transition: all 0.18s;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-family: "Poppins", sans-serif;
-}
-.amis-tab:hover {
-    background: var(--or3);
-    color: var(--or);
-}
-.amis-tab.active {
-    background: linear-gradient(135deg, var(--or), var(--or2));
-    color: #fff;
-    border-color: transparent;
-}
-.amis-tab-count {
-    background: rgba(0, 0, 0, 0.12);
-    border-radius: 99px;
-    font-size: 11px;
-    font-weight: 800;
-    min-width: 20px;
-    height: 20px;
+    white-space: nowrap;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0 5px;
+    gap: 4px;
+    transition: all 0.18s;
+    text-align: center;
+    overflow: hidden;
+}
+@media (min-width: 600px) {
+    .amis-tab {
+        font-size: 13px;
+        padding: 8px 12px;
+    }
+}
+.amis-tab:hover {
+    color: var(--dk);
+    background: var(--or3);
+}
+.amis-tab.active {
+    background: var(--or3);
+    color: var(--or);
+}
+.amis-tab-count {
+    background: var(--grl);
+    border-radius: 99px;
+    padding: 1px 6px;
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+@media (min-width: 600px) {
+    .amis-tab-count {
+        font-size: 11px;
+        padding: 1px 7px;
+    }
 }
 .amis-tab.active .amis-tab-count {
-    background: rgba(255, 255, 255, 0.25);
+    background: var(--or);
+    color: #fff;
 }
 
 /* ── MISSION LIST ── */
@@ -2329,63 +2428,103 @@ export default {
     color: #dc2626;
 }
 
-/* ── MODAL ── */
+/* ── MODAL (panel latéral) ── */
 .amis-modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.55);
+    background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(3px);
     z-index: 200;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
+    align-items: stretch;
+    justify-content: flex-end;
+}
+@media (max-width: 600px) {
+    .amis-modal-overlay {
+        align-items: flex-end;
+        justify-content: center;
+    }
 }
 .amis-modal {
     background: var(--wh);
-    border-radius: 18px;
     width: 100%;
-    max-width: 520px;
-    max-height: 92vh;
+    max-width: 540px;
+    height: 100vh;
     overflow-y: auto;
+    overflow-x: hidden;
     display: flex;
     flex-direction: column;
-    animation: amis-slide-up 0.25s ease;
+    box-shadow: -8px 0 40px rgba(0, 0, 0, 0.15);
+    animation: amis-slide-in 0.25s ease;
+    -webkit-overflow-scrolling: touch;
 }
 .amis-modal-xl {
-    max-width: 960px;
+    max-width: 900px;
 }
-@keyframes amis-slide-up {
+@keyframes amis-slide-in {
     from {
+        transform: translateX(40px);
         opacity: 0;
-        transform: translateY(18px);
     }
     to {
+        transform: translateX(0);
         opacity: 1;
-        transform: translateY(0);
+    }
+}
+@media (max-width: 600px) {
+    .amis-modal,
+    .amis-modal-xl {
+        height: 92vh;
+        max-width: 100%;
+        border-radius: 18px 18px 0 0;
+        animation: amis-slide-up-mob 0.25s ease;
+    }
+    @keyframes amis-slide-up-mob {
+        from {
+            transform: translateY(40px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
     }
 }
 .amis-modal-header {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 14px;
+    gap: 12px;
     padding: 20px 24px 16px;
     border-bottom: 2px solid var(--grl);
     position: sticky;
     top: 0;
     background: var(--wh);
-    border-radius: 18px 18px 0 0;
     z-index: 1;
+}
+.amis-modal-header-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+}
+.amis-modal-header-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+    margin-top: 2px;
 }
 .amis-modal-header h3 {
     font-size: 17px;
     font-weight: 800;
     color: var(--dk);
+    line-height: 1.3;
+}
+.amis-modal-header-right {
     display: flex;
     align-items: center;
     gap: 10px;
-    flex-wrap: wrap;
+    flex-shrink: 0;
 }
 .amis-modal-sub {
     font-size: 12px;
@@ -2393,30 +2532,49 @@ export default {
     margin-top: 3px;
 }
 .amis-modal-close {
-    background: none;
+    background: var(--grl);
     border: none;
-    font-size: 22px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    font-size: 18px;
     cursor: pointer;
     color: var(--gr);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
+    transition: background 0.15s;
+}
+.amis-modal-close:hover {
+    background: #d6cfc8;
 }
 .amis-modal-body {
-    padding: 20px 24px;
+    padding: 20px;
     flex: 1;
     display: flex;
     flex-direction: column;
     gap: 16px;
 }
+@media (min-width: 640px) {
+    .amis-modal-body {
+        padding: 24px;
+    }
+}
 .amis-modal-footer {
-    padding: 14px 24px;
+    padding: 12px 20px;
     border-top: 2px solid var(--grl);
     display: flex;
     align-items: center;
     justify-content: flex-end;
     gap: 8px;
     background: #faf7f4;
-    border-radius: 0 0 18px 18px;
     flex-wrap: wrap;
+}
+@media (min-width: 640px) {
+    .amis-modal-footer {
+        padding: 14px 24px;
+    }
 }
 
 /* ── STEP TRACK ── */
@@ -2444,12 +2602,13 @@ export default {
 /* ── DETAIL GRID ── */
 .amis-detail-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    grid-template-columns: 1fr;
+    gap: 16px;
 }
-@media (max-width: 720px) {
+@media (min-width: 720px) {
     .amis-detail-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
     }
 }
 .amis-detail-col {
@@ -2458,17 +2617,21 @@ export default {
     gap: 14px;
 }
 .amis-detail-section {
-    background: var(--grl);
-    border-radius: 12px;
-    padding: 14px 16px;
+    background: var(--wh);
+    border: 1.5px solid var(--grl);
+    border-radius: 14px;
+    padding: 16px 18px;
 }
 .amis-detail-section-title {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 800;
     color: var(--gr);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 10px;
+    letter-spacing: 0.8px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 .amis-verified-badge {
     display: inline-block;
@@ -2485,9 +2648,9 @@ export default {
 .amis-detail-row {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    padding: 7px 0;
-    border-bottom: 1px solid #e5e0db;
+    align-items: flex-start;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--grl);
     font-size: 13px;
     gap: 12px;
 }
@@ -2497,11 +2660,14 @@ export default {
 .amis-detail-row span:first-child {
     color: var(--gr);
     flex-shrink: 0;
+    min-width: 80px;
 }
 .amis-detail-row strong {
     font-weight: 700;
     color: var(--dk);
     text-align: right;
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 .amis-val-green {
     color: var(--green);
@@ -2929,6 +3095,19 @@ export default {
     transform: translateY(-1px);
     box-shadow: 0 5px 16px rgba(249, 115, 22, 0.4);
 }
+.amis-btn-green {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(34, 197, 94, 0.3);
+}
+.amis-btn-green:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 16px rgba(34, 197, 94, 0.4);
+}
+.amis-btn-green:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
 .amis-btn-ghost {
     background: var(--grl);
     color: var(--dk);
@@ -3003,21 +3182,42 @@ export default {
 }
 
 /* ── RESPONSIVE ── */
+@media (max-width: 479px) {
+    .amis-avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 11px;
+    }
+    .amis-modal-footer .amis-btn {
+        flex: 1;
+        justify-content: center;
+    }
+}
+
 @media (max-width: 640px) {
-    .amis-content {
-        padding: 12px;
+    /* Toasts pleine largeur */
+    .amis-toast-container {
+        bottom: 16px;
+        right: 12px;
+        left: 12px;
+        max-width: none;
     }
-    .amis-topbar {
-        padding: 0 12px;
-    }
-    .amis-modal-xl {
-        max-width: 100%;
-    }
-    .amis-filters-bar {
-        flex-direction: column;
-    }
-    .amis-filters-right {
+    .amis-toast {
+        min-width: unset;
         width: 100%;
+    }
+    /* Pagination compacte */
+    .ac-page-info {
+        width: 100%;
+        text-align: center;
+        margin-left: 0;
+        margin-top: 4px;
+    }
+}
+
+@media (min-width: 601px) and (max-width: 899px) {
+    .amis-content {
+        padding: 16px;
     }
 }
 
@@ -3201,8 +3401,35 @@ export default {
 }
 
 /* Responsive : masquer colonnes secondaires sur mobile */
-@media (max-width: 768px) {
-    .ac-row-contractor,
+@media (max-width: 540px) {
+    .ac-row-progress,
+    .ac-row-stats {
+        display: none;
+    }
+    .ac-row-contractor {
+        display: none;
+    }
+    .ac-row-main {
+        flex: 1;
+    }
+    .ac-row-badge {
+        flex: 0 0 auto;
+    }
+    .ac-row-action {
+        flex: 0 0 auto;
+        min-height: unset;
+    }
+    .ac-row {
+        gap: 8px;
+        padding: 10px 12px;
+    }
+    .ac-row-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 18px;
+    }
+}
+@media (min-width: 541px) and (max-width: 768px) {
     .ac-row-progress,
     .ac-row-stats {
         display: none;

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
     <div class="aac-wrap">
         <!-- ══════════════ TOPBAR ══════════════ -->
         <div class="aac-topbar">
@@ -15,7 +15,7 @@
                         Accréditations prestataires
                     </div>
                     <div class="aac-page-sub">
-                        {{ greeting }}, <strong>{{ user.name }}</strong>
+                        <strong>{{ user.name }}</strong>
                     </div>
                 </div>
             </div>
@@ -42,7 +42,7 @@
                             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                         </svg>
                         <span class="aac-notif-badge" v-if="unreadCount > 0">
-                            {{ unreadCount > 9 ? "9+" : unreadCount }}
+                            {{ unreadCount }}
                         </span>
                     </button>
                     <!-- Dropdown -->
@@ -185,8 +185,9 @@
 
                     <!-- Accréditation actuelle -->
                     <div class="aac-current">
+                        <div class="aac-current-lbl">Actuelle</div>
                         <span
-                            class="aac-badge"
+                            class="aac-badge aac-badge-current"
                             :class="accredBadgeClass(c.accreditation)"
                         >
                             {{ accredLabel(c.accreditation) }}
@@ -197,7 +198,7 @@
                     <div class="aac-actions">
                         <button
                             v-for="opt in accredOptions.filter(
-                                (o) => o.value !== c.accreditation,
+                                (o) => o.value !== c.accreditation
                             )"
                             :key="opt.value"
                             class="aac-btn aac-btn-action"
@@ -244,7 +245,7 @@
                                 class="aac-badge"
                                 :class="
                                     accredBadgeClass(
-                                        modal.contractor?.accreditation,
+                                        modal.contractor?.accreditation
                                     )
                                 "
                             >
@@ -325,7 +326,7 @@
                         Annuler
                     </button>
                     <button
-                        class="aac-btn aac-btn-orange"
+                        class="aac-btn aac-btn-green"
                         @click="confirmAccred"
                         :disabled="modal.loading"
                     >
@@ -423,12 +424,6 @@ export default {
     },
 
     computed: {
-        greeting() {
-            const h = new Date().getHours();
-            if (h < 12) return "Bonjour";
-            if (h < 18) return "Bon après-midi";
-            return "Bonsoir";
-        },
 
         userInitials() {
             return (
@@ -466,7 +461,7 @@ export default {
         specialties() {
             return [
                 ...new Set(
-                    this.contractors.map((c) => c.specialty).filter(Boolean),
+                    this.contractors.map((c) => c.specialty).filter(Boolean)
                 ),
             ].sort();
         },
@@ -489,7 +484,7 @@ export default {
                         c.first_name?.toLowerCase().includes(q) ||
                         c.last_name?.toLowerCase().includes(q) ||
                         c.specialty?.toLowerCase().includes(q) ||
-                        c.city?.toLowerCase().includes(q),
+                        c.city?.toLowerCase().includes(q)
                 );
             }
 
@@ -512,9 +507,7 @@ export default {
                 });
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
-                this.contractors = Array.isArray(data)
-                    ? data
-                    : (data.data ?? []);
+                this.contractors = Array.isArray(data) ? data : data.data ?? [];
             } catch {
                 this.error = "Impossible de charger les prestataires.";
             } finally {
@@ -536,12 +529,12 @@ export default {
             this.modal.loading = true;
             try {
                 const csrf = document.querySelector(
-                    'meta[name="csrf-token"]',
+                    'meta[name="csrf-token"]'
                 )?.content;
                 const url = this.routes.contractors_accreditation.replace(
                     "{id}",
                     this.modal.contractor.contractor_id ??
-                        this.modal.contractor.id,
+                        this.modal.contractor.id
                 );
                 const res = await fetch(url, {
                     method: "PATCH",
@@ -559,14 +552,14 @@ export default {
                 if (!res.ok) {
                     this.showToast(
                         data.message ?? "Erreur lors de la mise à jour.",
-                        "error",
+                        "error"
                     );
                     return;
                 }
 
                 // Mettre à jour localement
                 const idx = this.contractors.findIndex(
-                    (c) => c.id === this.modal.contractor.id,
+                    (c) => c.id === this.modal.contractor.id
                 );
                 if (idx !== -1) {
                     this.contractors[idx] = {
@@ -579,7 +572,7 @@ export default {
                 const label = this.accredLabel(this.modal.newValue);
                 this.showToast(
                     `🏅 ${this.modal.contractor.first_name} ${this.modal.contractor.last_name} — accréditation "${label}" attribuée.`,
-                    "success",
+                    "success"
                 );
             } catch {
                 this.showToast("Erreur réseau.", "error");
@@ -613,11 +606,11 @@ export default {
         async openNotif(n) {
             if (!n.read) {
                 const csrf = document.querySelector(
-                    'meta[name="csrf-token"]',
+                    'meta[name="csrf-token"]'
                 )?.content;
                 const url = this.routes.notifications_read.replace(
                     "{id}",
-                    n.id,
+                    n.id
                 );
                 await fetch(url, {
                     method: "PATCH",
@@ -634,7 +627,7 @@ export default {
 
         async markAllRead() {
             const csrf = document.querySelector(
-                'meta[name="csrf-token"]',
+                'meta[name="csrf-token"]'
             )?.content;
             await fetch(this.routes.notifications_all, {
                 method: "PATCH",
@@ -697,7 +690,7 @@ export default {
             window.dispatchEvent(
                 new CustomEvent("ab-sidebar-toggle", {
                     detail: { open: this.sidebarOpen },
-                }),
+                })
             );
         },
     },
@@ -707,7 +700,7 @@ export default {
         this.fetchNotifications();
         this.notifInterval = setInterval(
             () => this.fetchNotifications(),
-            30000,
+            30000
         );
         document.addEventListener("click", this.handleClickOutside);
         window.addEventListener("ab-sidebar-close", () => {
@@ -770,8 +763,13 @@ export default {
 .aac-topbar-right {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
     flex-shrink: 0;
+}
+@media (min-width: 480px) {
+    .aac-topbar-right {
+        gap: 10px;
+    }
 }
 .aac-page-title {
     font-size: 15px;
@@ -873,7 +871,7 @@ export default {
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
-    width: 320px;
+    width: min(320px, calc(100vw - 32px));
     background: var(--wh);
     border: 1.5px solid var(--grl);
     border-radius: 14px;
@@ -958,38 +956,73 @@ export default {
     font-weight: 700;
     color: #d97706;
     border: 1.5px solid var(--am);
+    display: none;
+}
+@media (min-width: 480px) {
+    .aac-count-pill {
+        display: inline-flex;
+        align-items: center;
+    }
 }
 
 /* ── CONTENT ── */
 .aac-content {
-    padding: 24px;
+    padding: 12px;
     max-width: 1100px;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
+}
+@media (min-width: 640px) {
+    .aac-content {
+        padding: 24px;
+        gap: 16px;
+    }
 }
 
 /* ── TABS ── */
 .aac-tabs {
     display: flex;
     gap: 8px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+}
+.aac-tabs::-webkit-scrollbar {
+    display: none;
+}
+@media (min-width: 480px) {
+    .aac-tabs {
+        flex-wrap: wrap;
+        overflow-x: visible;
+    }
 }
 .aac-tab {
-    padding: 9px 18px;
+    padding: 8px 14px;
     border-radius: 10px;
     border: 2px solid transparent;
     background: var(--wh);
-    font-size: 13.5px;
+    font-size: 12.5px;
     font-weight: 700;
     color: var(--gr);
     cursor: pointer;
     transition: all 0.18s;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     font-family: "Poppins", sans-serif;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+@media (min-width: 480px) {
+    .aac-tab {
+        padding: 9px 18px;
+        font-size: 13.5px;
+        gap: 8px;
+    }
 }
 .aac-tab:hover {
     background: var(--or3);
@@ -1033,7 +1066,7 @@ export default {
 }
 .aac-search {
     flex: 1;
-    min-width: 180px;
+    min-width: 120px;
     border: 2px solid var(--grl);
     border-radius: 9px;
     padding: 8px 12px;
@@ -1055,6 +1088,12 @@ export default {
     color: var(--dk);
     background: var(--wh);
     cursor: pointer;
+    width: 100%;
+}
+@media (min-width: 480px) {
+    .aac-select {
+        width: auto;
+    }
 }
 .aac-select:focus {
     outline: none;
@@ -1070,14 +1109,21 @@ export default {
 .aac-item {
     background: var(--wh);
     border-radius: 14px;
-    padding: 16px 18px;
+    padding: 14px 16px;
     display: flex;
-    align-items: center;
-    gap: 14px;
+    align-items: flex-start;
+    gap: 12px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
     border: 2px solid transparent;
     transition: all 0.18s;
     flex-wrap: wrap;
+}
+@media (min-width: 640px) {
+    .aac-item {
+        align-items: center;
+        padding: 16px 18px;
+        gap: 14px;
+    }
 }
 .aac-item:hover {
     border-color: var(--am);
@@ -1124,12 +1170,17 @@ export default {
 /* Infos */
 .aac-info {
     flex: 1;
-    min-width: 160px;
+    min-width: 0;
 }
 .aac-name {
-    font-size: 14.5px;
+    font-size: 13.5px;
     font-weight: 800;
     color: var(--dk);
+}
+@media (min-width: 480px) {
+    .aac-name {
+        font-size: 14.5px;
+    }
 }
 .aac-meta {
     font-size: 12.5px;
@@ -1140,9 +1191,20 @@ export default {
 /* Accréditation actuelle */
 .aac-current {
     flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+.aac-current-lbl {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--gr, #7c6a5a);
 }
 
-/* Badges accréditation */
+/* Badges accréditation — version liste (petite, pastel) */
 .aac-badge {
     padding: 5px 13px;
     border-radius: 99px;
@@ -1168,12 +1230,47 @@ export default {
     border: 1.5px solid #bfdbfe;
 }
 
+/* Badge "actuelle" — version grande, couleur pleine */
+.aac-badge.aac-badge-current {
+    padding: 7px 16px;
+    font-size: 13.5px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+.aac-badge.aac-badge-current.badge-none {
+    background: #64748b;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(100,116,139,0.35);
+}
+.aac-badge.aac-badge-current.badge-home {
+    background: #1d4ed8;
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(29,78,216,0.4);
+}
+.aac-badge.aac-badge-current.badge-business {
+    background: #15803d;
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(21,128,61,0.4);
+}
+.aac-badge.aac-badge-current.badge-both {
+    background: linear-gradient(135deg, #1d4ed8, #15803d);
+    color: #fff;
+    border: none;
+    box-shadow: 0 2px 10px rgba(29,78,216,0.35);
+}
+
 /* Boutons d'action */
 .aac-actions {
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
     flex-shrink: 0;
+    width: 100%;
+}
+@media (min-width: 640px) {
+    .aac-actions {
+        width: auto;
+        justify-content: flex-end;
+    }
 }
 .aac-btn-action {
     padding: 6px 12px;
@@ -1434,6 +1531,19 @@ export default {
 }
 .aac-btn-orange:hover:not(:disabled) {
     transform: translateY(-1px);
+}
+.aac-btn-green {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(34, 197, 94, 0.3);
+}
+.aac-btn-green:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 16px rgba(34, 197, 94, 0.4);
+}
+.aac-btn-green:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
     box-shadow: 0 5px 16px rgba(249, 115, 22, 0.4);
 }
 .aac-btn-ghost {
@@ -1498,19 +1608,109 @@ export default {
 }
 
 /* ── RESPONSIVE ── */
-@media (max-width: 640px) {
-    .aac-content {
-        padding: 12px;
+@media (max-width: 479px) {
+    /* Topbar très petit écran */
+    .aac-topbar {
+        padding: 0 10px;
+        height: 54px;
     }
+    .aac-page-title {
+        font-size: 13px;
+    }
+    .aac-avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 11px;
+    }
+
+    /* Item : badge accréditation remonté à droite du nom */
+    .aac-item {
+        gap: 10px;
+    }
+    .aac-current {
+        order: -1;
+        margin-left: auto;
+    }
+
+    /* Boutons action plus compacts */
+    .aac-btn-action {
+        font-size: 11.5px;
+        padding: 5px 10px;
+    }
+}
+
+@media (max-width: 639px) {
     .aac-topbar {
         padding: 0 12px;
+        height: 56px;
+    }
+    .aac-page-title {
+        font-size: 13.5px;
     }
     .aac-item {
         gap: 10px;
     }
-    .aac-actions {
+    .aac-current {
+        order: -1;
+        margin-left: auto;
+    }
+
+    /* Modal adaptée mobile */
+    .aac-modal {
+        border-radius: 14px;
+        max-height: 96vh;
+    }
+    .aac-modal-header {
+        padding: 16px 16px 12px;
+    }
+    .aac-modal-body {
+        padding: 16px;
+    }
+    .aac-modal-footer {
+        padding: 12px 16px;
+        flex-wrap: wrap;
+    }
+    .aac-modal-footer .aac-btn {
+        flex: 1;
+        justify-content: center;
+    }
+
+    /* Transition visuelle dans la modal */
+    .aac-transition-row {
+        gap: 10px;
+        padding: 14px 12px;
+    }
+    .aac-transition-arrow {
+        font-size: 18px;
+    }
+
+    /* Toast pleine largeur */
+    .aac-toast-container {
+        bottom: 16px;
+        right: 12px;
+        left: 12px;
+    }
+    .aac-toast {
+        min-width: unset;
         width: 100%;
-        justify-content: flex-end;
+    }
+}
+
+@media (min-width: 640px) and (max-width: 899px) {
+    .aac-content {
+        padding: 16px;
+    }
+}
+
+/* Grands écrans : item en ligne compacte */
+@media (min-width: 900px) {
+    .aac-item {
+        flex-wrap: nowrap;
+    }
+    .aac-actions {
+        margin-left: auto;
     }
 }
 </style>
+
+

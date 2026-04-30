@@ -1,6 +1,6 @@
 <template>
     <div class="clm-wrap">
-        <!-- ══════════════ TOPBAR ══════════════ -->
+        <!-- -------------- TOPBAR -------------- -->
         <div class="clm-topbar">
             <div class="clm-topbar-left">
                 <button
@@ -11,9 +11,9 @@
                     <span></span><span></span><span></span>
                 </button>
                 <div>
-                    <div class="clm-page-title">Commandes</div>
+                    <div class="clm-page-title">Mes commandes</div>
                     <div class="clm-page-sub">
-                        {{ greeting }}, <strong>{{ user.name }}</strong>
+                        <strong>{{ user.name }}</strong>
                     </div>
                 </div>
             </div>
@@ -35,7 +35,7 @@
                             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                         </svg>
                         <span class="clm-notif-badge" v-if="unreadCount > 0">{{
-                            unreadCount > 9 ? "9+" : unreadCount
+                            unreadCount
                         }}</span>
                     </button>
                     <div class="clm-notif-dropdown" v-if="notifOpen">
@@ -78,23 +78,23 @@
                 <div class="clm-avatar">{{ userInitials }}</div>
 
                 <button class="clm-btn clm-btn-orange" @click="openNewMission">
-                    ＋ Nouvelle mission
+                    + Nouvelle commande
                 </button>
             </div>
         </div>
 
-        <!-- ══════════════ CONTENU ══════════════ -->
+        <!-- -------------- CONTENU -------------- -->
         <div class="clm-content">
             <!-- Filtres -->
             <div class="clm-filters">
                 <div class="clm-search-wrap">
-                    <span class="clm-search-icon">🔍</span>
+                    <span class="clm-search-icon">??</span>
                     <input
                         class="clm-search"
                         type="text"
                         v-model="search"
                         @input="currentPage = 1"
-                        placeholder="Rechercher une mission…"
+                        placeholder="Rechercher une mission�"
                     />
                 </div>
                 <div class="clm-tabs">
@@ -123,29 +123,29 @@
 
             <!-- Erreur -->
             <div class="clm-alert-error" v-else-if="error">
-                ⚠️ {{ error }}
+                ?? {{ error }}
                 <button
                     class="clm-btn clm-btn-ghost clm-btn-sm"
                     @click="fetchMissions"
                 >
-                    Réessayer
+                    R�essayer
                 </button>
             </div>
 
             <!-- Vide -->
             <div class="clm-empty" v-else-if="totalFiltered === 0">
-                <div class="clm-empty-icon">📭</div>
+                <div class="clm-empty-icon">??</div>
                 <div class="clm-empty-title">Aucune mission</div>
                 <div class="clm-empty-sub">
-                    Publiez votre première mission pour trouver un prestataire
-                    certifié.
+                    Publiez votre premi�re mission pour trouver un prestataire
+                    certifi�.
                 </div>
                 <button
                     class="clm-btn clm-btn-orange"
                     @click="openNewMission"
                     style="margin-top: 16px"
                 >
-                    ＋ Créer une mission
+                    + Cr�er une mission
                 </button>
             </div>
 
@@ -175,27 +175,52 @@
                                 :class="m.location_type"
                             >
                                 {{
-                                    m.location_type === "business" ? "🏢" : "🏠"
+                                    m.location_type === "business" ? "??" : "??"
                                 }}
                             </span>
                         </div>
                         <div class="clm-item-meta">
                             {{
                                 m.contractor && m.contractor.name
-                                    ? "👷 " + m.contractor.name
+                                    ? "?? " + m.contractor.name
                                     : m.contractor
-                                      ? "👷 Prestataire assigné"
-                                      : "⏳ Attribution en cours…"
+                                    ? "?? Prestataire assign�"
+                                    : "? Attribution en cours�"
                             }}
-                            · {{ formatDateTime(m.created_at) }}
+                            � {{ formatDateTime(m.created_at) }}
                         </div>
-                        <div class="clm-item-addr">📍 {{ m.address }}</div>
+                        <div class="clm-item-addr">?? {{ m.address }}</div>
+                        <div class="clm-item-reservation" v-if="m.reservation">
+                            &#128197; Planifi&eacute; le
+                            {{
+                                formatReservationDate(m.reservation.day)
+                            }}
+                            &agrave; {{ m.reservation.time?.substring(0, 5) }}
+                        </div>
+                        <!-- Miniatures images -->
+                        <div
+                            class="clm-item-imgs"
+                            v-if="m.images && m.images.length"
+                        >
+                            <img
+                                v-for="(url, i) in m.images.slice(0, 5)"
+                                :key="i"
+                                :src="url"
+                                class="clm-item-img-thumb"
+                                @click.stop="missionLightbox = url"
+                            />
+                            <span
+                                class="clm-item-imgs-more"
+                                v-if="m.images.length > 5"
+                                >+{{ m.images.length - 5 }}</span
+                            >
+                        </div>
                         <!-- Badge non-lu chat -->
                         <div
                             class="clm-msg-unread"
                             v-if="unreadByMission[m.id]"
                         >
-                            💬 {{ unreadByMission[m.id] }} message{{
+                            ?? {{ unreadByMission[m.id] }} message{{
                                 unreadByMission[m.id] > 1 ? "s" : ""
                             }}
                             non lu{{ unreadByMission[m.id] > 1 ? "s" : "" }}
@@ -208,13 +233,13 @@
                         <div class="clm-item-price" v-if="m.total_amount">
                             {{ formatPrice(m.total_amount) }}
                         </div>
-                        <!-- Bouton Lire message — ouvre direct le chat sans ouvrir le panel -->
+                        <!-- Bouton Lire message � ouvre direct le chat sans ouvrir le panel -->
                         <button
                             class="clm-read-msg-btn"
                             v-if="unreadByMission[m.id]"
                             @click.stop="openChat(m.id)"
                             :title="
-                                'Ouvrir la conversation — ' +
+                                'Ouvrir la conversation � ' +
                                 unreadByMission[m.id] +
                                 ' non lu(s)'
                             "
@@ -228,21 +253,21 @@
                 </div>
             </div>
 
-            <!-- ── PAGINATION ── -->
+            <!-- -- PAGINATION -- -->
             <div class="clm-pagination" v-if="totalPages > 1">
                 <button
                     class="clm-page-btn"
                     @click="currentPage = 1"
                     :disabled="currentPage === 1"
                 >
-                    «
+                    �
                 </button>
                 <button
                     class="clm-page-btn"
                     @click="currentPage--"
                     :disabled="currentPage === 1"
                 >
-                    ‹
+                    �
                 </button>
                 <button
                     class="clm-page-btn"
@@ -258,17 +283,17 @@
                     @click="currentPage++"
                     :disabled="currentPage === totalPages"
                 >
-                    ›
+                    �
                 </button>
                 <button
                     class="clm-page-btn"
                     @click="currentPage = totalPages"
                     :disabled="currentPage === totalPages"
                 >
-                    »
+                    �
                 </button>
                 <span class="clm-page-info">
-                    {{ (currentPage - 1) * perPage + 1 }}–{{
+                    {{ (currentPage - 1) * perPage + 1 }}�{{
                         Math.min(currentPage * perPage, totalFiltered)
                     }}
                     sur {{ totalFiltered }}
@@ -276,7 +301,7 @@
             </div>
         </div>
 
-        <!-- ══════════════ PANEL DÉTAIL MISSION ══════════════ -->
+        <!-- -------------- PANEL D�TAIL MISSION -------------- -->
         <div
             class="clm-panel-overlay"
             v-if="activeMission"
@@ -306,7 +331,7 @@
                     <div>
                         <h2>{{ activeMission.service }}</h2>
                         <div class="clm-panel-sub">
-                            Mission #{{ activeMission.id }} ·
+                            Mission #{{ activeMission.id }} �
                             {{ formatDateTime(activeMission.created_at) }}
                         </div>
                     </div>
@@ -327,7 +352,7 @@
 
                 <!-- Barre de progression + fil bullet -->
                 <div class="clm-workflow">
-                    <!-- Barre linéaire -->
+                    <!-- Barre lin�aire -->
                     <div class="clm-workflow-track">
                         <div
                             class="clm-workflow-fill"
@@ -336,7 +361,7 @@
                             }"
                         ></div>
                     </div>
-                    <!-- Fil d'étapes avec labels -->
+                    <!-- Fil d'�tapes avec labels -->
                     <div class="clm-wf-steps">
                         <div
                             class="clm-wf-step"
@@ -359,14 +384,14 @@
                         <!-- Infos -->
                         <div class="clm-info-col">
                             <div class="clm-section">
-                                <div class="clm-section-title">📋 Détails</div>
+                                <div class="clm-section-title">?? D�tails</div>
                                 <div class="clm-row">
                                     <span>Type</span
                                     ><strong>{{
                                         activeMission.location_type ===
                                         "business"
-                                            ? "🏢 Entreprise"
-                                            : "🏠 Domicile"
+                                            ? "?? Entreprise"
+                                            : "?? Domicile"
                                     }}</strong>
                                 </div>
                                 <div class="clm-row">
@@ -376,9 +401,18 @@
                                     }}</strong>
                                 </div>
                                 <div class="clm-row">
+                                    <span>Mode</span
+                                    ><strong>{{
+                                        activeMission.latitude &&
+                                        activeMission.longitude
+                                            ? "?? G�olocalisation"
+                                            : "?? Saisie manuelle"
+                                    }}</strong>
+                                </div>
+                                <div class="clm-row">
                                     <span>Description</span
                                     ><strong>{{
-                                        activeMission.description ?? "—"
+                                        activeMission.description ?? "�"
                                     }}</strong>
                                 </div>
                                 <div
@@ -414,7 +448,7 @@
                                     class="clm-row"
                                     v-if="activeMission.accepted_at"
                                 >
-                                    <span>Acceptée le</span>
+                                    <span>Accept�e le</span>
                                     <strong>{{
                                         formatDate(activeMission.accepted_at)
                                     }}</strong>
@@ -426,7 +460,7 @@
                                 v-if="activeMission.contractor"
                             >
                                 <div class="clm-section-title">
-                                    👷 Prestataire
+                                    ?? Prestataire
                                 </div>
                                 <div class="clm-row">
                                     <span>Nom</span
@@ -435,7 +469,7 @@
                                     }}</strong>
                                 </div>
                                 <div class="clm-row">
-                                    <span>Spécialité</span
+                                    <span>Sp�cialit�</span
                                     ><strong>{{
                                         activeMission.contractor.specialty
                                     }}</strong>
@@ -443,29 +477,29 @@
                                 <div class="clm-row">
                                     <span>Note</span
                                     ><strong
-                                        >⭐
+                                        >?
                                         {{
                                             activeMission.contractor
-                                                .average_rating ?? "—"
+                                                .average_rating ?? "�"
                                         }}</strong
                                     >
                                 </div>
                                 <div class="clm-row">
                                     <span>Contact</span
                                     ><strong class="clm-masked"
-                                        >🔒 Numéro masqué — utilisez la
+                                        >?? Num�ro masqu� � utilisez la
                                         messagerie</strong
                                     >
                                 </div>
                             </div>
 
                             <div class="clm-section clm-section-pending" v-else>
-                                <div class="clm-pending-icon">⏳</div>
+                                <div class="clm-pending-icon">?</div>
                                 <div class="clm-pending-title">
                                     Attribution en cours
                                 </div>
                                 <div class="clm-pending-sub">
-                                    Un prestataire certifié va être attribué
+                                    Un prestataire certifi� va �tre attribu�
                                     automatiquement sous peu.
                                 </div>
                             </div>
@@ -473,7 +507,7 @@
 
                         <!-- Actions -->
                         <div class="clm-actions-col">
-                            <!-- ══ Devis soumis — EN ATTENTE D'APPROBATION ══ -->
+                            <!-- -- Devis soumis � EN ATTENTE D'APPROBATION -- -->
                             <div
                                 class="clm-action-block clm-action-quote"
                                 v-if="
@@ -483,15 +517,15 @@
                                     activeMission.quote.status !== 'rejected'
                                 "
                             >
-                                <!-- En-tête devis -->
+                                <!-- En-t�te devis -->
                                 <div class="clm-quote-header">
                                     <div class="clm-quote-header-left">
                                         <div class="clm-action-quote-icon">
-                                            📄
+                                            ??
                                         </div>
                                         <div>
                                             <div class="clm-action-quote-title">
-                                                Devis à approuver
+                                                Devis � approuver
                                             </div>
                                             <div
                                                 class="clm-quote-version"
@@ -500,7 +534,7 @@
                                                         .version > 1
                                                 "
                                             >
-                                                Révision v{{
+                                                R�vision v{{
                                                     activeMission.quote.version
                                                 }}
                                             </div>
@@ -509,9 +543,9 @@
                                     <button
                                         class="clm-btn-download"
                                         @click="downloadQuotePdf(activeMission)"
-                                        title="Télécharger PDF"
+                                        title="T�l�charger PDF"
                                     >
-                                        ⬇ PDF
+                                        ? PDF
                                     </button>
                                 </div>
 
@@ -521,7 +555,7 @@
                                     v-if="activeMission.quote.diagnosis"
                                 >
                                     <div class="clm-quote-diag-label">
-                                        🔍 Diagnostic
+                                        ?? Diagnostic
                                     </div>
                                     <div class="clm-quote-diag-text">
                                         {{ activeMission.quote.diagnosis }}
@@ -537,8 +571,8 @@
                                     "
                                 >
                                     <div class="clm-quote-lines-head">
-                                        <span class="ql-desc">Désignation</span>
-                                        <span class="ql-qty">Qté</span>
+                                        <span class="ql-desc">D�signation</span>
+                                        <span class="ql-qty">Qt�</span>
                                         <span class="ql-pu">P.U.</span>
                                         <span class="ql-total">Total</span>
                                     </div>
@@ -554,7 +588,7 @@
                                                 :class="item.type"
                                                 >{{
                                                     quoteItemTypeLabel(
-                                                        item.type,
+                                                        item.type
                                                     )
                                                 }}</span
                                             >
@@ -568,7 +602,7 @@
                                         }}</span>
                                         <span class="ql-total">{{
                                             formatPrice(
-                                                item.quantity * item.unit_price,
+                                                item.quantity * item.unit_price
                                             )
                                         }}</span>
                                     </div>
@@ -579,7 +613,7 @@
                                     <span>Total devis</span>
                                     <strong class="clm-quote-total-amount">{{
                                         formatPrice(
-                                            activeMission.quote.amount_incl_tax,
+                                            activeMission.quote.amount_incl_tax
                                         )
                                     }}</strong>
                                 </div>
@@ -596,10 +630,10 @@
                                         "
                                         :disabled="actionLoading"
                                     >
-                                        ✗ Refuser
+                                        ? Refuser
                                     </button>
                                     <button
-                                        class="clm-btn clm-btn-orange"
+                                        class="clm-btn clm-btn-green"
                                         @click="approveQuote(activeMission)"
                                         :disabled="actionLoading"
                                     >
@@ -607,12 +641,12 @@
                                             class="clm-spinner"
                                             v-if="actionLoading"
                                         ></div>
-                                        <span v-else>✓ Approuver</span>
+                                        <span v-else>? Approuver</span>
                                     </button>
                                 </div>
                             </div>
 
-                            <!-- ══ Devis refusé — bloc informatif ══ -->
+                            <!-- -- Devis refus� � bloc informatif -- -->
                             <div
                                 class="clm-action-block clm-action-quote-rejected"
                                 v-if="
@@ -622,21 +656,21 @@
                                     activeMission.quote.status === 'rejected'
                                 "
                             >
-                                <div class="clm-qr-icon">❌</div>
-                                <div class="clm-qr-title">Devis refusé</div>
+                                <div class="clm-qr-icon">?</div>
+                                <div class="clm-qr-title">Devis refus�</div>
                                 <div
                                     class="clm-qr-reason"
                                     v-if="activeMission.reported_issue"
                                 >
                                     Motif transmis :
                                     <em
-                                        >«
-                                        {{ activeMission.reported_issue }} »</em
+                                        >�
+                                        {{ activeMission.reported_issue }} �</em
                                     >
                                 </div>
                                 <div class="clm-qr-sub">
-                                    Le prestataire a été notifié. Il peut vous
-                                    soumettre un nouveau devis révisé ou
+                                    Le prestataire a �t� notifi�. Il peut vous
+                                    soumettre un nouveau devis r�vis� ou
                                     abandonner la mission.
                                 </div>
                             </div>
@@ -648,13 +682,13 @@
                                     activeMission.status === 'awaiting_confirm'
                                 "
                             >
-                                <div class="clm-action-confirm-icon">🔨</div>
+                                <div class="clm-action-confirm-icon">??</div>
                                 <div class="clm-action-confirm-title">
-                                    Travaux terminés
+                                    Travaux termin�s
                                 </div>
                                 <div class="clm-action-confirm-sub">
-                                    Le prestataire a marqué l'intervention comme
-                                    terminée. Confirmez-vous la fin des travaux
+                                    Le prestataire a marqu� l'intervention comme
+                                    termin�e. Confirmez-vous la fin des travaux
                                     ?
                                 </div>
                                 <div class="clm-action-row">
@@ -662,10 +696,10 @@
                                         class="clm-btn clm-btn-ghost"
                                         @click="openSignalProblem"
                                     >
-                                        ⚠️ Signaler un problème
+                                        ?? Signaler un probl�me
                                     </button>
                                     <button
-                                        class="clm-btn clm-btn-orange"
+                                        class="clm-btn clm-btn-green"
                                         @click="
                                             confirmCompletion(activeMission)
                                         "
@@ -675,33 +709,74 @@
                                             class="clm-spinner"
                                             v-if="actionLoading"
                                         ></div>
-                                        <span v-else>✓ Confirmer la fin</span>
+                                        <span v-else>? Confirmer la fin</span>
                                     </button>
                                 </div>
                             </div>
 
-                            <!-- Paiement MoMo — visible dès completed, même après avis -->
+                            <!-- Paiement MoMo � visible d�s completed, m�me apr�s avis -->
                             <div
                                 class="clm-action-block clm-action-pay"
                                 v-if="
-                                    activeMission.payment_unlocked ||
-                                    activeMission.status === 'completed'
+                                    !activeMission.paid_at &&
+                                    (activeMission.payment_unlocked ||
+                                        activeMission.status === 'completed')
                                 "
                             >
-                                <div class="clm-action-pay-icon">💸</div>
+                                <div class="clm-action-pay-icon">??</div>
                                 <div class="clm-action-pay-title">
                                     Paiement requis
                                 </div>
                                 <div class="clm-action-pay-sub">
-                                    Choisissez votre réseau et procédez au
-                                    paiement mobile pour clôturer la mission.
+                                    Choisissez votre r�seau et proc�dez au
+                                    paiement mobile pour cl�turer la mission.
                                 </div>
                                 <button
                                     class="clm-btn clm-btn-orange clm-btn-full"
                                     @click="openMomoModal(activeMission)"
                                 >
-                                    💳 Payer via Mobile Money →
+                                    ?? Payer via Mobile Money ?
                                 </button>
+                            </div>
+
+                            <!-- Re�u � mission pay�e -->
+                            <div
+                                class="clm-action-block clm-action-receipt"
+                                v-if="activeMission.paid_at"
+                            >
+                                <div class="clm-action-pay-icon">??</div>
+                                <div class="clm-action-pay-title">
+                                    Mission cl�tur�e &amp; pay�e
+                                </div>
+                                <div class="clm-action-pay-sub">
+                                    Le paiement a �t� confirm�.
+                                </div>
+                                <a
+                                    :href="routes.receipt.replace('{id}', activeMission.id)"
+                                    target="_blank"
+                                    class="clm-btn clm-btn-green clm-btn-full"
+                                    style="text-decoration:none;display:block;text-align:center"
+                                >
+                                    ?? T�l�charger le re�u
+                                </a>
+                            </div>
+
+                            <!-- Facture disponible d�s que le devis est approuv� -->
+                            <div
+                                class="clm-action-block clm-action-invoice"
+                                v-if="['order_placed','awaiting_confirm','completed','closed'].includes(activeMission.status)"
+                            >
+                                <div class="clm-invoice-icon">??</div>
+                                <div class="clm-invoice-title">Facture disponible</div>
+                                <div class="clm-invoice-sub">Votre devis a �t� approuv�. T�l�chargez votre facture.</div>
+                                <a
+                                    :href="routes.invoice.replace('{id}', activeMission.id)"
+                                    target="_blank"
+                                    class="clm-btn clm-btn-green clm-btn-full"
+                                    style="text-decoration:none;display:block;text-align:center"
+                                >
+                                    ?? T�l�charger la facture
+                                </a>
                             </div>
 
                             <!-- Avis prestataire (statut completed) -->
@@ -710,14 +785,14 @@
                                 v-if="activeMission.status === 'completed'"
                             >
                                 <div class="clm-review-header">
-                                    <span class="clm-review-icon">⭐</span>
+                                    <span class="clm-review-icon">?</span>
                                     <div>
                                         <div class="clm-review-title">
-                                            Évaluez le prestataire
+                                            �valuez le prestataire
                                         </div>
                                         <div class="clm-review-sub">
-                                            Votre avis aide la communauté
-                                            Resotravo
+                                            Votre avis aide la communaut�
+                                            Mesotravo
                                         </div>
                                     </div>
                                 </div>
@@ -732,7 +807,7 @@
                                         @click="reviewModal.rating = n"
                                         type="button"
                                     >
-                                        ★
+                                        ?
                                     </button>
                                     <span
                                         class="clm-star-label"
@@ -744,7 +819,7 @@
                                 <textarea
                                     class="clm-review-textarea"
                                     v-model="reviewModal.comment"
-                                    placeholder="Décrivez votre expérience (optionnel)…"
+                                    placeholder="D�crivez votre exp�rience (optionnel)�"
                                     rows="3"
                                     maxlength="500"
                                 ></textarea>
@@ -764,7 +839,7 @@
                                         v-if="reviewModal.loading"
                                     ></div>
                                     <span v-else
-                                        >✓ Soumettre l'avis et clôturer la
+                                        >? Soumettre l'avis et cl�turer la
                                         mission</span
                                     >
                                 </button>
@@ -774,7 +849,7 @@
                                         @click="closeMissionOnly(activeMission)"
                                         :disabled="reviewModal.loading"
                                     >
-                                        Passer et clôturer sans avis →
+                                        Passer et cl�turer sans avis ?
                                     </button>
                                 </div>
                             </div>
@@ -788,7 +863,7 @@
                                     <div class="clm-status-info-title">
                                         {{
                                             statusInfoTitle(
-                                                activeMission.status,
+                                                activeMission.status
                                             )
                                         }}
                                     </div>
@@ -800,7 +875,7 @@
                                 </div>
                             </div>
 
-                            <!-- ── Bannière sécurité : prestataire en route / sur place ── -->
+                            <!-- -- Banni�re s�curit� : prestataire en route / sur place -- -->
                             <div
                                 class="clm-security-banner"
                                 v-if="
@@ -811,36 +886,82 @@
                                     ].includes(activeMission.status)
                                 "
                             >
-                                <div class="clm-security-icon">🛡️</div>
+                                <div class="clm-security-icon">???</div>
                                 <div class="clm-security-body">
                                     <div class="clm-security-title">
-                                        Recommandations de sécurité
+                                        Recommandations de s�curit�
                                     </div>
                                     <ul class="clm-security-list">
                                         <li>
-                                            ✅ Vérifiez l'identité du
-                                            prestataire à son arrivée
+                                            ? V�rifiez l'identit� du
+                                            prestataire � son arriv�e
                                         </li>
                                         <li>
-                                            🏅 Contrôlez son badge
+                                            ?? Contr�lez son badge
                                             <strong
-                                                >Profil Certifié
-                                                Resotravo</strong
+                                                >Profil Certifi�
+                                                Mesotravo</strong
                                             >
                                         </li>
                                         <li>
-                                            🔒 N'effectuez aucun paiement en
+                                            ?? N'effectuez aucun paiement en
                                             dehors de la plateforme
                                         </li>
                                         <li>
-                                            💬 Tout contact passe par la
-                                            messagerie intégrée
+                                            ?? Tout contact passe par la
+                                            messagerie int�gr�e
                                         </li>
                                     </ul>
                                     <div class="clm-security-note">
-                                        Tout paiement hors-plateforme dégage
-                                        Resotravo de toute responsabilité.
+                                        Tout paiement hors-plateforme d�gage
+                                        Mesotravo de toute responsabilit�.
                                     </div>
+                                </div>
+                            </div>
+
+                            <!-- -- Devis approuv� � consulter apr�s approbation -- -->
+                            <div
+                                class="clm-action-block clm-action-quote-approved"
+                                v-if="
+                                    activeMission.quote &&
+                                    activeMission.quote.status !== 'draft' &&
+                                    activeMission.status !== 'quote_submitted'
+                                "
+                            >
+                                <div class="clm-qa-header">
+                                    <div class="clm-qa-left">
+                                        <span class="clm-qa-icon">??</span>
+                                        <div>
+                                            <div class="clm-qa-title">
+                                                Devis
+                                                <span
+                                                    v-if="
+                                                        activeMission.quote
+                                                            .version > 1
+                                                    "
+                                                    >v{{
+                                                        activeMission.quote
+                                                            .version
+                                                    }}</span
+                                                >
+                                            </div>
+                                            <div class="clm-qa-amount">
+                                                {{
+                                                    formatPrice(
+                                                        activeMission.quote
+                                                            .amount_incl_tax
+                                                    )
+                                                }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button
+                                        class="clm-btn-download"
+                                        @click="downloadQuotePdf(activeMission)"
+                                        title="Consulter / T�l�charger PDF"
+                                    >
+                                        ? PDF
+                                    </button>
                                 </div>
                             </div>
 
@@ -861,7 +982,7 @@
                                     ].includes(activeMission.status)
                                 "
                             >
-                                💬 Contacter le prestataire
+                                ?? Contacter le prestataire
                                 <span
                                     class="clm-chat-badge"
                                     v-if="unreadByMission[activeMission.id]"
@@ -876,7 +997,7 @@
             </div>
         </div>
 
-        <!-- ══════════════ MODAL NOUVELLE MISSION ══════════════ -->
+        <!-- -------------- MODAL NOUVELLE MISSION -------------- -->
         <div
             class="clm-modal-overlay"
             v-if="showNewMission"
@@ -884,7 +1005,7 @@
         >
             <div class="clm-modal clm-modal-lg">
                 <div class="clm-modal-header">
-                    <h3>➕ Nouvelle mission</h3>
+                    <h3>? Nouvelle commande</h3>
                     <button
                         class="clm-modal-close"
                         @click="showNewMission = false"
@@ -893,45 +1014,69 @@
                     </button>
                 </div>
                 <div class="clm-modal-body">
+                    <!-- Quand souhaitez-vous le service ? -->
                     <div class="clm-field">
                         <label
-                            >Type de lieu <span class="clm-req">*</span></label
+                            >Quand souhaitez-vous le service ?
+                            <span class="clm-req">*</span></label
                         >
                         <div class="clm-radio-row">
                             <label
                                 class="clm-radio-opt"
                                 :class="{
-                                    selected:
-                                        form.location_type === 'residential',
+                                    selected: form.schedule_type === 'now',
                                 }"
                             >
                                 <input
                                     type="radio"
-                                    v-model="form.location_type"
-                                    value="residential"
+                                    v-model="form.schedule_type"
+                                    value="now"
                                 />
-                                🏠 Domicile
+                                &#9889; Maintenant
                             </label>
                             <label
                                 class="clm-radio-opt"
-                                v-if="isCompany"
                                 :class="{
-                                    selected: form.location_type === 'business',
+                                    selected: form.schedule_type === 'later',
                                 }"
                             >
                                 <input
                                     type="radio"
-                                    v-model="form.location_type"
-                                    value="business"
+                                    v-model="form.schedule_type"
+                                    value="later"
                                 />
-                                🏢 Entreprise
+                                &#128197; Planifier pour plus tard
                             </label>
+                        </div>
+                    </div>
+                    <!-- Date & Heure si planifi� -->
+                    <div
+                        class="clm-field"
+                        v-if="form.schedule_type === 'later'"
+                        style="display: flex; gap: 12px"
+                    >
+                        <div style="flex: 1">
+                            <label>Date <span class="clm-req">*</span></label>
+                            <input
+                                class="clm-input"
+                                type="date"
+                                v-model="form.reservation_day"
+                                :min="todayDate"
+                            />
+                        </div>
+                        <div style="flex: 1">
+                            <label>Heure <span class="clm-req">*</span></label>
+                            <input
+                                class="clm-input"
+                                type="time"
+                                v-model="form.reservation_time"
+                            />
                         </div>
                     </div>
                     <div class="clm-field">
                         <label>Prestation <span class="clm-req">*</span></label>
                         <select class="clm-input" v-model="form.service">
-                            <option value="">Sélectionner…</option>
+                            <option value="">S�lectionner�</option>
                             <option
                                 v-for="s in services"
                                 :key="s.value"
@@ -949,7 +1094,7 @@
                             class="clm-input clm-textarea"
                             v-model="form.description"
                             rows="4"
-                            placeholder="Décrivez votre besoin en détail (min. 20 caractères)…"
+                            placeholder="D�crivez votre besoin en d�tail (min. 20 caract�res)�"
                         ></textarea>
                         <div
                             class="clm-char-count"
@@ -958,8 +1103,37 @@
                             {{ form.description.length }} / 2000
                         </div>
                     </div>
+                    <!-- Adresse d'intervention -->
                     <div class="clm-field">
                         <label>Adresse <span class="clm-req">*</span></label>
+                        <div class="clm-addr-modes">
+                            <label
+                                class="clm-addr-mode-label"
+                                :class="{ active: address_mode === 'manual' }"
+                            >
+                                <input
+                                    type="radio"
+                                    v-model="address_mode"
+                                    value="manual"
+                                />
+                                ?? Saisir manuellement
+                            </label>
+                            <label
+                                class="clm-addr-mode-label"
+                                :class="{ active: address_mode === 'geo' }"
+                            >
+                                <input
+                                    type="radio"
+                                    v-model="address_mode"
+                                    value="geo"
+                                />
+                                ?? G�olocalisation
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Saisie manuelle -->
+                    <div class="clm-field" v-if="address_mode === 'manual'">
                         <input
                             class="clm-input"
                             type="text"
@@ -967,37 +1141,30 @@
                             placeholder="Ex : Akpakpa, Cotonou"
                         />
                     </div>
-                    <!-- Géolocalisation -->
-                    <button
-                        class="clm-btn-geo"
-                        type="button"
-                        @click="askGeo"
-                        :disabled="geoLoading"
-                        v-if="!geoOk"
-                    >
-                        <div
-                            class="clm-spinner clm-spinner-sm"
-                            v-if="geoLoading"
-                        ></div>
-                        <span v-else>📍</span>
-                        {{
-                            geoLoading
-                                ? "Localisation…"
-                                : "Utiliser ma position actuelle"
-                        }}
-                    </button>
-                    <div class="clm-geo-ok" v-if="geoOk">
-                        <span>📍</span>
-                        <span class="clm-geo-ok-addr">{{
-                            geoAddress || "Position enregistrée"
-                        }}</span>
-                        <button class="clm-geo-reset" @click="resetGeo">
-                            ✕
+
+                    <!-- G�olocalisation : carte -->
+                    <div v-if="address_mode === 'geo'" class="clm-field">
+                        <button
+                            class="clm-btn-geo"
+                            type="button"
+                            @click="openMapModal"
+                            v-if="!geoOk"
+                        >
+                            ??? Ouvrir la carte
                         </button>
+                        <div class="clm-geo-ok" v-if="geoOk">
+                            <span>??</span>
+                            <span class="clm-geo-ok-addr">{{
+                                form.address
+                            }}</span>
+                            <button class="clm-geo-reset" @click="resetGeo">
+                                ?
+                            </button>
+                        </div>
                     </div>
                     <!-- Images optionnelles -->
                     <div class="clm-field">
-                        <label>Photos (optionnel, max 5 × 10 Mo)</label>
+                        <label>Photos (optionnel, max 5 � 10 Mo)</label>
                         <div class="clm-img-upload-row">
                             <label
                                 class="clm-img-add-btn"
@@ -1011,7 +1178,7 @@
                                     ref="imgInput"
                                     @change="onImagesSelect"
                                 />
-                                <span>＋ Photo</span>
+                                <span>+ Photo</span>
                             </label>
                             <div
                                 class="clm-img-thumb"
@@ -1023,7 +1190,7 @@
                                     class="clm-img-remove"
                                     @click.prevent="removeImage(i)"
                                 >
-                                    ✕
+                                    ?
                                 </button>
                             </div>
                         </div>
@@ -1040,18 +1207,136 @@
                         Annuler
                     </button>
                     <button
-                        class="clm-btn clm-btn-orange"
-                        @click="submitMission"
+                        class="clm-btn clm-btn-green"
+                        @click="showPublishConfirm = true"
                         :disabled="submitting"
                     >
-                        <div class="clm-spinner" v-if="submitting"></div>
-                        <span v-else>Publier la mission →</span>
+                        Publier la mission ?
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- ══════════════ MODAL SIGNALEMENT ══════════════ -->
+        <!-- -------------- MODAL CONFIRMATION PUBLICATION -------------- -->
+        <div class="clm-modal-overlay" v-if="showPublishConfirm" @click.self="showPublishConfirm = false">
+            <div class="clm-modal" style="max-width:480px;width:95vw">
+                <div class="clm-modal-header">
+                    <h3>?? Informations importantes</h3>
+                    <button class="clm-modal-close" @click="showPublishConfirm = false">&#215;</button>
+                </div>
+                <div class="clm-modal-body" style="text-align:center;padding:28px 24px">
+                    <div style="font-size:2.5rem;margin-bottom:16px">??</div>
+                    <p style="font-size:1rem;font-weight:700;color:#1c1412;margin-bottom:12px">
+                        Frais de diagnostic
+                    </p>
+                    <p style="font-size:0.9rem;color:#4b5563;line-height:1.6;margin-bottom:20px">
+                        Une fois le prestataire arriv� chez vous, des <strong>frais de diagnostic de
+                        {{ diagnosticFee.toLocaleString('fr-FR') }} FCFA</strong> vous seront factur�s
+                        avant qu'il commence l'intervention.
+                    </p>
+                    <p style="font-size:0.82rem;color:#9ca3af;margin-bottom:24px">
+                        Ces frais couvrent le d�placement et l'�valuation initiale de la mission.
+                    </p>
+                    <div style="display:flex;gap:12px;justify-content:center">
+                        <button class="clm-btn clm-btn-ghost" @click="showPublishConfirm = false">Annuler</button>
+                        <button class="clm-btn clm-btn-green" @click="showPublishConfirm = false; submitMission()" :disabled="submitting">
+                            <div class="clm-spinner" v-if="submitting"></div>
+                            <span v-else>J'ai compris, publier ?</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- -------------- MODAL CARTE LEAFLET -------------- -->
+        <div
+            class="clm-modal-overlay"
+            v-if="showMapModal"
+            @click.self="closeMapModal"
+        >
+            <div class="clm-modal" style="max-width: 660px; width: 95vw">
+                <div class="clm-modal-header">
+                    <h3>??? Choisir la position</h3>
+                    <button class="clm-modal-close" @click="closeMapModal">
+                        &#215;
+                    </button>
+                </div>
+                <div class="clm-modal-body" style="padding-bottom: 0">
+                    <div class="clm-map-search">
+                        <input
+                            class="clm-input clm-map-search-input"
+                            type="text"
+                            v-model="mapSearch"
+                            placeholder="Rechercher une adresse, un quartier�"
+                            @keydown.enter.prevent="searchOnMap"
+                        />
+                        <button
+                            class="clm-btn clm-btn-orange clm-map-search-btn"
+                            type="button"
+                            @click="searchOnMap"
+                        >
+                            ?? Rechercher
+                        </button>
+                    </div>
+                    <p
+                        style="
+                            font-size: 12.5px;
+                            color: var(--grm);
+                            margin-bottom: 8px;
+                        "
+                    >
+                        Cliquez sur la carte ou faites glisser le marqueur pour
+                        ajuster la position.
+                    </p>
+                    <div
+                        id="clm-leaflet-map"
+                        style="
+                            height: 440px;
+                            width: 100%;
+                            border-radius: 10px;
+                            overflow: hidden;
+                        "
+                    ></div>
+                    <div
+                        v-if="mapAddress"
+                        style="
+                            margin-top: 10px;
+                            font-size: 13px;
+                            color: var(--dk);
+                        "
+                    >
+                        ?? <strong>{{ mapAddress }}</strong>
+                    </div>
+                    <div
+                        v-if="geoLoading"
+                        style="
+                            margin-top: 8px;
+                            font-size: 13px;
+                            color: var(--grm);
+                        "
+                    >
+                        ? Localisation en cours�
+                    </div>
+                </div>
+                <div class="clm-modal-footer">
+                    <button
+                        class="clm-btn clm-btn-ghost"
+                        @click="closeMapModal"
+                    >
+                        Annuler
+                    </button>
+                    <button
+                        class="clm-btn clm-btn-green"
+                        @click="validatePosition"
+                        :disabled="!mapLat"
+                    >
+                        ? Valider cette position
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- -------------- MODAL SIGNALEMENT -------------- -->
         <div
             class="clm-modal-overlay"
             v-if="signalModal.visible"
@@ -1059,7 +1344,7 @@
         >
             <div class="clm-modal">
                 <div class="clm-modal-header">
-                    <h3>⚠️ Signaler un problème</h3>
+                    <h3>?? Signaler un probl�me</h3>
                     <button
                         class="clm-modal-close"
                         @click="signalModal.visible = false"
@@ -1076,7 +1361,7 @@
                             line-height: 1.6;
                         "
                     >
-                        Décrivez le problème rencontré. Un agent Resotravo vous
+                        D�crivez le probl�me rencontr�. Un agent Mesotravo vous
                         contactera sous 24h.
                     </p>
                     <label class="clm-form-label"
@@ -1086,7 +1371,7 @@
                         class="clm-input clm-textarea"
                         v-model="signalModal.reason"
                         rows="3"
-                        placeholder="Ex : Travaux non terminés, matériaux défectueux…"
+                        placeholder="Ex : Travaux non termin�s, mat�riaux d�fectueux�"
                     ></textarea>
                 </div>
                 <div class="clm-modal-footer">
@@ -1107,13 +1392,13 @@
                             class="clm-spinner"
                             v-if="signalModal.loading"
                         ></div>
-                        <span v-else>⚠️ Signaler</span>
+                        <span v-else>?? Signaler</span>
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- ══════════════ MODAL REFUS DEVIS ══════════════ -->
+        <!-- -------------- MODAL REFUS DEVIS -------------- -->
         <div
             class="clm-modal-overlay"
             v-if="rejectQuoteModal.visible"
@@ -1121,7 +1406,7 @@
         >
             <div class="clm-modal">
                 <div class="clm-modal-header">
-                    <h3>✗ Refuser le devis</h3>
+                    <h3>? Refuser le devis</h3>
                     <button
                         class="clm-modal-close"
                         @click="rejectQuoteModal.visible = false"
@@ -1139,7 +1424,7 @@
                         "
                     >
                         Expliquez au prestataire pourquoi vous refusez ce devis.
-                        Il pourra le réviser et vous le soumettre à nouveau.
+                        Il pourra le r�viser et vous le soumettre � nouveau.
                     </p>
                     <div class="clm-rq-options">
                         <label
@@ -1164,14 +1449,14 @@
                         style="margin-top: 10px"
                     >
                         <label class="clm-form-label"
-                            >Précisez votre motif
+                            >Pr�cisez votre motif
                             <span class="clm-req">*</span></label
                         >
                         <textarea
                             class="clm-input clm-textarea"
                             v-model="rejectQuoteModal.customReason"
                             rows="3"
-                            placeholder="Ex : Le prix des pièces semble trop élevé…"
+                            placeholder="Ex : Le prix des pi�ces semble trop �lev�"
                         ></textarea>
                     </div>
                 </div>
@@ -1196,13 +1481,13 @@
                             class="clm-spinner"
                             v-if="rejectQuoteModal.loading"
                         ></div>
-                        <span v-else>✗ Confirmer le refus</span>
+                        <span v-else>? Confirmer le refus</span>
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- ══════════════ CHAT MODAL ══════════════ -->
+        <!-- -------------- CHAT MODAL -------------- -->
         <mission-chat-modal
             v-if="chatMissionId"
             :mission-id="chatMissionId"
@@ -1233,125 +1518,382 @@
             </div>
         </div>
 
-        <!-- ══════════════ MODAL PAIEMENT MOMO ══════════════ -->
+        <!-- -------------- MODAL PAIEMENT MOMO -------------- -->
         <div
             class="clm-modal-overlay"
             v-if="momoModal.visible"
-            @click.self="momoModal.visible = false"
+            @click.self="
+                momoModal.step === 'form' && (momoModal.visible = false)
+            "
         >
             <div class="clm-modal">
                 <div class="clm-modal-header">
                     <div>
-                        <h3>💳 Paiement Mobile Money</h3>
+                        <h3>?? Paiement Mobile Money</h3>
                         <div class="clm-modal-sub">
-                            Mission #{{ momoModal.mission?.id }} —
+                            Mission #{{ momoModal.mission?.id }} �
                             {{ formatPrice(momoModal.mission?.total_amount) }}
                         </div>
                     </div>
                     <button
                         class="clm-modal-close"
                         @click="momoModal.visible = false"
+                        v-if="momoModal.step !== 'polling'"
                     >
                         &#215;
                     </button>
                 </div>
-                <div class="clm-modal-body">
-                    <div class="clm-field">
-                        <label class="clm-form-label"
-                            >Réseau Mobile Money
-                            <span class="clm-req">*</span></label
+
+                <!-- -- Step: form -- -->
+                <template v-if="momoModal.step === 'form'">
+                    <div class="clm-modal-body">
+                        <div class="clm-momo-step-hint">
+                            ?? Choisissez d'abord votre r�seau, puis entrez votre num�ro de t�l�phone.
+                        </div>
+                        <div class="clm-field">
+                            <label class="clm-form-label">
+                                1. R�seau Mobile Money <span class="clm-req">*</span>
+                            </label>
+                            <select class="clm-input" v-model="momoModal.network">
+                                <option value="" disabled>-- S�lectionnez votre r�seau --</option>
+                                <option v-for="net in momoNetworks" :key="net.value" :value="net.value">
+                                    {{ net.label }}
+                                </option>
+                            </select>
+                        </div>
+                        <div class="clm-field">
+                            <label class="clm-form-label">
+                                2. Num�ro de t�l�phone <span class="clm-req">*</span>
+                            </label>
+                            <input
+                                class="clm-input"
+                                type="tel"
+                                v-model="momoModal.phone"
+                                placeholder="Ex : 97 12 34 56"
+                                maxlength="20"
+                                :disabled="!momoModal.network"
+                            />
+                            <div class="clm-momo-hint" v-if="momoModal.network">
+                                Entrez le num�ro associ� � votre compte {{ momoNetworks.find(n => n.value === momoModal.network)?.label }}.
+                            </div>
+                            <div class="clm-momo-hint" v-else>
+                                S�lectionnez d'abord votre r�seau ci-dessus.
+                            </div>
+                        </div>
+                        <div
+                            class="clm-momo-recap"
+                            v-if="momoModal.network && momoModal.phone"
                         >
-                        <div class="clm-momo-networks">
-                            <button
-                                type="button"
-                                class="clm-momo-network"
-                                v-for="net in momoNetworks"
-                                :key="net.value"
-                                :class="{
-                                    active: momoModal.network === net.value,
-                                }"
-                                @click="momoModal.network = net.value"
-                            >
-                                <span class="clm-momo-net-icon">{{
-                                    net.icon
-                                }}</span>
-                                <span class="clm-momo-net-label">{{
-                                    net.label
-                                }}</span>
-                            </button>
+                            <div class="clm-momo-recap-row">
+                                <span>R�seau</span>
+                                <strong>{{
+                                    momoNetworks.find(
+                                        (n) => n.value === momoModal.network
+                                    )?.label
+                                }}</strong>
+                            </div>
+                            <div class="clm-momo-recap-row">
+                                <span>Num�ro</span>
+                                <strong>{{ momoModal.phone }}</strong>
+                            </div>
+                            <div class="clm-momo-recap-row">
+                                <span>Montant</span>
+                                <strong class="clm-momo-amount">{{
+                                    formatPrice(momoModal.mission?.total_amount)
+                                }}</strong>
+                            </div>
+                        </div>
+                        <div class="clm-momo-warning">
+                            ?? Vous recevrez une demande de paiement sur votre
+                            t�l�phone. Confirmez avec votre code PIN.
                         </div>
                     </div>
-                    <div class="clm-field">
-                        <label class="clm-form-label"
-                            >Numéro de téléphone
-                            <span class="clm-req">*</span></label
+                    <div class="clm-modal-footer">
+                        <button
+                            class="clm-btn clm-btn-ghost"
+                            @click="momoModal.visible = false"
                         >
-                        <input
-                            class="clm-input"
-                            type="tel"
-                            v-model="momoModal.phone"
-                            placeholder="Ex : 97 12 34 56"
-                            maxlength="20"
-                        />
-                        <div class="clm-momo-hint">
-                            Entrez le numéro associé à votre compte
-                            {{
-                                momoModal.network
-                                    ? momoNetworks.find(
-                                          (n) => n.value === momoModal.network,
-                                      )?.label
-                                    : "Mobile Money"
-                            }}.
-                        </div>
+                            Annuler
+                        </button>
+                        <button
+                            class="clm-btn clm-btn-orange"
+                            @click="submitMomo"
+                            :disabled="
+                                !momoModal.network ||
+                                !momoModal.phone.trim() ||
+                                momoModal.loading
+                            "
+                        >
+                            <div
+                                class="clm-spinner"
+                                v-if="momoModal.loading"
+                            ></div>
+                            <span v-else>? Confirmer le paiement</span>
+                        </button>
                     </div>
-                    <div
-                        class="clm-momo-recap"
-                        v-if="momoModal.network && momoModal.phone"
-                    >
-                        <div class="clm-momo-recap-row">
-                            <span>Réseau</span>
+                </template>
+
+                <!-- -- Step: polling -- -->
+                <template v-if="momoModal.step === 'polling'">
+                    <div class="clm-modal-body clm-momo-waiting">
+                        <div class="clm-momo-pulse">??</div>
+                        <div class="clm-momo-wait-title">
+                            Confirmez sur votre t�l�phone
+                        </div>
+                        <p
+                            style="
+                                color: #6b7280;
+                                font-size: 13.5px;
+                                margin-bottom: 12px;
+                            "
+                        >
+                            Ouvrez le menu Mobile Money et saisissez votre code
+                            PIN pour valider le paiement de
                             <strong>{{
-                                momoNetworks.find(
-                                    (n) => n.value === momoModal.network,
-                                )?.label
-                            }}</strong>
-                        </div>
-                        <div class="clm-momo-recap-row">
-                            <span>Numéro</span>
-                            <strong>{{ momoModal.phone }}</strong>
-                        </div>
-                        <div class="clm-momo-recap-row">
-                            <span>Montant</span>
-                            <strong class="clm-momo-amount">{{
                                 formatPrice(momoModal.mission?.total_amount)
-                            }}</strong>
+                            }}</strong
+                            >.
+                        </p>
+                        <div class="clm-momo-countdown">
+                            ? Expiration dans {{ momoModal.pollSecondsLeft }}s
                         </div>
+
+                        <div class="clm-momo-ussd-hint">
+                            Vous ne voyez pas la requ�te sur votre t�l�phone
+                            ?<br />
+                            Tapez ce code
+                            <strong>*880*2*1*0190003626#</strong> sur votre
+                            t�l�phone pour payer, puis cliquez sur le bouton
+                            ci-dessous.
+                        </div>
+                        <button
+                            class="clm-btn clm-btn-orange"
+                            style="margin-top: 12px; width: 100%"
+                            @click="momoModal.step = 'manual_pending'"
+                        >
+                            ? Paiement effectu�
+                        </button>
                     </div>
-                    <div class="clm-momo-warning">
-                        🔒 Vous recevrez une demande de paiement sur votre
-                        téléphone. Confirmez avec votre code PIN.
+                </template>
+
+                <!-- -- Step: manual_pending -- -->
+                <template v-if="momoModal.step === 'manual_pending'">
+                    <div class="clm-modal-body clm-momo-success">
+                        <div class="clm-momo-success-icon">??</div>
+                        <div class="clm-momo-success-title">
+                            Merci pour votre commande !
+                        </div>
+                        <p
+                            style="
+                                color: #6b7280;
+                                font-size: 13.5px;
+                                margin-bottom: 16px;
+                            "
+                        >
+                            Nous allons proc�der � la v�rification de votre
+                            paiement.<br />
+                            Vous serez notifi� d�s la confirmation.
+                        </p>
                     </div>
+                    <div class="clm-modal-footer">
+                        <button
+                            class="clm-btn clm-btn-ghost"
+                            @click="momoModal.visible = false"
+                        >
+                            Fermer
+                        </button>
+                    </div>
+                </template>
+
+                <!-- -- Step: success -- -->
+                <template v-if="momoModal.step === 'success'">
+                    <div class="clm-modal-body clm-momo-success">
+                        <div class="clm-momo-success-icon">??</div>
+                        <div class="clm-momo-success-title">
+                            Paiement confirm� !
+                        </div>
+                        <p
+                            style="
+                                color: #6b7280;
+                                font-size: 13.5px;
+                                margin-bottom: 16px;
+                            "
+                        >
+                            La mission est cl�tur�e avec succ�s. Merci pour
+                            votre confiance !
+                        </p>
+                        <a
+                            v-if="momoModal.receiptUrl"
+                            :href="momoModal.receiptUrl"
+                            target="_blank"
+                            class="clm-btn clm-btn-orange"
+                            style="text-decoration: none; display: inline-block"
+                        >
+                            ?? T�l�charger le re�u
+                        </a>
+                    </div>
+                    <div class="clm-modal-footer">
+                        <button
+                            class="clm-btn clm-btn-ghost"
+                            @click="momoModal.visible = false"
+                        >
+                            Fermer
+                        </button>
+                    </div>
+                </template>
+
+                <!-- -- Step: failed -- -->
+                <template v-if="momoModal.step === 'failed'">
+                    <div class="clm-modal-body clm-momo-error">
+                        <div class="clm-momo-error-icon">?</div>
+                        <div class="clm-momo-error-title">Paiement �chou�</div>
+                        <p
+                            style="
+                                color: #6b7280;
+                                font-size: 13.5px;
+                                margin-bottom: 16px;
+                            "
+                        >
+                            {{
+                                momoModal.errorMessage ||
+                                "Le paiement a �t� refus� ou a expir�."
+                            }}
+                        </p>
+                    </div>
+                    <div class="clm-modal-footer">
+                        <button
+                            class="clm-btn clm-btn-ghost"
+                            @click="momoModal.visible = false"
+                        >
+                            Annuler
+                        </button>
+                        <button
+                            class="clm-btn clm-btn-orange"
+                            @click="momoModal.step = 'form'"
+                        >
+                            ?? R�essayer
+                        </button>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- -------------- POPUP POST-MISSION CLIENT -------------- -->
+    <div
+        class="clm-modal-overlay"
+        v-if="completionPopup.visible"
+        @click.self="closeCompletionPopup"
+    >
+        <div class="clm-modal clm-modal-completion">
+            <div class="clm-completion-header">
+                <div class="clm-completion-icon">??</div>
+                <h3 class="clm-completion-title">Merci pour votre confiance !</h3>
+                <p class="clm-completion-sub">
+                    Votre intervention a bien �t� confirm�e. Aidez-nous � am�liorer Mesotravo.
+                </p>
+            </div>
+
+            <!-- Section 1 : �valuer le prestataire -->
+            <div class="clm-completion-section">
+                <div class="clm-completion-section-title">
+                    <span>?</span> �valuez votre prestataire
                 </div>
-                <div class="clm-modal-footer">
+                <div v-if="!completionPopup.reviewDone">
+                    <div class="clm-stars-wrap" style="justify-content:center; margin-bottom:10px">
+                        <button
+                            class="clm-star"
+                            v-for="n in 5"
+                            :key="n"
+                            :class="{ active: n <= completionPopup.rating }"
+                            @click="completionPopup.rating = n"
+                            type="button"
+                        >?</button>
+                        <span class="clm-star-label" v-if="completionPopup.rating">
+                            {{ starLabel(completionPopup.rating) }}
+                        </span>
+                    </div>
+                    <textarea
+                        class="clm-review-textarea"
+                        v-model="completionPopup.comment"
+                        placeholder="Un commentaire sur la prestation ? (optionnel)"
+                        rows="2"
+                        maxlength="500"
+                    ></textarea>
                     <button
-                        class="clm-btn clm-btn-ghost"
-                        @click="momoModal.visible = false"
+                        class="clm-btn clm-btn-green clm-btn-full"
+                        style="margin-top:8px"
+                        @click="submitReviewFromPopup"
+                        :disabled="!completionPopup.rating || completionPopup.loadingReview"
                     >
-                        Annuler
-                    </button>
-                    <button
-                        class="clm-btn clm-btn-orange"
-                        @click="submitMomo"
-                        :disabled="
-                            !momoModal.network ||
-                            !momoModal.phone.trim() ||
-                            momoModal.loading
-                        "
-                    >
-                        <div class="clm-spinner" v-if="momoModal.loading"></div>
-                        <span v-else>✓ Confirmer le paiement</span>
+                        <div class="clm-spinner" v-if="completionPopup.loadingReview"></div>
+                        <span v-else>? Envoyer mon avis</span>
                     </button>
                 </div>
+                <div class="clm-completion-done-badge" v-else>
+                    ? Avis envoy� � merci !
+                </div>
+            </div>
+
+            <!-- Section 2 : Recommander -->
+            <div class="clm-completion-section">
+                <div class="clm-completion-section-title">
+                    <span>??</span> Recommandez Mesotravo
+                </div>
+                <p class="clm-completion-section-body">
+                    Parlez de Mesotravo � vos proches, coll�gues et voisins.
+                    Ensemble, construisons le r�seau de confiance des artisans au B�nin ! ????
+                </p>
+                <div class="clm-share-btns">
+                    <a
+                        href="https://wa.me/?text=Je%20recommande%20Mesotravo%20pour%20trouver%20des%20prestataires%20certifi%C3%A9s%20%3A%20mesotravo.bj"
+                        target="_blank"
+                        class="clm-share-btn clm-share-wa"
+                    >
+                        <span>??</span> WhatsApp
+                    </a>
+                    <a
+                        href="https://www.facebook.com/sharer/sharer.php?u=mesotravo.bj"
+                        target="_blank"
+                        class="clm-share-btn clm-share-fb"
+                    >
+                        <span>??</span> Facebook
+                    </a>
+                </div>
+            </div>
+
+            <!-- Section 3 : Suggestions -->
+            <div class="clm-completion-section">
+                <div class="clm-completion-section-title">
+                    <span>??</span> Une suggestion pour nous ?
+                </div>
+                <div v-if="!completionPopup.suggestionSent">
+                    <textarea
+                        class="clm-review-textarea"
+                        v-model="completionPopup.suggestionText"
+                        placeholder="Comment pouvons-nous am�liorer votre exp�rience ?"
+                        rows="3"
+                        maxlength="2000"
+                    ></textarea>
+                    <button
+                        class="clm-btn clm-btn-orange clm-btn-full"
+                        style="margin-top:8px"
+                        @click="sendSuggestion"
+                        :disabled="!completionPopup.suggestionText.trim() || completionPopup.loadingSuggestion"
+                    >
+                        <div class="clm-spinner" v-if="completionPopup.loadingSuggestion"></div>
+                        <span v-else>?? Envoyer ma suggestion</span>
+                    </button>
+                </div>
+                <div class="clm-completion-done-badge" v-else>
+                    ? Suggestion envoy�e � merci !
+                </div>
+            </div>
+
+            <div class="clm-modal-footer" style="border-top: 1.5px solid var(--grl); margin-top: 4px;">
+                <button class="clm-btn clm-btn-ghost" @click="closeCompletionPopup">
+                    Fermer
+                </button>
             </div>
         </div>
     </div>
@@ -1368,6 +1910,7 @@ export default {
         user: { type: Object, required: true },
         clientProfile: { type: Object, default: () => ({}) },
         routes: { type: Object, required: true },
+        diagnosticFee: { type: Number, default: 5000 },
     },
 
     data() {
@@ -1398,10 +1941,20 @@ export default {
             imageFiles: [],
             imagesPreviews: [],
             missionLightbox: null,
+            address_mode: "manual",
+            showMapModal: false,
             geoLoading: false,
             geoOk: false,
-            geoAddress: "",
+            mapAddress: "",
+            mapSearch: "",
+            mapLat: null,
+            mapLng: null,
+            leafletMap: null,
+            leafletMarker: null,
             form: {
+                schedule_type: "now",
+                reservation_day: "",
+                reservation_time: "",
                 location_type: "residential",
                 service: "",
                 description: "",
@@ -1409,6 +1962,8 @@ export default {
                 latitude: null,
                 longitude: null,
             },
+
+            showPublishConfirm: false,
 
             // Signalement
             signalModal: { visible: false, reason: "", loading: false },
@@ -1423,11 +1978,26 @@ export default {
                 network: "",
                 phone: "",
                 loading: false,
+                polling: false,
+                step: "form",
+                pollSecondsLeft: 120,
+                receiptUrl: null,
+                errorMessage: "",
+                _pollInterval: null,
             },
             momoNetworks: [
-                { value: "mtn", label: "MTN Bénin", icon: "🟡" },
-                { value: "moov", label: "Moov Bénin", icon: "🔵" },
-                { value: "celtiis", label: "Celtiis", icon: "🟠" },
+                {
+                    value: "mtn", label: "MTN B�nin",
+                    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 36" width="72" height="36"><rect width="72" height="36" rx="6" fill="#FFCC00"/><text x="36" y="24" font-family="Arial Black,Arial" font-weight="900" font-size="16" fill="#000" text-anchor="middle" letter-spacing="1">MTN</text></svg>`,
+                },
+                {
+                    value: "moov", label: "Moov B�nin",
+                    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 36" width="72" height="36"><rect width="72" height="36" rx="6" fill="#005BAA"/><text x="36" y="22" font-family="Arial,sans-serif" font-weight="700" font-size="13" fill="#fff" text-anchor="middle">moov</text><text x="36" y="33" font-family="Arial,sans-serif" font-size="8" fill="#7fc4f5" text-anchor="middle">africa</text></svg>`,
+                },
+                {
+                    value: "celtiis", label: "Celtiis",
+                    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 36" width="72" height="36"><rect width="72" height="36" rx="6" fill="#E8500A"/><text x="36" y="24" font-family="Arial,sans-serif" font-weight="700" font-size="13" fill="#fff" text-anchor="middle">Celtiis</text></svg>`,
+                },
             ],
 
             // Refus devis
@@ -1439,20 +2009,20 @@ export default {
                 loading: false,
             },
             rejectReasons: [
-                { value: "price_too_high", label: "💰 Prix trop élevé" },
+                { value: "price_too_high", label: "?? Prix trop �lev�" },
                 {
                     value: "wrong_parts",
-                    label: "🔩 Pièces incorrectes ou inutiles",
+                    label: "?? Pi�ces incorrectes ou inutiles",
                 },
                 {
                     value: "labor_too_high",
-                    label: "🛠️ Main d'œuvre trop chère",
+                    label: "??? Main d'�uvre trop ch�re",
                 },
                 {
                     value: "missing_items",
-                    label: "📋 Des éléments manquent au devis",
+                    label: "?? Des �l�ments manquent au devis",
                 },
-                { value: "other", label: "✏️ Autre motif" },
+                { value: "other", label: "?? Autre motif" },
             ],
 
             toasts: [],
@@ -1464,30 +2034,30 @@ export default {
             perPage: 10,
 
             services: [
-                { value: "plomberie", label: "Plomberie", icon: "🔧" },
-                { value: "electricite", label: "Électricité", icon: "⚡" },
-                { value: "menuiserie", label: "Menuiserie", icon: "🪵" },
-                { value: "ferronnerie", label: "Ferronnerie", icon: "⚙️" },
-                { value: "frigoriste", label: "Frigoriste", icon: "❄️" },
-                { value: "mecanique", label: "Mécanique auto", icon: "🚗" },
-                { value: "nettoyage", label: "Nettoyage", icon: "🧹" },
-                { value: "peinture", label: "Peinture", icon: "🎨" },
-                { value: "maintenance", label: "Maintenance", icon: "🛠️" },
-                { value: "autre", label: "Autre", icon: "➕" },
+                { value: "plomberie", label: "Plomberie", icon: "??" },
+                { value: "electricite", label: "�lectricit�", icon: "?" },
+                { value: "menuiserie", label: "Menuiserie", icon: "??" },
+                { value: "ferronnerie", label: "Ferronnerie", icon: "??" },
+                { value: "frigoriste", label: "Frigoriste", icon: "??" },
+                { value: "mecanique", label: "M�canique auto", icon: "??" },
+                { value: "nettoyage", label: "Nettoyage", icon: "??" },
+                { value: "peinture", label: "Peinture", icon: "??" },
+                { value: "maintenance", label: "Maintenance", icon: "???" },
+                { value: "autre", label: "Autre", icon: "?" },
             ],
 
             tabs: [
                 { key: "all", label: "Toutes" },
-                { key: "active", label: "🔄 En cours" },
-                { key: "pending", label: "⏳ En attente" },
-                { key: "closed", label: "✅ Terminées" },
-                { key: "cancelled", label: "❌ Annulées" },
+                { key: "active", label: "?? En cours" },
+                { key: "pending", label: "? En attente" },
+                { key: "closed", label: "? Termin�es" },
+                { key: "cancelled", label: "? Annul�es" },
             ],
 
             workflowSteps: [
                 { step: 1, label: "En attente" },
-                { step: 2, label: "Proposée" },
-                { step: 3, label: "Acceptée" },
+                { step: 2, label: "Propos�e" },
+                { step: 3, label: "Accept�e" },
                 { step: 4, label: "Contact" },
                 { step: 5, label: "En route" },
                 { step: 6, label: "Suivi" },
@@ -1495,8 +2065,8 @@ export default {
                 { step: 8, label: "Devis soumis" },
                 { step: 9, label: "Commande" },
                 { step: 10, label: "Att. confirmation" },
-                { step: 11, label: "Terminée" },
-                { step: 12, label: "Clôturée" },
+                { step: 11, label: "Termin�e" },
+                { step: 12, label: "Cl�tur�e" },
             ],
 
             actionableStatuses: [
@@ -1504,6 +2074,18 @@ export default {
                 "awaiting_confirm",
                 "completed",
             ],
+
+            completionPopup: {
+                visible: false,
+                mission: null,
+                rating: 0,
+                comment: "",
+                suggestionText: "",
+                loadingReview: false,
+                loadingSuggestion: false,
+                suggestionSent: false,
+                reviewDone: false,
+            },
         };
     },
 
@@ -1518,12 +2100,6 @@ export default {
                     .slice(0, 2) ?? "CL"
             );
         },
-        greeting() {
-            const h = new Date().getHours();
-            if (h < 12) return "Bonjour";
-            if (h < 18) return "Bon après-midi";
-            return "Bonsoir";
-        },
         isActionable() {
             const m = this.activeMission;
             if (!m) return false;
@@ -1532,6 +2108,9 @@ export default {
         },
         isCompany() {
             return this.clientProfile?.account_type === "company";
+        },
+        todayDate() {
+            return new Date().toISOString().split("T")[0];
         },
         activeStatuses() {
             return [
@@ -1550,13 +2129,13 @@ export default {
             let list = [...this.missions];
             if (this.activeTab === "active")
                 list = list.filter((m) =>
-                    this.activeStatuses.includes(m.status),
+                    this.activeStatuses.includes(m.status)
                 );
             else if (this.activeTab === "pending")
                 list = list.filter((m) => m.status === "pending");
             else if (this.activeTab === "closed")
                 list = list.filter((m) =>
-                    ["completed", "closed"].includes(m.status),
+                    ["completed", "closed"].includes(m.status)
                 );
             else if (this.activeTab === "cancelled")
                 list = list.filter((m) => m.status === "cancelled");
@@ -1566,7 +2145,7 @@ export default {
                     (m) =>
                         m.service?.toLowerCase().includes(q) ||
                         m.address?.toLowerCase().includes(q) ||
-                        m.contractor?.name?.toLowerCase().includes(q),
+                        m.contractor?.name?.toLowerCase().includes(q)
                 );
             }
             return list;
@@ -1596,7 +2175,7 @@ export default {
     },
 
     methods: {
-        // ── Missions ─────────────────────────────────────────────
+        // -- Missions ---------------------------------------------
         async fetchMissions() {
             this.loading = true;
             this.error = null;
@@ -1606,7 +2185,7 @@ export default {
                 });
                 if (!res.ok) throw new Error();
                 const data = await res.json();
-                this.missions = Array.isArray(data) ? data : (data.data ?? []);
+                this.missions = Array.isArray(data) ? data : data.data ?? [];
             } catch {
                 this.error = "Impossible de charger les missions.";
             } finally {
@@ -1617,7 +2196,7 @@ export default {
         openMission(m) {
             this.activeMission = { ...m };
             this.showScrollBtn = false;
-            // Après rendu, vérifier si le panel est scrollable
+            // Apr�s rendu, v�rifier si le panel est scrollable
             this.$nextTick(() => {
                 const el = this.$refs.missionPanel;
                 if (el)
@@ -1629,7 +2208,7 @@ export default {
             this.actionLoading = true;
             try {
                 const csrf = document.querySelector(
-                    'meta[name="csrf-token"]',
+                    'meta[name="csrf-token"]'
                 )?.content;
                 const url = this.routes.missions_status
                     .replace("{id}", mission.id)
@@ -1640,7 +2219,7 @@ export default {
                     "| mission.id:",
                     mission.id,
                     "| routes.missions_status:",
-                    this.routes.missions_status,
+                    this.routes.missions_status
                 );
                 const res = await fetch(url, {
                     method: "PATCH",
@@ -1661,7 +2240,7 @@ export default {
                 this.activeMission = { ...data.mission };
                 return data.mission;
             } catch {
-                this.showToast("Erreur réseau.", "error");
+                this.showToast("Erreur r�seau.", "error");
                 return null;
             } finally {
                 this.actionLoading = false;
@@ -1669,12 +2248,66 @@ export default {
         },
 
         async confirmCompletion(m) {
-            await this.updateMissionStatus(m, "completed");
+            const updated = await this.updateMissionStatus(m, "completed");
+            if (!updated) return;
             this.reviewModal = { rating: 0, comment: "", loading: false };
-            this.showToast(
-                "Fin des travaux confirmée ! Évaluez le prestataire et procédez au paiement.",
-                "success",
-            );
+            this.completionPopup = {
+                visible: true,
+                mission: updated,
+                rating: 0,
+                comment: "",
+                suggestionText: "",
+                loadingReview: false,
+                loadingSuggestion: false,
+                suggestionSent: false,
+                reviewDone: false,
+            };
+        },
+
+        async submitReviewFromPopup() {
+            if (!this.completionPopup.rating) return;
+            this.completionPopup.loadingReview = true;
+            try {
+                const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? "";
+                const reviewUrl = (this.routes.reviews_store ?? "/client/missions") + "/" + this.completionPopup.mission.id + "/review";
+                await fetch(reviewUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "X-CSRF-TOKEN": csrf, Accept: "application/json" },
+                    body: JSON.stringify({ rating: this.completionPopup.rating, comment: this.completionPopup.comment.trim() }),
+                });
+                this.reviewModal.rating = this.completionPopup.rating;
+                this.reviewModal.comment = this.completionPopup.comment;
+                this.completionPopup.reviewDone = true;
+                this.showToast("Avis envoy�, merci !", "success");
+            } catch {
+                this.showToast("Erreur lors de l'envoi de l'avis.", "error");
+            } finally {
+                this.completionPopup.loadingReview = false;
+            }
+        },
+
+        async sendSuggestion() {
+            const msg = this.completionPopup.suggestionText.trim();
+            if (!msg) return;
+            this.completionPopup.loadingSuggestion = true;
+            try {
+                const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? "";
+                await fetch(this.routes.suggestions ?? "/client/suggestions", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "X-CSRF-TOKEN": csrf, Accept: "application/json" },
+                    body: JSON.stringify({ message: msg }),
+                });
+                this.completionPopup.suggestionSent = true;
+                this.showToast("Suggestion envoy�e, merci !", "success");
+            } catch {
+                this.showToast("Erreur lors de l'envoi de la suggestion.", "error");
+            } finally {
+                this.completionPopup.loadingSuggestion = false;
+            }
+        },
+
+        closeCompletionPopup() {
+            this.completionPopup.visible = false;
         },
 
         async submitReviewAndClose(m) {
@@ -1705,7 +2338,7 @@ export default {
             } catch {
                 this.showToast(
                     "Erreur lors de la soumission de l'avis.",
-                    "error",
+                    "error"
                 );
                 this.reviewModal.loading = false;
             }
@@ -1716,60 +2349,161 @@ export default {
             await this.updateMissionStatus(m, "closed");
             this.reviewModal = { rating: 0, comment: "", loading: false };
             this.showToast(
-                "Mission clôturée. Merci de votre confiance !",
-                "success",
+                "Mission cl�tur�e. Merci de votre confiance !",
+                "success"
             );
         },
 
         openMomoModal(mission) {
+            if (this.momoModal._pollInterval) {
+                clearInterval(this.momoModal._pollInterval);
+            }
             this.momoModal = {
                 visible: true,
                 mission,
                 network: "",
                 phone: "",
                 loading: false,
+                polling: false,
+                step: "form",
+                pollSecondsLeft: 120,
+                receiptUrl: null,
+                errorMessage: "",
+                _pollInterval: null,
             };
         },
 
         async submitMomo() {
             if (!this.momoModal.network || !this.momoModal.phone.trim()) return;
             this.momoModal.loading = true;
+            const csrf = document.querySelector(
+                'meta[name="csrf-token"]'
+            )?.content;
+            const url = this.routes.payment_initiate.replace(
+                "{id}",
+                this.momoModal.mission.id
+            );
             try {
-                // Réutiliser updateMissionStatus qui gère déjà l'URL correctement
-                const result = await this.updateMissionStatus(
-                    this.momoModal.mission,
-                    "closed",
-                    {
-                        momo_network: this.momoModal.network,
-                        momo_phone: this.momoModal.phone.trim(),
+                const res = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": csrf,
+                        Accept: "application/json",
                     },
-                );
-                if (result) {
-                    this.momoModal.visible = false;
-                    this.showToast(
-                        "🎉 Paiement confirmé ! Mission clôturée avec succès.",
-                        "success",
-                    );
+                    body: JSON.stringify({
+                        phone: this.momoModal.phone.trim(),
+                        network: this.momoModal.network,
+                    }),
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    this.momoModal.step = "failed";
+                    this.momoModal.errorMessage =
+                        data.message || "Erreur lors de l'initiation.";
+                    return;
+                }
+                if (data.status === "SUCCESSFUL") {
+                    this.onMomoSuccess(data);
+                } else {
+                    this.momoModal.step = "polling";
+                    this.momoModal.pollSecondsLeft = 120;
+                    this.startMomoPolling();
                 }
             } catch {
-                this.showToast(
-                    "Erreur lors du paiement. Veuillez réessayer.",
-                    "error",
-                );
+                this.momoModal.step = "failed";
+                this.momoModal.errorMessage =
+                    "Erreur r�seau. Veuillez r�essayer.";
             } finally {
                 this.momoModal.loading = false;
+                this.momoModal.polling = this.momoModal.step === "polling";
             }
+        },
+
+        startMomoPolling() {
+            const interval = setInterval(async () => {
+                if (!this.momoModal.polling) {
+                    clearInterval(interval);
+                    return;
+                }
+                this.momoModal.pollSecondsLeft = Math.max(
+                    0,
+                    this.momoModal.pollSecondsLeft - 3
+                );
+                if (this.momoModal.pollSecondsLeft <= 0) {
+                    clearInterval(interval);
+                    this.momoModal.polling = false;
+                    this.momoModal.step = "failed";
+                    this.momoModal.errorMessage = "D�lai d�pass�. R�essayez.";
+                    return;
+                }
+                const csrf = document.querySelector(
+                    'meta[name="csrf-token"]'
+                )?.content;
+                const url = this.routes.payment_status.replace(
+                    "{id}",
+                    this.momoModal.mission.id
+                );
+                try {
+                    const res = await fetch(url, {
+                        headers: {
+                            Accept: "application/json",
+                            "X-CSRF-TOKEN": csrf,
+                        },
+                    });
+                    const data = await res.json();
+                    if (data.status === "SUCCESSFUL") {
+                        clearInterval(interval);
+                        this.momoModal.polling = false;
+                        this.onMomoSuccess(data);
+                    } else if (data.status === "FAILED") {
+                        clearInterval(interval);
+                        this.momoModal.polling = false;
+                        this.momoModal.step = "failed";
+                        this.momoModal.errorMessage =
+                            data.message || "Paiement refus� ou expir�.";
+                    }
+                } catch {
+                    /* r�seau � continuer */
+                }
+            }, 3000);
+            this.momoModal._pollInterval = interval;
+        },
+
+        onMomoSuccess(data) {
+            this.momoModal.step = "success";
+            this.momoModal.receiptUrl = data.receipt_url ?? null;
+            if (data.mission) {
+                const idx = this.missions.findIndex(
+                    (m) => m.id === data.mission.id
+                );
+                if (idx !== -1)
+                    this.$set(this.missions, idx, {
+                        ...this.missions[idx],
+                        ...data.mission,
+                    });
+                if (this.activeMission?.id === data.mission.id) {
+                    this.activeMission = {
+                        ...this.activeMission,
+                        ...data.mission,
+                    };
+                }
+            }
+            this.showToast(
+                "?? Paiement confirm� ! Mission cl�tur�e.",
+                "success"
+            );
         },
 
         starLabel(n) {
             return (
                 [
                     "",
-                    "😕 Mauvais",
-                    "😐 Passable",
-                    "🙂 Correct",
-                    "😊 Bien",
-                    "🤩 Excellent !",
+                    "?? Mauvais",
+                    "?? Passable",
+                    "?? Correct",
+                    "?? Bien",
+                    "?? Excellent !",
                 ][n] ?? ""
             );
         },
@@ -1777,8 +2511,8 @@ export default {
         async approveQuote(m) {
             await this.updateMissionStatus(m, "order_placed");
             this.showToast(
-                "Devis approuvé ! L'intervention va démarrer.",
-                "success",
+                "Devis approuv� ! L'intervention va d�marrer.",
+                "success"
             );
         },
 
@@ -1795,21 +2529,21 @@ export default {
         async confirmRejectQuote() {
             const label =
                 this.rejectReasons.find(
-                    (r) => r.value === this.rejectQuoteModal.reason,
+                    (r) => r.value === this.rejectQuoteModal.reason
                 )?.label ?? "";
             const reason =
                 this.rejectQuoteModal.reason === "other"
                     ? this.rejectQuoteModal.customReason.trim()
                     : label;
             this.rejectQuoteModal.loading = true;
-            // PATCH mission status → quote_submitted (reste en quote_submitted) avec rejection_reason
+            // PATCH mission status ? quote_submitted (reste en quote_submitted) avec rejection_reason
             await this.updateMissionStatus(
                 this.rejectQuoteModal.mission,
                 "quote_submitted",
-                { reported_issue: reason },
+                { reported_issue: reason }
             );
             this.rejectQuoteModal.visible = false;
-            this.showToast("Devis refusé. Le prestataire va le réviser.", "");
+            this.showToast("Devis refus�. Le prestataire va le r�viser.", "");
             this.rejectQuoteModal.loading = false;
         },
 
@@ -1817,198 +2551,143 @@ export default {
             const quote = mission.quote;
             if (!quote) return;
 
+            const typeLabels = {
+                diagnostic: "Diagnostic",
+                part: "Fourniture",
+                labor: "Main d'�uvre",
+                travel: "D�placement",
+                other: "Autre",
+            };
+            const typeBg = {
+                diagnostic: "#f97316",
+                part: "#3b82f6",
+                labor: "#10b981",
+                travel: "#8b5cf6",
+                other: "#6b7280",
+            };
+
             const lines = (quote.items ?? [])
                 .map((i) => {
                     const total =
                         parseFloat(i.quantity) * parseFloat(i.unit_price);
-                    const typeLabel =
-                        {
-                            part: "Pièce",
-                            labor: "M.O.",
-                            travel: "Dépl.",
-                            other: "Autre",
-                        }[i.type] ?? "";
-                    return `
-                    <tr>
-                        <td style="padding:7px 10px;border-bottom:1px solid #eee;font-size:13px;">[${typeLabel}] ${i.description}</td>
-                        <td style="padding:7px 10px;border-bottom:1px solid #eee;font-size:13px;text-align:center;">${i.quantity}</td>
-                        <td style="padding:7px 10px;border-bottom:1px solid #eee;font-size:13px;text-align:right;">${this.formatPrice(i.unit_price)}</td>
-                        <td style="padding:7px 10px;border-bottom:1px solid #eee;font-size:13px;text-align:right;font-weight:700;">${this.formatPrice(total)}</td>
+                    const tl = typeLabels[i.type] ?? i.type;
+                    const bg = typeBg[i.type] ?? "#6b7280";
+                    return `<tr>
+                        <td><span style="background:${bg};color:#fff;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700;margin-right:8px;">${tl}</span>${
+                        i.description
+                    }</td>
+                        <td style="text-align:center;">${i.quantity}</td>
+                        <td style="text-align:right;">${this.formatPrice(
+                            i.unit_price
+                        )}</td>
+                        <td style="text-align:right;font-weight:700;">${this.formatPrice(
+                            total
+                        )}</td>
                     </tr>`;
                 })
                 .join("");
 
-            const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
-            <title>Devis #${quote.id} — Mission #${mission.id}</title>
-            <style>
-                body { font-family: Arial, sans-serif; color: #1c1412; max-width: 700px; margin: 40px auto; padding: 0 20px; }
-                .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; }
-                .brand { font-size: 22px; font-weight: 900; color: #f97316; }
-                .brand span { color: #1c1412; }
-                .meta { font-size: 12px; color: #7c6a5a; text-align: right; }
-                h2 { font-size: 16px; color: #1c1412; margin: 0 0 4px; }
-                .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #7c6a5a; margin: 24px 0 8px; }
-                table { width: 100%; border-collapse: collapse; }
-                thead td { background: #f8f4f0; font-size: 11px; font-weight: 700; color: #7c6a5a; padding: 8px 10px; text-transform: uppercase; }
-                .total-row td { padding: 12px 10px; font-size: 15px; font-weight: 800; border-top: 2px solid #f97316; }
-                .diag { background: #fff7ed; border-left: 4px solid #f97316; padding: 10px 14px; font-size: 13px; color: #7c6a5a; border-radius: 4px; margin-bottom: 8px; }
-                .footer { margin-top: 40px; font-size: 11px; color: #8a7d78; text-align: center; border-top: 1px solid #e8ddd4; padding-top: 16px; }
-            
-/* ── PAGINATION ── */
-.clm-pagination {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    justify-content: center;
-    flex-wrap: wrap;
-    margin-top: 24px;
-    padding-bottom: 16px;
-}
-.clm-page-btn {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    border: 1.5px solid var(--grl);
-    background: var(--wh);
-    font-family: "Poppins", sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--gr);
-    cursor: pointer;
-    transition: all 0.18s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.clm-page-btn:hover:not(:disabled) {
-    border-color: var(--or);
-    color: var(--or);
-}
-.clm-page-btn.active {
-    background: var(--or);
-    border-color: var(--or);
-    color: #fff;
-}
-.clm-page-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-.clm-page-info {
-    font-size: 12.5px;
-    color: var(--gr);
-    margin-left: 8px;
+            const contractorName = mission.contractor?.name ?? "";
+            const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Devis #${quote.id} � Mission #${mission.id}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Arial,sans-serif;color:#1c1412;padding:32px 40px;max-width:800px;margin:0 auto}
+  .print-btn{display:block;margin:0 auto 24px;padding:10px 28px;background:#f97316;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.3px}
+  .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:18px;border-bottom:2px solid #f97316}
+  .brand{font-size:24px;font-weight:900;color:#f97316;letter-spacing:-.5px}
+  .brand em{color:#1c1412;font-style:normal}
+  .sub-brand{font-size:11px;color:#7c6a5a;margin-top:3px}
+  .meta{font-size:12px;color:#7c6a5a;text-align:right;line-height:1.8}
+  .meta strong{color:#1c1412;font-size:14px;display:block}
+  .section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#7c6a5a;margin:20px 0 8px}
+  .info-row{font-size:13px;color:#7c6a5a;margin-bottom:4px}
+  .info-row strong{color:#1c1412}
+  .diag-box{background:#fff7ed;border-left:3px solid #f97316;padding:10px 14px;font-size:13px;color:#7c6a5a;margin:16px 0;border-radius:0 6px 6px 0}
+  .diag-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#f97316;margin-bottom:5px}
+  table{width:100%;border-collapse:collapse;margin:10px 0}
+  thead th{background:#f8f4f0;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#7c6a5a;padding:10px 12px;text-align:left}
+  thead th:nth-child(2){text-align:center}
+  thead th:nth-child(3),thead th:nth-child(4){text-align:right}
+  tbody td{padding:9px 12px;border-bottom:1px solid #f0e9e4;font-size:13px;vertical-align:middle}
+  tbody td:nth-child(2){text-align:center}
+  tbody td:nth-child(3),tbody td:nth-child(4){text-align:right}
+  tfoot td{padding:14px 12px;font-weight:700;font-size:15px;border-top:2px solid #f97316}
+  tfoot td:last-child{text-align:right;color:#f97316}
+  .note{margin-top:28px;padding:12px 16px;background:#f8f4f0;border-radius:6px;font-size:11px;color:#7c6a5a;line-height:1.6}
+  .footer{margin-top:24px;text-align:center;font-size:10px;color:#b0a09a;padding-top:14px;border-top:1px solid #e8ddd4}
+  @media print{.print-btn{display:none!important}}
+</style>
+</head>
+<body>
+<button class="print-btn" onclick="window.print()">? Enregistrer en PDF</button>
+<div class="header">
+  <div>
+    <div class="brand">Meso<em>Travo</em></div>
+    <div class="sub-brand">Plateforme de mise en relation</div>
+  </div>
+  <div class="meta">
+    <strong>Devis n�${quote.id}${
+                quote.version > 1 ? " � R�vision v" + quote.version : ""
+            }</strong>
+    Mission #${mission.id} � ${mission.service}<br>
+    �mis le ${new Date().toLocaleDateString("fr-FR")}
+  </div>
+</div>
+
+<div class="section-label">D�tails de l'intervention</div>
+<div class="info-row">?? Adresse : <strong>${mission.address}</strong></div>
+${
+    contractorName
+        ? `<div class="info-row">?? Prestataire : <strong>${contractorName}</strong></div>`
+        : ""
 }
 
-/* ── MODAL PAIEMENT MOMO ── */
-.clm-momo-networks {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-top: 4px;
+${
+    quote.diagnosis
+        ? `<div class="diag-box"><div class="diag-label">?? Diagnostic</div>${quote.diagnosis}</div>`
+        : ""
 }
-.clm-momo-network {
-    flex: 1;
-    min-width: 100px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    padding: 14px 10px;
-    border: 2px solid var(--grl);
-    border-radius: 12px;
-    background: var(--wh);
-    cursor: pointer;
-    transition: all 0.18s;
-    font-family: "Poppins", sans-serif;
-}
-.clm-momo-network:hover { border-color: var(--or); }
-.clm-momo-network.active {
-    border-color: var(--or);
-    background: var(--or3);
-}
-.clm-momo-net-icon  { font-size: 26px; }
-.clm-momo-net-label { font-size: 12px; font-weight: 700; color: var(--dk); }
-.clm-momo-hint {
-    font-size: 12px;
-    color: var(--gr);
-    margin-top: 6px;
-    line-height: 1.5;
-}
-.clm-momo-recap {
-    background: #f8f4f0;
-    border: 1.5px solid var(--grl);
-    border-radius: 10px;
-    padding: 14px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-.clm-momo-recap-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 13px;
-    color: var(--gr);
-}
-.clm-momo-recap-row strong { color: var(--dk); }
-.clm-momo-amount { color: var(--or); font-size: 15px; }
-.clm-momo-warning {
-    font-size: 12.5px;
-    color: #92400e;
-    background: #fffbeb;
-    border: 1px solid #fde68a;
-    border-radius: 8px;
-    padding: 10px 14px;
-    line-height: 1.5;
-}
-</style></head><body>
-            <div class="header">
-                <div><div class="brand">Reso<span>Travo</span></div><div style="font-size:12px;color:#7c6a5a;margin-top:4px;">Plateforme de mise en relation</div></div>
-                <div class="meta">
-                    <div><strong>Devis #${quote.id}</strong>${quote.version > 1 ? " — Révision v" + quote.version : ""}</div>
-                    <div>Mission #${mission.id} · ${mission.service}</div>
-                    <div>Date : ${new Date().toLocaleDateString("fr-FR")}</div>
-                </div>
-            </div>
-            <h2>Détail de l'intervention</h2>
-            <p style="font-size:13px;color:#7c6a5a;margin:4px 0 16px;">Adresse : ${mission.address}</p>
-            ${quote.diagnosis ? `<div class="diag"><strong>Diagnostic :</strong> ${quote.diagnosis}</div>` : ""}
-            <div class="section-title">Lignes du devis</div>
-            <table>
-                <thead><tr>
-                    <td>Désignation</td><td style="text-align:center;">Qté</td>
-                    <td style="text-align:right;">Prix unitaire</td><td style="text-align:right;">Total</td>
-                </tr></thead>
-                <tbody>${lines}</tbody>
-                <tfoot><tr class="total-row">
-                    <td colspan="3">Total</td>
-                    <td style="text-align:right;color:#f97316;">${this.formatPrice(quote.amount_incl_tax)}</td>
-                </tr></tfoot>
-            </table>
-            <div class="footer">Resotravo — Ce devis est soumis à votre approbation via la plateforme. Aucun paiement hors-plateforme n'est autorisé.</div>
-            </body></html>`;
 
-            const blob = new Blob([html], { type: "text/html" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `devis-mission-${mission.id}.html`;
-            a.click();
-            URL.revokeObjectURL(url);
+<div class="section-label">Lignes du devis</div>
+<table>
+  <thead><tr>
+    <th>D�signation</th><th>Qt�</th><th>Prix unitaire</th><th>Total</th>
+  </tr></thead>
+  <tbody>${lines}</tbody>
+  <tfoot><tr>
+    <td colspan="3">Total TTC</td>
+    <td>${this.formatPrice(quote.amount_incl_tax)}</td>
+  </tr></tfoot>
+</table>
+
+<div class="note">?? Ce devis est soumis � approbation via la plateforme Mesotravo. Aucun paiement hors-plateforme n'est autoris� ni conseill�.</div>
+<div class="footer">Mesotravo.com � Plateforme de mise en relation artisans &amp; particuliers</div>
+</body></html>`;
+
+            const win = window.open("", "_blank", "width=860,height=720");
+            if (win) {
+                win.document.write(html);
+                win.document.close();
+            }
         },
 
         quoteItemTypeLabel(type) {
             return (
                 {
-                    part: "Pièce",
+                    diagnostic: "Diagnostic",
+                    part: "Fourniture",
                     labor: "M.O.",
-                    travel: "Dépl.",
+                    travel: "D�pl.",
                     other: "Autre",
                 }[type] ?? type
             );
         },
 
-        // ── Signalement ───────────────────────────────────────────
+        // -- Signalement -------------------------------------------
         openSignalProblem() {
             this.signalModal = { visible: true, reason: "", loading: false };
         },
@@ -2020,19 +2699,22 @@ export default {
                 "awaiting_confirm",
                 {
                     reported_issue: this.signalModal.reason,
-                },
+                }
             );
             this.signalModal.visible = false;
             this.showToast(
-                "Problème signalé. Un agent va vous contacter.",
-                "success",
+                "Probl�me signal�. Un agent va vous contacter.",
+                "success"
             );
             this.signalModal.loading = false;
         },
 
-        // ── Nouvelle mission ──────────────────────────────────────
+        // -- Nouvelle mission --------------------------------------
         openNewMission() {
             this.form = {
+                schedule_type: "now",
+                reservation_day: "",
+                reservation_time: "",
                 location_type: "residential",
                 service: "",
                 description: "",
@@ -2042,86 +2724,162 @@ export default {
             };
             this.formError = "";
             this.geoOk = false;
+            this.address_mode = "manual";
+            this.mapAddress = "";
+            this.mapLat = null;
+            this.mapLng = null;
             this.imageFiles = [];
             this.imagesPreviews = [];
             this.showNewMission = true;
         },
-        askGeo() {
-            if (!navigator.geolocation) return;
-            this.geoLoading = true;
-            this.geoOk = false;
-            navigator.geolocation.getCurrentPosition(
-                async (pos) => {
-                    const lat = pos.coords.latitude;
-                    const lon = pos.coords.longitude;
-                    this.form.latitude = lat;
-                    this.form.longitude = lon;
-
-                    // Reverse geocoding via Nominatim — attendre l'adresse avant d'afficher
-                    try {
-                        const res = await fetch(
-                            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=fr`,
-                            { headers: { "Accept-Language": "fr" } },
-                        );
-                        const data = await res.json();
-                        const a = data.address ?? {};
-
-                        // Construire l'adresse la plus précise possible (adapté Afrique de l'Ouest)
-                        const street =
-                            a.road ?? a.pedestrian ?? a.path ?? a.footway ?? "";
-                        const quarter =
-                            a.neighbourhood ??
-                            a.suburb ??
-                            a.quarter ??
-                            a.hamlet ??
-                            a.village ??
-                            "";
-                        const city =
-                            a.city ??
-                            a.town ??
-                            a.municipality ??
-                            a.county ??
-                            "";
-                        const country = a.country ?? "";
-
-                        const parts = [street, quarter, city, country].filter(
-                            Boolean,
-                        );
-
-                        // Si on a au moins 2 composants on l'utilise, sinon display_name complet
-                        this.geoAddress =
-                            parts.length >= 2
-                                ? parts.join(", ")
-                                : (data.display_name ??
-                                  `${lat.toFixed(5)}, ${lon.toFixed(5)}`);
-
-                        // Toujours pré-remplir le champ adresse avec la position GPS
-                        this.form.address = this.geoAddress;
-                    } catch {
-                        // Fallback : coordonnées brutes
-                        this.geoAddress = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-                        this.form.address = this.geoAddress;
-                    }
-
-                    this.geoOk = true; // afficher APRÈS avoir l'adresse
-                    this.geoLoading = false;
-                },
-                () => {
-                    this.geoLoading = false;
-                    this.showToast(
-                        "Géolocalisation refusée ou indisponible.",
-                        "error",
-                    );
-                },
-                { timeout: 15000, enableHighAccuracy: true, maximumAge: 0 },
-            );
+        openMapModal() {
+            this.mapAddress = "";
+            this.mapSearch = "";
+            this.mapLat = null;
+            this.mapLng = null;
+            this.showMapModal = true;
         },
+
+        closeMapModal() {
+            this.showMapModal = false;
+            this.destroyMap();
+        },
+
+        initLeafletMap() {
+            const L = window.L;
+            if (!L) return;
+            const el = document.getElementById("clm-leaflet-map");
+            if (!el) return;
+            if (this.leafletMap) {
+                this.leafletMap.remove();
+                this.leafletMap = null;
+            }
+            const defaultCenter = [6.3654, 2.4183]; // Cotonou
+            const map = L.map(el).setView(defaultCenter, 13);
+            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                attribution:
+                    '� <a href="https://www.openstreetmap.org">OpenStreetMap</a>',
+            }).addTo(map);
+            this.leafletMap = map;
+            map.on("click", (e) => {
+                this.placeMapMarker(e.latlng.lat, e.latlng.lng);
+            });
+            if (navigator.geolocation) {
+                this.geoLoading = true;
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        this.geoLoading = false;
+                        const lat = pos.coords.latitude;
+                        const lng = pos.coords.longitude;
+                        map.setView([lat, lng], 16);
+                        this.placeMapMarker(lat, lng);
+                    },
+                    () => {
+                        this.geoLoading = false;
+                    },
+                    { timeout: 10000, enableHighAccuracy: true }
+                );
+            }
+        },
+
+        destroyMap() {
+            if (this.leafletMap) {
+                this.leafletMap.remove();
+                this.leafletMap = null;
+            }
+            this.leafletMarker = null;
+        },
+
+        async placeMapMarker(lat, lng) {
+            const L = window.L;
+            if (!L || !this.leafletMap) return;
+            this.mapLat = lat;
+            this.mapLng = lng;
+            if (this.leafletMarker) {
+                this.leafletMarker.setLatLng([lat, lng]);
+            } else {
+                this.leafletMarker = L.marker([lat, lng], {
+                    draggable: true,
+                }).addTo(this.leafletMap);
+                this.leafletMarker.on("dragend", (e) => {
+                    const pos = e.target.getLatLng();
+                    this.placeMapMarker(pos.lat, pos.lng);
+                });
+            }
+            try {
+                const res = await fetch(
+                    `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=fr`
+                );
+                const data = await res.json();
+                const a = data.address ?? {};
+                const parts = [
+                    a.road ?? a.pedestrian ?? a.path ?? "",
+                    a.neighbourhood ??
+                        a.suburb ??
+                        a.quarter ??
+                        a.hamlet ??
+                        a.village ??
+                        "",
+                    a.city ?? a.town ?? a.municipality ?? a.county ?? "",
+                    a.country ?? "",
+                ].filter(Boolean);
+                this.mapAddress =
+                    parts.length >= 2
+                        ? parts.join(", ")
+                        : data.display_name ??
+                          `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+            } catch {
+                this.mapAddress = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+            }
+        },
+
+        validatePosition() {
+            if (!this.mapLat) return;
+            this.form.latitude = this.mapLat;
+            this.form.longitude = this.mapLng;
+            this.form.address =
+                this.mapAddress ||
+                `${this.mapLat.toFixed(5)}, ${this.mapLng.toFixed(5)}`;
+            this.geoOk = true;
+            this.closeMapModal();
+        },
+
         resetGeo() {
             this.form.latitude = null;
             this.form.longitude = null;
+            this.form.address = "";
             this.geoOk = false;
-            this.geoAddress = "";
+            this.mapAddress = "";
+            this.mapLat = null;
+            this.mapLng = null;
+            this.openMapModal();
         },
+
+        async searchOnMap() {
+            if (!this.mapSearch.trim()) return;
+            try {
+                const res = await fetch(
+                    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+                        this.mapSearch
+                    )}&format=json&limit=1&accept-language=fr`
+                );
+                const data = await res.json();
+                if (!data.length) {
+                    this.showToast(
+                        "Aucun r�sultat pour cette adresse.",
+                        "error"
+                    );
+                    return;
+                }
+                const lat = parseFloat(data[0].lat);
+                const lng = parseFloat(data[0].lon);
+                if (this.leafletMap) this.leafletMap.setView([lat, lng], 16);
+                this.placeMapMarker(lat, lng);
+            } catch {
+                this.showToast("Erreur lors de la recherche.", "error");
+            }
+        },
+
         onImagesSelect(e) {
             const files = Array.from(e.target.files);
             const remaining = 5 - this.imageFiles.length;
@@ -2141,13 +2899,23 @@ export default {
 
         async submitMission() {
             this.formError = "";
+            if (this.form.schedule_type === "later") {
+                if (!this.form.reservation_day) {
+                    this.formError = "Veuillez choisir une date.";
+                    return;
+                }
+                if (!this.form.reservation_time) {
+                    this.formError = "Veuillez choisir une heure.";
+                    return;
+                }
+            }
             if (!this.form.service) {
-                this.formError = "Sélectionnez un type de prestation.";
+                this.formError = "S�lectionnez un type de prestation.";
                 return;
             }
             if (this.form.description.trim().length < 20) {
                 this.formError =
-                    "Description trop courte (min. 20 caractères).";
+                    "Description trop courte (min. 20 caract�res).";
                 return;
             }
             if (!this.form.address.trim()) {
@@ -2157,7 +2925,7 @@ export default {
             this.submitting = true;
             try {
                 const csrf = document.querySelector(
-                    'meta[name="csrf-token"]',
+                    'meta[name="csrf-token"]'
                 )?.content;
                 const fd = new FormData();
                 Object.entries(this.form).forEach(([k, v]) => {
@@ -2181,23 +2949,23 @@ export default {
                 if (!res.ok) {
                     this.formError = data.errors
                         ? Object.values(data.errors).flat()[0]
-                        : (data.message ?? "Erreur.");
+                        : data.message ?? "Erreur.";
                     return;
                 }
                 this.missions.unshift(data.mission);
                 this.showNewMission = false;
                 this.showToast(
-                    "Mission publiée ! Un prestataire sera attribué rapidement.",
-                    "success",
+                    "Mission publi�e ! Un prestataire sera attribu� rapidement.",
+                    "success"
                 );
             } catch {
-                this.formError = "Erreur réseau.";
+                this.formError = "Erreur r�seau.";
             } finally {
                 this.submitting = false;
             }
         },
 
-        // ── Chat ──────────────────────────────────────────────────
+        // -- Chat --------------------------------------------------
         openChat(id) {
             this.chatMissionId = id;
         },
@@ -2222,7 +2990,7 @@ export default {
             }
         },
 
-        // ── Notifications ─────────────────────────────────────────
+        // -- Notifications -----------------------------------------
         async fetchNotifications() {
             this.notifLoading = true;
             try {
@@ -2245,7 +3013,7 @@ export default {
         async openNotif(n) {
             if (!n.read) {
                 const csrf = document.querySelector(
-                    'meta[name="csrf-token"]',
+                    'meta[name="csrf-token"]'
                 )?.content;
                 await fetch(
                     this.routes.notifications_read.replace("{id}", n.id),
@@ -2255,7 +3023,7 @@ export default {
                             "X-CSRF-TOKEN": csrf,
                             Accept: "application/json",
                         },
-                    },
+                    }
                 );
                 n.read = true;
                 this.unreadCount = Math.max(0, this.unreadCount - 1);
@@ -2264,7 +3032,7 @@ export default {
         },
         async markAllRead() {
             const csrf = document.querySelector(
-                'meta[name="csrf-token"]',
+                'meta[name="csrf-token"]'
             )?.content;
             await fetch(this.routes.notifications_all, {
                 method: "PATCH",
@@ -2274,19 +3042,19 @@ export default {
             this.unreadCount = 0;
         },
 
-        // ── Helpers affichage ─────────────────────────────────────
+        // -- Helpers affichage -------------------------------------
         countByTab(key) {
             if (key === "all") return this.missions.length;
             if (key === "active")
                 return this.missions.filter((m) =>
-                    this.activeStatuses.includes(m.status),
+                    this.activeStatuses.includes(m.status)
                 ).length;
             if (key === "pending")
                 return this.missions.filter((m) => m.status === "pending")
                     .length;
             if (key === "closed")
                 return this.missions.filter((m) =>
-                    ["completed", "closed"].includes(m.status),
+                    ["completed", "closed"].includes(m.status)
                 ).length;
             if (key === "cancelled")
                 return this.missions.filter((m) => m.status === "cancelled")
@@ -2295,44 +3063,44 @@ export default {
         },
         statusInfoIcon(s) {
             const m = {
-                pending: "⏳",
-                assigned: "🔍",
-                accepted: "✅",
-                on_the_way: "🚗",
-                tracking: "📡",
-                in_progress: "🔨",
-                order_placed: "📋",
-                completed: "🎉",
-                closed: "🏁",
-                cancelled: "❌",
+                pending: "?",
+                assigned: "??",
+                accepted: "?",
+                on_the_way: "??",
+                tracking: "??",
+                in_progress: "??",
+                order_placed: "??",
+                completed: "??",
+                closed: "??",
+                cancelled: "?",
             };
-            return m[s] ?? "ℹ️";
+            return m[s] ?? "??";
         },
         statusInfoTitle(s) {
             const m = {
                 pending: "En attente d'attribution",
-                assigned: "Prestataire attribué",
-                accepted: "Prestataire en route bientôt",
+                assigned: "Prestataire attribu�",
+                accepted: "Prestataire en route bient�t",
                 on_the_way: "Prestataire en route",
                 tracking: "Suivi GPS actif",
                 in_progress: "Intervention en cours",
-                order_placed: "Travaux démarrés",
-                completed: "Terminée — paiement requis",
-                closed: "Mission clôturée",
-                cancelled: "Mission annulée",
+                order_placed: "Travaux d�marr�s",
+                completed: "Termin�e � paiement requis",
+                closed: "Mission cl�tur�e",
+                cancelled: "Mission annul�e",
             };
             return m[s] ?? s;
         },
         statusInfoSub(s) {
             const m = {
                 pending:
-                    "Un prestataire certifié sera attribué automatiquement.",
-                assigned: "Le prestataire va bientôt vous contacter.",
-                accepted: "Il vous contactera avant de se déplacer.",
+                    "Un prestataire certifi� sera attribu� automatiquement.",
+                assigned: "Le prestataire va bient�t vous contacter.",
+                accepted: "Il vous contactera avant de se d�placer.",
                 on_the_way: "Votre prestataire arrive.",
                 in_progress: "L'intervention est en cours chez vous.",
                 order_placed: "Les travaux sont en cours.",
-                completed: "Confirmez la fin pour déclencher le paiement.",
+                completed: "Confirmez la fin pour d�clencher le paiement.",
                 closed: "Merci de votre confiance !",
                 cancelled: "Contactez le support pour plus d'informations.",
             };
@@ -2341,18 +3109,18 @@ export default {
         labelOf(m) {
             const map = {
                 pending: "En attente",
-                assigned: "Assignée",
-                accepted: "Acceptée",
-                contact_made: "Contact établi",
+                assigned: "Assign�e",
+                accepted: "Accept�e",
+                contact_made: "Contact �tabli",
                 on_the_way: "En route",
                 tracking: "Suivi",
                 in_progress: "Sur place",
                 quote_submitted: "Devis soumis",
-                order_placed: "Commande passée",
+                order_placed: "Commande pass�e",
                 awaiting_confirm: "Att. confirmation",
-                completed: "Terminée",
-                closed: "Clôturée",
-                cancelled: "Annulée",
+                completed: "Termin�e",
+                closed: "Cl�tur�e",
+                cancelled: "Annul�e",
             };
             return m.status_label ?? map[m.status] ?? m.status;
         },
@@ -2377,19 +3145,19 @@ export default {
         serviceIcon(s) {
             return (
                 {
-                    plomberie: "🔧",
-                    electricite: "⚡",
-                    menuiserie: "🪵",
-                    ferronnerie: "⚙️",
-                    frigoriste: "❄️",
-                    mecanique: "🚗",
-                    nettoyage: "🧹",
-                    peinture: "🎨",
-                    maintenance: "🛠️",
-                }[s?.toLowerCase()] ?? "🔨"
+                    plomberie: "??",
+                    electricite: "?",
+                    menuiserie: "??",
+                    ferronnerie: "??",
+                    frigoriste: "??",
+                    mecanique: "??",
+                    nettoyage: "??",
+                    peinture: "??",
+                    maintenance: "???",
+                }[s?.toLowerCase()] ?? "??"
             );
         },
-        // Retourne le numéro d'étape en parsant step ou en déduisant depuis status
+        // Retourne le num�ro d'�tape en parsant step ou en d�duisant depuis status
         onPanelScroll() {
             const el = this.$refs.missionPanel;
             if (!el) return;
@@ -2423,7 +3191,7 @@ export default {
             return map[m.status] ?? 1;
         },
         formatDate(iso) {
-            if (!iso) return "—";
+            if (!iso) return "�";
             return new Date(iso).toLocaleDateString("fr-FR", {
                 day: "numeric",
                 month: "short",
@@ -2431,7 +3199,7 @@ export default {
             });
         },
         formatDateTime(iso) {
-            if (!iso) return "—";
+            if (!iso) return "�";
             const d = new Date(iso);
             return (
                 d.toLocaleDateString("fr-FR", {
@@ -2439,25 +3207,34 @@ export default {
                     month: "short",
                     year: "numeric",
                 }) +
-                " à " +
+                " � " +
                 d.toLocaleTimeString("fr-FR", {
                     hour: "2-digit",
                     minute: "2-digit",
                 })
             );
         },
+        formatReservationDate(dateStr) {
+            if (!dateStr) return "";
+            const d = new Date(dateStr);
+            return d.toLocaleDateString("fr-FR", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+            });
+        },
         formatPrice(a) {
-            if (!a) return "—";
+            if (!a) return "�";
             return (
                 new Intl.NumberFormat("fr-FR").format(Math.round(a)) + " FCFA"
             );
         },
         wip(f) {
-            this.showToast(f + " — bientôt disponible.", "");
+            this.showToast(f + " � bient�t disponible.", "");
         },
         onGlobalUnreadUpdate(evt) {
             const byMission = evt.detail?.by_mission ?? {};
-            // Ne pas écraser le compteur de la conversation ouverte (déjà lue)
+            // Ne pas �craser le compteur de la conversation ouverte (d�j� lue)
             if (this.chatMissionId) {
                 const updated = { ...byMission };
                 delete updated[this.chatMissionId];
@@ -2478,7 +3255,7 @@ export default {
             window.dispatchEvent(
                 new CustomEvent("ab-sidebar-toggle", {
                     detail: { open: this.sidebarOpen },
-                }),
+                })
             );
         },
         handleClickOutside(e) {
@@ -2490,12 +3267,25 @@ export default {
         },
     },
 
+    watch: {
+        showMapModal(val) {
+            if (val) {
+                this.$nextTick(() => this.initLeafletMap());
+            } else {
+                this.destroyMap();
+            }
+        },
+        address_mode(val) {
+            if (val === "geo") this.openMapModal();
+        },
+    },
+
     mounted() {
         this.fetchMissions();
         this.fetchNotifications();
         this.notifInterval = setInterval(
             () => this.fetchNotifications(),
-            30000,
+            30000
         );
         document.addEventListener("click", this.handleClickOutside);
         window.addEventListener("ab-sidebar-close", () => {
@@ -2504,11 +3294,12 @@ export default {
         window.addEventListener("rt-unread-update", this.onGlobalUnreadUpdate);
     },
     beforeUnmount() {
+        this.destroyMap();
         clearInterval(this.notifInterval);
         document.removeEventListener("click", this.handleClickOutside);
         window.removeEventListener(
             "rt-unread-update",
-            this.onGlobalUnreadUpdate,
+            this.onGlobalUnreadUpdate
         );
     },
 };
@@ -2908,7 +3699,7 @@ export default {
     background: #fffbf7;
     border-color: #fed7aa;
 }
-/* Bande orange à gauche pour messages non lus */
+/* Bande orange � gauche pour messages non lus */
 .clm-unread-stripe {
     position: absolute;
     left: 0;
@@ -2939,6 +3730,12 @@ export default {
     font-size: 12.5px;
     color: var(--gr);
     margin-top: 2px;
+}
+.clm-item-reservation {
+    font-size: 12.5px;
+    color: #f97316;
+    margin-top: 2px;
+    font-weight: 600;
 }
 .clm-msg-unread {
     display: inline-flex;
@@ -2978,9 +3775,7 @@ export default {
     padding: 4px 10px;
     cursor: pointer;
     white-space: nowrap;
-    transition:
-        opacity 0.18s,
-        transform 0.12s;
+    transition: opacity 0.18s, transform 0.12s;
     box-shadow: 0 2px 6px rgba(249, 115, 22, 0.35);
     font-family: "Poppins", sans-serif;
 }
@@ -3321,7 +4116,7 @@ export default {
     flex: 1;
     justify-content: center;
 }
-/* ACTION QUOTE — nouveau bloc détaillé */
+/* ACTION QUOTE � nouveau bloc d�taill� */
 .clm-action-quote {
     border-color: var(--am);
     background: #fffbeb;
@@ -3475,6 +4270,38 @@ export default {
     font-weight: 800;
     color: var(--or);
 }
+.clm-action-quote-approved {
+    border-color: #86efac;
+    background: #f0fdf4;
+    padding: 12px 14px;
+}
+.clm-qa-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+.clm-qa-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+.clm-qa-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+}
+.clm-qa-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--dk);
+}
+.clm-qa-amount {
+    font-size: 14px;
+    font-weight: 800;
+    color: #16a34a;
+    margin-top: 1px;
+}
 .clm-action-quote-rejected {
     border-color: #fca5a5;
     background: #fff5f5;
@@ -3620,7 +4447,7 @@ export default {
     cursor: not-allowed;
 }
 
-/* ── Avis ── */
+/* -- Avis -- */
 .clm-action-review {
     border-color: #fde68a;
     background: #fffbeb;
@@ -3659,9 +4486,7 @@ export default {
     cursor: pointer;
     padding: 0;
     line-height: 1;
-    transition:
-        color 0.15s,
-        transform 0.12s;
+    transition: color 0.15s, transform 0.12s;
 }
 .clm-star:hover,
 .clm-star.active {
@@ -3722,7 +4547,7 @@ export default {
     cursor: not-allowed;
 }
 
-/* ── Adresse géolocalisée ── */
+/* -- Adresse g�olocalis�e -- */
 .clm-geo-ok-addr {
     font-size: 12.5px;
     font-weight: 600;
@@ -3813,7 +4638,7 @@ export default {
     width: 100%;
     max-width: 460px;
     max-height: 92vh;
-    overflow-y: auto;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     animation: clm-modal-in 0.25s ease;
@@ -3852,6 +4677,8 @@ export default {
 }
 .clm-modal-body {
     padding: 18px 22px;
+    flex: 1;
+    overflow-y: auto;
 }
 .clm-modal-footer {
     padding: 14px 22px;
@@ -3937,6 +4764,54 @@ export default {
 .clm-radio-opt input {
     accent-color: var(--or);
 }
+/* -- Barre de recherche carte -- */
+.clm-map-search {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.clm-map-search-input {
+    flex: 1;
+    margin-bottom: 0 !important;
+}
+.clm-map-search-btn {
+    flex-shrink: 0;
+    padding: 10px 16px;
+    font-size: 13px;
+}
+
+/* -- S�lecteur mode adresse -- */
+.clm-addr-modes,
+.clm-geo-methods {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+}
+.clm-addr-mode-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 1.5px solid var(--grl);
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gr);
+    background: var(--wh);
+    transition: all 0.15s;
+    user-select: none;
+}
+.clm-addr-mode-label input[type="radio"] {
+    accent-color: var(--or);
+}
+.clm-addr-mode-label.active,
+.clm-addr-mode-label:has(input:checked) {
+    border-color: var(--or);
+    color: var(--or);
+    background: var(--or3);
+}
 .clm-btn-geo {
     display: flex;
     align-items: center;
@@ -3996,9 +4871,7 @@ export default {
     font-size: 12.5px;
     font-weight: 700;
     color: #8a7d78;
-    transition:
-        border-color 0.15s,
-        color 0.15s;
+    transition: border-color 0.15s, color 0.15s;
     flex-shrink: 0;
 }
 .clm-img-add-btn:hover {
@@ -4036,6 +4909,38 @@ export default {
     justify-content: center;
     line-height: 1;
 }
+/* Miniatures dans la card liste */
+.clm-item-imgs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+}
+.clm-item-img-thumb {
+    width: 44px;
+    height: 44px;
+    object-fit: cover;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    transition: opacity 0.15s;
+}
+.clm-item-img-thumb:hover {
+    opacity: 0.8;
+}
+.clm-item-imgs-more {
+    width: 44px;
+    height: 44px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #555;
+}
+
 .clm-row-images {
     flex-direction: column;
     align-items: flex-start;
@@ -4180,5 +5085,221 @@ export default {
 }
 .clm-toast.error {
     background: #dc2626;
+}
+
+/* -- MoMo form -- */
+.clm-momo-step-hint {
+    background: #eff6ff;
+    border: 1.5px solid #bfdbfe;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #1d4ed8;
+    font-weight: 600;
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+.clm-momo-hint {
+    font-size: 12px;
+    color: var(--gr, #7c6a5a);
+    margin-top: 4px;
+    font-style: italic;
+}
+
+/* -- MoMo modal states -- */
+.clm-momo-waiting {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 32px 24px;
+}
+.clm-momo-pulse {
+    font-size: 52px;
+    animation: clm-momo-bounce 1.2s infinite;
+    margin-bottom: 16px;
+}
+@keyframes clm-momo-bounce {
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.18);
+    }
+}
+.clm-momo-wait-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1c1412;
+    margin-bottom: 8px;
+}
+.clm-momo-countdown {
+    background: #fef3c7;
+    color: #92400e;
+    border-radius: 8px;
+    padding: 7px 16px;
+    font-size: 13px;
+    font-weight: 600;
+}
+.clm-momo-ussd-hint {
+    margin-top: 14px;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12.5px;
+    color: #166534;
+    line-height: 1.6;
+    text-align: center;
+}
+.clm-momo-ussd-hint strong {
+    color: #ea580c;
+    font-size: 13.5px;
+    letter-spacing: 0.5px;
+}
+.clm-momo-success {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 32px 24px;
+}
+.clm-momo-success-icon {
+    font-size: 52px;
+    margin-bottom: 14px;
+}
+.clm-momo-success-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: #15803d;
+    margin-bottom: 8px;
+}
+.clm-momo-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 32px 24px;
+}
+.clm-momo-error-icon {
+    font-size: 48px;
+    margin-bottom: 14px;
+}
+.clm-momo-error-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #dc2626;
+    margin-bottom: 8px;
+}
+
+/* -- Invoice action block -- */
+.clm-action-invoice {
+    background: #f0fdf4;
+    border: 1.5px solid #bbf7d0;
+    border-radius: 14px;
+    padding: 20px;
+    text-align: center;
+}
+.clm-invoice-icon { font-size: 32px; margin-bottom: 8px }
+.clm-invoice-title { font-size: 15px; font-weight: 700; color: #15803d; margin-bottom: 4px }
+.clm-invoice-sub { font-size: 13px; color: #4A3F3A; margin-bottom: 14px; line-height: 1.5 }
+
+/* -- Receipt action block -- */
+.clm-action-receipt {
+    background: #f0fdf4;
+    border: 1.5px solid #bbf7d0;
+    border-radius: 14px;
+    padding: 20px;
+    text-align: center;
+}
+
+/* -- POPUP POST-MISSION CLIENT -- */
+.clm-modal-completion {
+    max-width: 520px;
+    width: 95vw;
+    max-height: 92vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+}
+.clm-completion-header {
+    text-align: center;
+    padding: 28px 28px 16px;
+    border-bottom: 1.5px solid var(--grl, #e8ddd4);
+}
+.clm-completion-icon {
+    font-size: 52px;
+    margin-bottom: 10px;
+}
+.clm-completion-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--dk, #1c1412);
+    margin-bottom: 6px;
+}
+.clm-completion-sub {
+    font-size: 13.5px;
+    color: var(--gr, #7c6a5a);
+    line-height: 1.6;
+    margin: 0;
+}
+.clm-completion-section {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--grl, #e8ddd4);
+}
+.clm-completion-section:last-of-type {
+    border-bottom: none;
+}
+.clm-completion-section-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--dk, #1c1412);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.clm-completion-section-body {
+    font-size: 13.5px;
+    color: var(--gr, #7c6a5a);
+    line-height: 1.6;
+    margin-bottom: 12px;
+}
+.clm-completion-done-badge {
+    background: #f0fdf4;
+    border: 1.5px solid #86efac;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13.5px;
+    color: #16a34a;
+    font-weight: 600;
+    text-align: center;
+}
+.clm-share-btns {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.clm-share-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 18px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: opacity 0.2s;
+}
+.clm-share-btn:hover { opacity: 0.85; }
+.clm-share-wa {
+    background: #22c55e;
+    color: #fff;
+}
+.clm-share-fb {
+    background: #3b82f6;
+    color: #fff;
 }
 </style>

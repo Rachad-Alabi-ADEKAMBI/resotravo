@@ -1,4 +1,4 @@
-<template>
+﻿<template>
     <div class="amis-wrap">
         <!-- ══════════════ TOPBAR ══════════════ -->
         <div class="amis-topbar">
@@ -13,7 +13,7 @@
                 <div>
                     <div class="amis-page-title">Gestion des Prestataires</div>
                     <div class="amis-page-sub">
-                        {{ greeting }}, <strong>{{ user.name }}</strong>
+                        <strong>{{ user.name }}</strong>
                     </div>
                 </div>
             </div>
@@ -40,7 +40,7 @@
                             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                         </svg>
                         <span class="amis-notif-badge" v-if="unreadCount > 0">{{
-                            unreadCount > 9 ? "9+" : unreadCount
+                            unreadCount
                         }}</span>
                     </button>
                     <div class="amis-notif-dropdown" v-if="notifOpen">
@@ -572,7 +572,7 @@
                                         </option>
                                     </select>
                                     <button
-                                        class="amis-btn amis-btn-orange amis-btn-sm"
+                                        class="amis-btn amis-btn-orange amis-btn-sm success-action"
                                         @click="saveAccreditation"
                                         :disabled="
                                             accredLoading ||
@@ -592,6 +592,34 @@
 
                         <!-- COL DROITE -->
                         <div class="amis-detail-col">
+
+                            <!-- ── Missions ── -->
+                            <div class="amis-detail-section">
+                                <div class="amis-detail-section-title">📋 Historique des missions</div>
+                                <div v-if="contractorMissionsLoading" class="amis-missions-loading">Chargement…</div>
+                                <div v-else-if="contractorMissions.length === 0" class="amis-missions-empty">Aucune mission pour ce prestataire.</div>
+                                <table v-else class="amis-missions-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Service</th>
+                                            <th>Client</th>
+                                            <th>Date</th>
+                                            <th>Montant</th>
+                                            <th>Statut</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="m in contractorMissions" :key="m.id">
+                                            <td>{{ m.service }}</td>
+                                            <td>{{ m.client_name }}</td>
+                                            <td>{{ m.created_at }}</td>
+                                            <td class="amis-missions-amount">{{ formatMissionAmount(m.total_amount) }}</td>
+                                            <td><span class="amis-missions-badge" :class="'ms-' + m.status">{{ m.status_label }}</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
                             <!-- Documents -->
                             <div class="amis-detail-section">
                                 <div class="amis-detail-section-title">
@@ -999,6 +1027,8 @@ export default {
 
             // Détail
             activeContractor: null,
+            contractorMissions: [],
+            contractorMissionsLoading: false,
             actionLoading: null,
             accredEdit: "none",
             accredLoading: false,
@@ -1041,12 +1071,6 @@ export default {
     },
 
     computed: {
-        greeting() {
-            const h = new Date().getHours();
-            if (h < 12) return "Bonjour";
-            if (h < 18) return "Bon après-midi";
-            return "Bonsoir";
-        },
 
         userInitials() {
             return (
@@ -1396,9 +1420,28 @@ export default {
         openDetail(c) {
             this.activeContractor = c;
             this.accredEdit = c.accreditation ?? "none";
+            this.contractorMissions = [];
+            this.fetchContractorMissions(c.contractor_id ?? c.id);
         },
         closeDetail() {
             this.activeContractor = null;
+            this.contractorMissions = [];
+        },
+
+        async fetchContractorMissions(contractorId) {
+            if (!this.routes.contractors_missions) return;
+            this.contractorMissionsLoading = true;
+            try {
+                const url = this.routes.contractors_missions.replace('{contractor}', contractorId);
+                const res = await fetch(url, { headers: { Accept: 'application/json' } });
+                this.contractorMissions = await res.json();
+            } catch { this.contractorMissions = []; }
+            finally { this.contractorMissionsLoading = false; }
+        },
+
+        formatMissionAmount(amount) {
+            if (!amount) return '—';
+            return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
         },
 
         // ── Helpers ───────────────────────────────────────────────
@@ -2684,4 +2727,51 @@ export default {
         transform: translateY(0);
     }
 }
+
+/* ── Tableau missions dans modal ── */
+.amis-missions-loading,
+.amis-missions-empty {
+    font-size: 13px;
+    color: var(--gr, #7c6a5a);
+    padding: 10px 0;
+    text-align: center;
+}
+.amis-missions-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+}
+.amis-missions-table th {
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #8A7D78;
+    padding: 6px 8px;
+    border-bottom: 1px solid #E8DDD4;
+    font-weight: 700;
+}
+.amis-missions-table td {
+    padding: 8px 8px;
+    border-bottom: 1px solid #f5f0ec;
+    vertical-align: middle;
+}
+.amis-missions-table tr:last-child td { border-bottom: none }
+.amis-missions-amount { font-weight: 700; color: var(--or, #f97316); white-space: nowrap }
+.amis-missions-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+    background: #f1f5f9;
+    color: #64748b;
+}
+.amis-missions-badge.ms-closed     { background: #dcfce7; color: #15803d }
+.amis-missions-badge.ms-completed  { background: #dbeafe; color: #1d4ed8 }
+.amis-missions-badge.ms-cancelled  { background: #fee2e2; color: #dc2626 }
+.amis-missions-badge.ms-in_progress { background: #fef3c7; color: #92400e }
 </style>
+
+

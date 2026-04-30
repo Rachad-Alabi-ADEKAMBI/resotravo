@@ -1,6 +1,6 @@
 {{-- resources/views/pages/front/market.blade.php --}}
 @extends('layouts.front')
-@section('title', "Appels d'offres — Resotravo")
+@section('title', "Appels d'offres — Mesotravo")
 @php
     $active   = 'market';
     $authUser = Auth::user();

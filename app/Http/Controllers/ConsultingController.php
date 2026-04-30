@@ -200,7 +200,7 @@ class ConsultingController extends Controller
             return "Pour publier un appel d'offres, rendez-vous dans la section « Appels d'offres ». Décrivez votre besoin, fixez un budget et une deadline. La publication est validée par notre équipe sous 24h.";
 
         if (str_contains($t, 'prestataire') || str_contains($t, 'inscrire') || str_contains($t, 'devenir'))
-            return "Pour devenir prestataire Resotravo, inscrivez-vous et uploadez vos 6 documents (CNI, casier judiciaire, diplômes…). Notre équipe vérifie votre dossier sous 48h et vous attribue vos accréditations.";
+            return "Pour devenir prestataire Mesotravo, inscrivez-vous et uploadez vos 6 documents (CNI, casier judiciaire, diplômes…). Notre équipe vérifie votre dossier sous 48h et vous attribue vos accréditations.";
 
         if (str_contains($t, 'clim') || str_contains($t, 'froid') || str_contains($t, 'frigori'))
             return "Pour la climatisation et le froid, nos frigoristes accrédités interviennent pour l'installation, la réparation et la maintenance de vos équipements.";
@@ -212,7 +212,9 @@ class ConsultingController extends Controller
             return "Notre algorithme géolocalisé attribue un prestataire certifié en moins de 5 minutes. À Cotonou, le délai moyen est de 3 minutes.";
 
         if (str_contains($t, 'prix') || str_contains($t, 'tarif') || str_contains($t, 'coût') || str_contains($t, 'combien'))
-            return "Les tarifs sont fixés par les prestataires via un devis détaillé que vous approuvez avant tout travail. La commission Resotravo est de 10%, incluse dans le total affiché.";
+            $rateDiag  = \App\Models\Setting::get('commission_diagnostic', 10);
+            $rateLabor = \App\Models\Setting::get('commission_main_oeuvre', 10);
+            return "Les tarifs sont fixés par les prestataires via un devis détaillé que vous approuvez avant tout travail. La commission Mesotravo est de {$rateDiag}% sur le diagnostic et {$rateLabor}% sur la main d'oeuvre, incluse dans le total affiché.";
 
         return "Je comprends votre demande. Pour une assistance plus précise, je vous recommande de décrire davantage votre situation. Si besoin, demandez à parler à un agent humain en cliquant sur « Parler à un humain ».";
     }
@@ -371,7 +373,7 @@ class ConsultingController extends Controller
         return [
             'id'          => $m->id,
             'sender_type' => $m->sender_type,
-            'sender_name' => $m->sender?->name ?? ($m->sender_type === 'ia' ? 'Agent IA' : 'Agent Resotravo'),
+            'sender_name' => $m->sender?->name ?? ($m->sender_type === 'ia' ? 'Agent IA' : 'Agent Mesotravo'),
             'body'        => $m->body,
             'is_read'     => $m->is_read,
             'created_at'  => $m->created_at?->format('d/m/Y H:i'),

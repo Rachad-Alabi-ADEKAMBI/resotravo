@@ -1,7 +1,7 @@
 {{-- resources/views/pages/back/contractor/dossier.blade.php --}}
 @extends('layouts.back')
 
-@section('title', 'Mon dossier — Resotravo')
+@section('title', 'Mon dossier — Mesotravo')
 
 @php $active = 'dossier'; @endphp
 

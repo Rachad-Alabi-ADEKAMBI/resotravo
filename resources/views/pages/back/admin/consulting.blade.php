@@ -1,7 +1,7 @@
 {{-- resources/views/pages/back/admin/consulting.blade.php --}}
 @extends('layouts.back')
 
-@section('title', 'Allo Conseils — Resotravo')
+@section('title', 'Allô Conseils - Mesotravo')
 
 @php $active = 'consulting'; @endphp
 

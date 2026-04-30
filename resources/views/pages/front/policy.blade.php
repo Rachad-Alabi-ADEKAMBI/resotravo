@@ -95,13 +95,13 @@
 
             <div class="legal-intro">
                 <p>
-                    Resotravo accorde une importance capitale a la protection de vos donnees personnelles.
+                    Mesotravo accorde une importance capitale a la protection de vos donnees personnelles.
                     La presente politique explique quelles donnees nous collectons, pourquoi, comment nous les utilisons
                     et quels sont vos droits.
                 </p>
                 <p>
                     Cette politique s'applique a tous les utilisateurs de la plateforme
-                    <strong>resotravo.bj</strong> : Clients, Prestataires, Talents et Visiteurs.
+                    <strong>Mesotravo.com</strong> : Clients, Prestataires, Talents et Visiteurs.
                 </p>
             </div>
 
@@ -109,22 +109,22 @@
             <div class="legal-article" id="pc-1">
                 <h2><span class="art-num">01</span> Responsable du traitement</h2>
                 <div class="legal-contact-card">
-                    <div class="legal-contact-title">Resotravo</div>
+                    <div class="legal-contact-title">Mesotravo</div>
                     <div class="legal-contact-item">
                         <span>&#x1F310;</span>
-                        <a href="https://resotravo.bj" class="legal-link">www.resotravo.bj</a>
+                        <a href="https://Mesotravo.com" class="legal-link">www.Mesotravo.com</a>
                     </div>
                     <div class="legal-contact-item">
     <span>&#x2709;&#xFE0F;</span>
-    <span><a href="mailto:contact@resotravo.bj" class="legal-link">contact@resotravo.bj</a></span>
+    <span><a href="mailto:contact@Mesotravo.com" class="legal-link">contact@Mesotravo.com</a></span>
 </div>
                     <div class="legal-contact-item">
                         <span>&#x1F4DE;</span>
-                        <a href="tel:+22901966363644" class="legal-link">+229 01 96 66 36 44</a>
+                        <a href="tel:+22901966363644" class="legal-link">+229 01 90 00 36 26</a>
                     </div>
                     <div class="legal-contact-item">
                         <span>&#x1F4AC;</span>
-                        WhatsApp : <a href="https://wa.me/22901966363644" class="legal-link">+229 01 96 66 36 44</a>
+                        WhatsApp : <a href="https://wa.me/2290190003626" class="legal-link">+229 01 90 00 36 26</a>
                     </div>
                     <div class="legal-contact-item">
                         <span>&#x1F4CD;</span>
@@ -198,7 +198,7 @@
                     <li><strong>Mise en relation</strong> : attribution des missions, geolocalisation des prestataires</li>
                     <li><strong>Verification administrative</strong> : controle des dossiers prestataires (CNI, casier judiciaire, diplomes)</li>
                     <li><strong>Paiements</strong> : traitement des transactions via MTN MoMo, gestion des commissions</li>
-                    <li><strong>Communication</strong> : notifications SMS/email, messagerie integree, service Allo Conseils</li>
+                    <li><strong>Communication</strong> : notifications SMS/email, messagerie integree, service Allô Conseils</li>
                     <li><strong>Amelioration du service</strong> : analyses statistiques (donnees anonymisees), detection des fraudes</li>
                     <li><strong>Obligations legales</strong> : conservation des factures, reponse aux demandes des autorites competentes</li>
                 </ul>
@@ -233,7 +233,7 @@
                         </tr>
                         <tr>
                             <td>Analyses statistiques anonymisees</td>
-                            <td>Interet legitime de Resotravo</td>
+                            <td>Interet legitime de Mesotravo</td>
                         </tr>
                         <tr>
                             <td>Conservation des factures</td>
@@ -296,7 +296,7 @@
                 <p>Les numeros de telephone sont masques dans la messagerie integree — aucun echange direct de coordonnees n'est autorise en dehors de la plateforme.</p>
 
                 <h3>6.2 Partage avec des tiers</h3>
-                <p>Resotravo peut partager vos donnees avec :</p>
+                <p>Mesotravo peut partager vos donnees avec :</p>
                 <ul>
                     <li><strong>MTN MoMo</strong> : pour le traitement des paiements (donnees minimales requises)</li>
                     <li><strong>Google Maps</strong> : pour la geolocalisation (coordonnees GPS anonymisees)</li>
@@ -305,14 +305,14 @@
                 </ul>
 
                 <div class="legal-success">
-                    Resotravo ne vend jamais vos donnees personnelles a des tiers a des fins commerciales.
+                    Mesotravo ne vend jamais vos donnees personnelles a des tiers a des fins commerciales.
                 </div>
             </div>
 
             <!-- Article 7 -->
             <div class="legal-article" id="pc-7">
                 <h2><span class="art-num">07</span> Securite des donnees</h2>
-                <p>Resotravo met en oeuvre des mesures techniques et organisationnelles appropriees pour proteger vos donnees :</p>
+                <p>Mesotravo met en oeuvre des mesures techniques et organisationnelles appropriees pour proteger vos donnees :</p>
                 <ul>
                     <li>Chiffrement HTTPS de toutes les communications</li>
                     <li>Chiffrement des mots de passe (hachage bcrypt)</li>
@@ -322,7 +322,7 @@
                     <li>Journalisation des acces aux donnees sensibles</li>
                 </ul>
                 <div class="legal-warning">
-                    En cas de violation de donnees susceptible d'engendrer un risque pour vos droits et libertes, Resotravo s'engage a vous en informer dans les meilleurs delais.
+                    En cas de violation de donnees susceptible d'engendrer un risque pour vos droits et libertes, Mesotravo s'engage a vous en informer dans les meilleurs delais.
                 </div>
             </div>
 
@@ -334,7 +334,7 @@
                     <div class="legal-right-card">
                         <div class="legal-right-icon">&#x1F440;</div>
                         <div class="legal-right-title">Droit d'acces</div>
-                        <div class="legal-right-desc">Obtenir une copie de vos donnees personnelles detenues par Resotravo.</div>
+                        <div class="legal-right-desc">Obtenir une copie de vos donnees personnelles detenues par Mesotravo.</div>
                     </div>
                     <div class="legal-right-card">
                         <div class="legal-right-icon">&#x270F;&#xFE0F;</div>
@@ -364,9 +364,9 @@
                 </div>
                 <p>Pour exercer l'un de ces droits, contactez-nous :</p>
                 <ul>
-                    <li>Par telephone : <a href="tel:+22901966363644" class="legal-link">+229 01 96 66 36 44</a></li>
-                    <li>Par WhatsApp : <a href="https://wa.me/22901966363644" class="legal-link">+229 01 96 66 36 44</a></li>
-                    <li>Via le site : <a href="https://resotravo.bj" class="legal-link">resotravo.bj</a></li>
+                    <li>Par telephone : <a href="tel:+22901966363644" class="legal-link">+229 01 90 00 36 26</a></li>
+                    <li>Par WhatsApp : <a href="https://wa.me/22901966363644" class="legal-link">+229 01 90 00 36 26</a></li>
+                    <li>Via le site : <a href="https://Mesotravo.com" class="legal-link">Mesotravo.com</a></li>
                 </ul>
                 <p>Nous nous engageons a repondre dans un delai d'un (1) mois a compter de la reception de votre demande.</p>
             </div>
@@ -414,7 +414,7 @@
             <div class="legal-article" id="pc-10">
                 <h2><span class="art-num">10</span> Mineurs</h2>
                 <div class="legal-warning">
-                    La plateforme Resotravo est reservee aux personnes majeures (18 ans et plus). Resotravo ne collecte pas sciemment de donnees personnelles concernant des mineurs.
+                    La plateforme Mesotravo est reservee aux personnes majeures (18 ans et plus). Mesotravo ne collecte pas sciemment de donnees personnelles concernant des mineurs.
                 </div>
                 <p>Si vous pensez qu'un mineur a cree un compte sur notre plateforme, contactez-nous immediatement afin que nous puissions supprimer le compte et les donnees associees.</p>
             </div>
@@ -422,9 +422,9 @@
             <!-- Article 11 -->
             <div class="legal-article" id="pc-11">
                 <h2><span class="art-num">11</span> Modifications de la politique</h2>
-                <p>Resotravo se reserve le droit de modifier la presente politique de confidentialite a tout moment pour refleter des changements dans nos pratiques ou la reglementation applicable.</p>
+                <p>Mesotravo se reserve le droit de modifier la presente politique de confidentialite a tout moment pour refleter des changements dans nos pratiques ou la reglementation applicable.</p>
                 <p>Toute modification substantielle sera notifiee aux utilisateurs par email et/ou par un avis visible sur la plateforme au moins 15 jours avant son entree en vigueur.</p>
-                <p>La version en vigueur est toujours accessible a l'adresse <a href="{{ route('policy') }}" class="legal-link">resotravo.bj/confidentialite</a>.</p>
+                <p>La version en vigueur est toujours accessible a l'adresse <a href="{{ route('policy') }}" class="legal-link">Mesotravo.com/policy</a>.</p>
             </div>
 
             <!-- Article 12 -->
@@ -432,18 +432,18 @@
                 <h2><span class="art-num">12</span> Contact - Delegue a la Protection des Donnees</h2>
                 <p>Pour toute question relative a la protection de vos donnees personnelles ou pour exercer vos droits, contactez notre equipe :</p>
                 <div class="legal-contact-card">
-                    <div class="legal-contact-title">Resotravo - Protection des donnees</div>
+                    <div class="legal-contact-title">Mesotravo - Protection des donnees</div>
                     <div class="legal-contact-item">
                         <span>&#x1F310;</span>
-                        <a href="https://resotravo.bj" class="legal-link">resotravo.bj</a>
+                        <a href="https://Mesotravo.com" class="legal-link">Mesotravo.com</a>
                     </div>
                     <div class="legal-contact-item">
                         <span>&#x1F4DE;</span>
-                        <a href="tel:+22901966363644" class="legal-link">+229 01 96 66 36 44</a>
+                        <a href="tel:+22901966363644" class="legal-link">+229 01 90 00 36 26</a>
                     </div>
                     <div class="legal-contact-item">
                         <span>&#x1F4AC;</span>
-                        WhatsApp : <a href="https://wa.me/22901966363644" class="legal-link">+229 01 96 66 36 44</a>
+                        WhatsApp : <a href="https://wa.me/22901966363644" class="legal-link">+229 01 90 00 36 26</a>
                     </div>
                     <div class="legal-contact-item">
                         <span>&#x1F4CD;</span>

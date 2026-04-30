@@ -1,6 +1,6 @@
 <template>
     <div class="msg-wrap">
-        <!-- ══════════════ TOPBAR ══════════════ -->
+        <!-- -------------- TOPBAR -------------- -->
         <div class="msg-topbar">
             <div class="msg-topbar-left">
                 <button
@@ -13,7 +13,7 @@
                 <div>
                     <div class="msg-page-title">Messages</div>
                     <div class="msg-page-sub">
-                        {{ greeting }}, <strong>{{ user.name }}</strong>
+                        <strong>{{ user.name }}</strong>
                     </div>
                 </div>
             </div>
@@ -38,7 +38,7 @@
                             class="msg-notif-badge"
                             v-if="unreadNotifCount > 0"
                         >
-                            {{ unreadNotifCount > 9 ? "9+" : unreadNotifCount }}
+                            {{ unreadNotifCount }}
                         </span>
                     </button>
                     <div class="msg-notif-dropdown" v-if="notifOpen">
@@ -90,21 +90,21 @@
             </div>
         </div>
 
-        <!-- ══════════════ BODY ══════════════ -->
+        <!-- -------------- BODY -------------- -->
         <div class="msg-body">
-            <!-- ════ COLONNE GAUCHE — liste conversations ════ -->
+            <!-- ---- COLONNE GAUCHE � liste conversations ---- -->
             <div
                 class="msg-left"
                 :class="{ 'msg-left-hidden': activeConv && isMobile }"
             >
                 <!-- Recherche -->
                 <div class="msg-search-wrap">
-                    <span class="msg-search-icon">🔍</span>
+                    <span class="msg-search-icon">??</span>
                     <input
                         class="msg-search"
                         type="text"
                         v-model="search"
-                        placeholder="Rechercher…"
+                        placeholder="Rechercher�"
                     />
                 </div>
 
@@ -115,10 +115,10 @@
 
                 <!-- Erreur -->
                 <div class="msg-state-block" v-else-if="convError">
-                    <div class="msg-state-icon">⚠️</div>
+                    <div class="msg-state-icon">??</div>
                     <div class="msg-state-text">{{ convError }}</div>
                     <button class="msg-btn-ghost" @click="fetchConversations">
-                        Réessayer
+                        R�essayer
                     </button>
                 </div>
 
@@ -127,10 +127,10 @@
                     class="msg-state-block"
                     v-else-if="filteredConvs.length === 0"
                 >
-                    <div class="msg-state-icon">💬</div>
+                    <div class="msg-state-icon">??</div>
                     <div class="msg-state-title">Aucune conversation</div>
                     <div class="msg-state-sub">
-                        Vos échanges avec vos interlocuteurs apparaîtront ici.
+                        Vos �changes avec vos interlocuteurs appara�tront ici.
                     </div>
                 </div>
 
@@ -161,7 +161,7 @@
                                 class="msg-conv-mission"
                                 v-if="c.mission_service"
                             >
-                                📋 {{ c.mission_service }}
+                                ?? {{ c.mission_service }}
                                 <span v-if="c.mission_id" class="msg-mission-id"
                                     >#{{ c.mission_id }}</span
                                 >
@@ -176,7 +176,7 @@
                                 class="msg-conv-address"
                                 v-if="c.mission_address"
                             >
-                                📍 {{ c.mission_address }}
+                                ?? {{ c.mission_address }}
                             </div>
                             <div class="msg-conv-last">
                                 {{ c.last_message ?? "Aucun message" }}
@@ -189,21 +189,21 @@
                 </div>
             </div>
 
-            <!-- ════ COLONNE DROITE — zone chat ════ -->
+            <!-- ---- COLONNE DROITE � zone chat ---- -->
             <div class="msg-right">
-                <!-- État vide — aucune conversation sélectionnée -->
+                <!-- �tat vide � aucune conversation s�lectionn�e -->
                 <div class="msg-no-conv" v-if="!activeConv">
-                    <div class="msg-no-conv-icon">💬</div>
+                    <div class="msg-no-conv-icon">??</div>
                     <div class="msg-no-conv-title">
-                        Sélectionnez une conversation
+                        S�lectionnez une conversation
                     </div>
                     <div class="msg-no-conv-sub">
-                        Choisissez une conversation à gauche pour afficher les
+                        Choisissez une conversation � gauche pour afficher les
                         messages.
                     </div>
                 </div>
 
-                <!-- ── Chat actif ── -->
+                <!-- -- Chat actif -- -->
                 <template v-else>
                     <!-- Header chat -->
                     <div class="msg-chat-header">
@@ -234,7 +234,7 @@
                                 class="msg-chat-mission"
                                 v-if="activeConv.mission_service"
                             >
-                                📋 {{ activeConv.mission_service }}
+                                ?? {{ activeConv.mission_service }}
                                 <span
                                     v-if="activeConv.mission_id"
                                     class="msg-mission-id"
@@ -259,14 +259,14 @@
                                 class="msg-chat-address"
                                 v-if="activeConv.mission_address"
                             >
-                                📍 {{ activeConv.mission_address }}
+                                ?? {{ activeConv.mission_address }}
                             </div>
                         </div>
                         <div
                             class="msg-masked-badge"
-                            title="Numéro masqué — utilisez la messagerie"
+                            title="Num�ro masqu� � utilisez la messagerie"
                         >
-                            🔒 Numéro masqué
+                            ?? Num�ro masqu�
                         </div>
                     </div>
 
@@ -274,11 +274,11 @@
                     <div class="msg-messages" ref="messagesEl">
                         <div class="msg-chat-loading" v-if="chatLoading">
                             <div class="msg-spinner"></div>
-                            <span>Chargement…</span>
+                            <span>Chargement�</span>
                         </div>
 
                         <div class="msg-chat-error" v-else-if="chatError">
-                            <div style="font-size: 28px">⚠️</div>
+                            <div style="font-size: 28px">??</div>
                             <div style="font-weight: 600; margin: 6px 0 4px">
                                 Erreur de chargement
                             </div>
@@ -295,7 +295,7 @@
                                 class="msg-btn-ghost"
                                 @click="openConversation(activeConv)"
                             >
-                                🔄 Réessayer
+                                ?? R�essayer
                             </button>
                         </div>
 
@@ -303,7 +303,7 @@
                             class="msg-chat-empty"
                             v-else-if="messages.length === 0"
                         >
-                            <div>💬</div>
+                            <div>??</div>
                             <div>Aucun message. Envoyez le premier !</div>
                         </div>
 
@@ -377,7 +377,7 @@
                                                 m.attachment_url
                                             "
                                         >
-                                            <span>🎵</span>
+                                            <span>??</span>
                                             <audio
                                                 controls
                                                 :src="m.attachment_url"
@@ -395,11 +395,11 @@
                                             target="_blank"
                                             rel="noopener"
                                         >
-                                            <span>📎</span>
+                                            <span>??</span>
                                             <span class="msg-file-name">{{
                                                 m.attachment_name
                                             }}</span>
-                                            <span>↓</span>
+                                            <span>?</span>
                                         </a>
                                         <!-- Meta -->
                                         <div class="msg-meta">
@@ -412,14 +412,14 @@
                                                     m.sender_id === user.id &&
                                                     m.id < lastMsgId
                                                 "
-                                                >✓✓</span
+                                                >??</span
                                             >
                                             <span
                                                 class="msg-tick"
                                                 v-else-if="
                                                     m.sender_id === user.id
                                                 "
-                                                >✓</span
+                                                >?</span
                                             >
                                         </div>
                                     </div>
@@ -428,7 +428,7 @@
                         </template>
                     </div>
 
-                    <!-- Preview pièce jointe -->
+                    <!-- Preview pi�ce jointe -->
                     <div class="msg-attach-preview" v-if="attachPreview">
                         <div class="msg-preview-inner">
                             <img
@@ -439,10 +439,10 @@
                                 v-else-if="attachPreview.isAudio"
                                 class="msg-preview-file"
                             >
-                                🎵 {{ attachPreview.name }}
+                                ?? {{ attachPreview.name }}
                             </div>
                             <div v-else class="msg-preview-file">
-                                📎 {{ attachPreview.name }}
+                                ?? {{ attachPreview.name }}
                             </div>
                         </div>
                         <button class="msg-preview-remove" @click="clearAttach">
@@ -481,7 +481,7 @@
                             class="msg-input"
                             ref="inputEl"
                             v-model="draft"
-                            placeholder="Votre message…"
+                            placeholder="Votre message�"
                             rows="1"
                             @keydown.enter.exact.prevent="send"
                             @keydown.enter.shift.exact="draft += '\n'"
@@ -573,12 +573,6 @@ export default {
                     .slice(0, 2) || "??"
             );
         },
-        greeting() {
-            const h = new Date().getHours();
-            if (h < 12) return "Bonjour";
-            if (h < 18) return "Bon après-midi";
-            return "Bonsoir";
-        },
         totalUnread() {
             return this.conversations.reduce(
                 (s, c) => s + (c.unread_count ?? 0),
@@ -610,7 +604,7 @@ export default {
     },
 
     methods: {
-        // ── Initiales ────────────────────────────────────────────
+        // -- Initiales --------------------------------------------
         initials(name) {
             return (name ?? "??")
                 .split(" ")
@@ -620,7 +614,7 @@ export default {
                 .slice(0, 2);
         },
 
-        // ── Fetch conversations ───────────────────────────────────
+        // -- Fetch conversations -----------------------------------
         async fetchConversations() {
             this.convLoading = true;
             this.convError = null;
@@ -631,7 +625,7 @@ export default {
                 if (!res.ok) throw new Error("HTTP " + res.status);
                 this.conversations = await res.json();
 
-                // Ouvrir directement si openConversationId passé
+                // Ouvrir directement si openConversationId pass�
                 if (this.openConversationId) {
                     const c = this.conversations.find(
                         (c) => c.id === this.openConversationId
@@ -645,7 +639,7 @@ export default {
             }
         },
 
-        // ── Ouvrir une conversation ───────────────────────────────
+        // -- Ouvrir une conversation -------------------------------
         async openConversation(conv) {
             if (this.activeConv?.id === conv.id) return;
 
@@ -680,13 +674,13 @@ export default {
                     data = JSON.parse(rawText);
                 } catch {
                     console.error(
-                        "[MessagesComponent] Réponse non-JSON reçue — probablement une redirection ou erreur HTML. Début:",
+                        "[MessagesComponent] R�ponse non-JSON re�ue � probablement une redirection ou erreur HTML. D�but:",
                         rawText.slice(0, 200)
                     );
                     throw new Error(
-                        "Le serveur a retourné une page HTML au lieu de JSON (statut " +
+                        "Le serveur a retourn� une page HTML au lieu de JSON (statut " +
                             res.status +
-                            "). Vérifiez la route et l'authentification."
+                            "). V�rifiez la route et l'authentification."
                     );
                 }
 
@@ -709,10 +703,10 @@ export default {
             } catch (e) {
                 if (e.name === "AbortError") {
                     console.error(
-                        "[MessagesComponent] Timeout : le serveur n'a pas répondu en 10s"
+                        "[MessagesComponent] Timeout : le serveur n'a pas r�pondu en 10s"
                     );
                     this.chatError =
-                        "⏱️ Le serveur ne répond pas. Vérifiez que la route admin est correcte.";
+                        "?? Le serveur ne r�pond pas. V�rifiez que la route admin est correcte.";
                 } else {
                     console.error(
                         "[MessagesComponent] openConversation error:",
@@ -729,7 +723,7 @@ export default {
             }
         },
 
-        // ── Polling ───────────────────────────────────────────────
+        // -- Polling -----------------------------------------------
         startPolling() {
             this.pollInterval = setInterval(() => this.poll(), 3000);
         },
@@ -768,7 +762,7 @@ export default {
             }
         },
 
-        // ── Envoi message ─────────────────────────────────────────
+        // -- Envoi message -----------------------------------------
         async send() {
             if (this.pendingFile) {
                 await this.sendAttachment();
@@ -802,13 +796,13 @@ export default {
                 const data = await res.json();
                 this.messages.push(data.message);
                 this.lastMsgId = data.message.id;
-                // Mettre à jour le dernier message dans la liste
+                // Mettre � jour le dernier message dans la liste
                 const c = this.conversations.find(
                     (c) => c.id === this.activeConv.id
                 );
                 if (c) {
                     c.last_message = body;
-                    c.last_message_at = "À l'instant";
+                    c.last_message_at = "� l'instant";
                 }
                 await this.scrollBottomAfterRender(true);
             } catch {
@@ -819,7 +813,7 @@ export default {
             }
         },
 
-        // ── Envoi pièce jointe ────────────────────────────────────
+        // -- Envoi pi�ce jointe ------------------------------------
         async sendAttachment() {
             if (!this.pendingFile || this.sending) return;
             this.sending = true;
@@ -854,7 +848,7 @@ export default {
             }
         },
 
-        // ── Fichier ───────────────────────────────────────────────
+        // -- Fichier -----------------------------------------------
         onFileSelect(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -874,7 +868,7 @@ export default {
             if (this.$refs.fileInput) this.$refs.fileInput.value = "";
         },
 
-        // ── Marquer comme lu ──────────────────────────────────────
+        // -- Marquer comme lu --------------------------------------
         async markRead(convId) {
             try {
                 const csrf = document.querySelector(
@@ -895,7 +889,7 @@ export default {
             }
         },
 
-        // ── Scroll ────────────────────────────────────────────────
+        // -- Scroll ------------------------------------------------
         scrollBottom(force = false) {
             const el = this.$refs.messagesEl;
             if (!el) return;
@@ -907,7 +901,7 @@ export default {
         },
         async scrollBottomAfterRender(force = false) {
             await this.$nextTick();
-            // Double RAF pour s'assurer que le DOM est complètement rendu
+            // Double RAF pour s'assurer que le DOM est compl�tement rendu
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     this.scrollBottom(force);
@@ -915,7 +909,7 @@ export default {
             });
         },
 
-        // ── Textarea auto-resize ──────────────────────────────────
+        // -- Textarea auto-resize ----------------------------------
         autoResize() {
             const el = this.$refs.inputEl;
             if (!el) return;
@@ -923,7 +917,7 @@ export default {
             el.style.height = Math.min(el.scrollHeight, 120) + "px";
         },
 
-        // ── Formatage ─────────────────────────────────────────────
+        // -- Formatage ---------------------------------------------
         formatTime(dt) {
             if (!dt) return "";
             return new Date(dt).toLocaleTimeString("fr-FR", {
@@ -948,19 +942,19 @@ export default {
         missionStatusLabel(status) {
             const map = {
                 pending: "En attente",
-                assigned: "Assignée",
-                accepted: "Acceptée",
-                contact_made: "Contact établi",
+                assigned: "Assign�e",
+                accepted: "Accept�e",
+                contact_made: "Contact �tabli",
                 on_the_way: "En route",
                 in_progress: "En cours",
                 quote_submitted: "Devis soumis",
                 order_placed: "Commande",
                 awaiting_confirm: "Att. confirmation",
-                completed: "Terminée",
-                closed: "Clôturée",
-                cancelled: "Annulée",
+                completed: "Termin�e",
+                closed: "Cl�tur�e",
+                cancelled: "Annul�e",
             };
-            return map[status] ?? status ?? "—";
+            return map[status] ?? status ?? "�";
         },
         missionChipClass(status) {
             if (["completed", "closed"].includes(status)) return "chip-green";
@@ -978,7 +972,7 @@ export default {
             );
         },
 
-        // ── Notifications ─────────────────────────────────────────
+        // -- Notifications -----------------------------------------
         async fetchNotifications() {
             this.notifLoading = true;
             try {
@@ -1028,7 +1022,7 @@ export default {
             }
         },
 
-        // ── Photo de profil ───────────────────────────────────────
+        // -- Photo de profil ---------------------------------------
         loadPhoto() {
             const url = this.routes.profile_photo;
             if (!url) return;
@@ -1060,9 +1054,9 @@ export default {
 </script>
 
 <style scoped>
-/* ═══════════════════════════════════════════
+/* -------------------------------------------
    VARIABLES & BASE
-═══════════════════════════════════════════ */
+------------------------------------------- */
 .msg-wrap {
     --or: #f97316;
     --or2: #ea580c;
@@ -1075,15 +1069,15 @@ export default {
     font-family: "Poppins", sans-serif;
     color: var(--dk);
     background: #f8f4f0;
-    height: 100vh; /* hauteur fixe — empêche le scroll global */
+    height: 100vh; /* hauteur fixe � emp�che le scroll global */
     overflow: hidden; /* AUCUN scroll sur le wrapper */
     display: flex;
     flex-direction: column;
 }
 
-/* ═══════════════════════════════════════════
+/* -------------------------------------------
    TOPBAR
-═══════════════════════════════════════════ */
+------------------------------------------- */
 .msg-topbar {
     background: var(--wh);
     border-bottom: 2px solid var(--grl);
@@ -1146,7 +1140,7 @@ export default {
     border-radius: 50%;
 }
 
-/* ── NOTIFICATIONS ── */
+/* -- NOTIFICATIONS -- */
 .msg-notif-wrap {
     position: relative;
 }
@@ -1275,9 +1269,9 @@ export default {
     border-radius: 2px;
 }
 
-/* ═══════════════════════════════════════════
+/* -------------------------------------------
    BODY SPLIT VIEW
-═══════════════════════════════════════════ */
+------------------------------------------- */
 .msg-body {
     display: flex;
     flex: 1;
@@ -1285,7 +1279,7 @@ export default {
     overflow: hidden;
 }
 
-/* ── COLONNE GAUCHE ── */
+/* -- COLONNE GAUCHE -- */
 .msg-left {
     width: 340px;
     flex-shrink: 0;
@@ -1293,7 +1287,7 @@ export default {
     border-right: 2px solid var(--grl);
     display: flex;
     flex-direction: column;
-    overflow: hidden; /* la liste enfant scrolle, pas la colonne entière */
+    overflow: hidden; /* la liste enfant scrolle, pas la colonne enti�re */
     min-height: 0;
     height: 100%; /* remplit toute la hauteur du body */
 }
@@ -1461,7 +1455,7 @@ export default {
     color: #1d4ed8;
 }
 
-/* ── ÉTAT VIDE / ERREUR ── */
+/* -- �TAT VIDE / ERREUR -- */
 .msg-state-block {
     flex: 1;
     display: flex;
@@ -1529,7 +1523,7 @@ export default {
     }
 }
 
-/* ── COLONNE DROITE ── */
+/* -- COLONNE DROITE -- */
 .msg-right {
     flex: 1;
     display: flex;
@@ -1541,7 +1535,7 @@ export default {
     height: 100%; /* remplit toute la hauteur du body */
 }
 
-/* Pas de conv sélectionnée */
+/* Pas de conv s�lectionn�e */
 .msg-no-conv {
     flex: 1;
     display: flex;
@@ -1682,7 +1676,7 @@ export default {
     }
 }
 
-/* Séparateur date */
+/* S�parateur date */
 .msg-date-sep {
     text-align: center;
     position: relative;
@@ -1808,7 +1802,7 @@ export default {
     white-space: nowrap;
 }
 
-/* Preview pièce jointe */
+/* Preview pi�ce jointe */
 .msg-attach-preview {
     border-top: 1px solid var(--grl);
     padding: 8px 14px;
@@ -1955,9 +1949,9 @@ export default {
     border-radius: 8px;
 }
 
-/* ═══════════════════════════════════════════
+/* -------------------------------------------
    RESPONSIVE MOBILE
-═══════════════════════════════════════════ */
+------------------------------------------- */
 @media (max-width: 767px) {
     .msg-left {
         width: 100%;
@@ -1977,7 +1971,7 @@ export default {
     }
 }
 
-/* ── NOTIFICATIONS ── */
+/* -- NOTIFICATIONS -- */
 .msg-notif-wrap {
     position: relative;
 }
@@ -2088,7 +2082,7 @@ export default {
     text-align: center;
 }
 
-/* ── AVATAR PHOTO ── */
+/* -- AVATAR PHOTO -- */
 .msg-avatar {
     width: 36px;
     height: 36px;
@@ -2110,3 +2104,5 @@ export default {
     border-radius: 50%;
 }
 </style>
+
+
