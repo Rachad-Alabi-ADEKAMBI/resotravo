@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Facture #{{ str_pad($mission->id, 6, '0', STR_PAD_LEFT) }} — Mesotravo</title>
+    <title>Facture #{{ str_pad($mission->id, 6, '0', STR_PAD_LEFT) }} - Mesotravo</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0 }
         body {
@@ -17,7 +17,7 @@
         .doc { max-width: 680px; margin: 0 auto; background: #fff; border-radius: 16px; box-shadow: 0 4px 32px rgba(0,0,0,.08); overflow: hidden }
         /* Header */
         .doc-header { background: linear-gradient(135deg, #F97316, #EA580C); color: #fff; padding: 32px 40px 24px; display: flex; justify-content: space-between; align-items: flex-start }
-        .doc-brand img { height: 44px; width: auto; display: block; filter: brightness(0) invert(1) }
+        .doc-brand img { height: 44px; width: auto; display: block }
         .doc-subtitle { font-size: 13px; opacity: .85; margin-top: 6px }
         .doc-badge { background: rgba(255,255,255,.2); border: 1.5px solid rgba(255,255,255,.4); border-radius: 8px; padding: 8px 16px; text-align: right }
         .doc-badge-num { font-size: 18px; font-weight: 800 }
@@ -46,6 +46,11 @@
         .totals-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; font-size: 13.5px }
         .totals-row.total-final { font-size: 17px; font-weight: 800; color: #F97316; border-top: 1px solid #E8DDD4; margin-top: 8px; padding-top: 12px }
         .totals-row.commission-row { font-size: 12.5px; color: #8A7D78 }
+        /* QR */
+        .qr-block { margin-top: 24px; border: 1.5px solid #E8DDD4; border-radius: 12px; padding: 14px; display: flex; gap: 16px; align-items: center; background: #fffaf6 }
+        .qr-block img { width: 118px; height: 118px; background: #fff; border: 1px solid #E8DDD4; border-radius: 8px; padding: 6px }
+        .qr-title { font-size: 13.5px; font-weight: 800; color: #1C1412; margin-bottom: 4px }
+        .qr-text { font-size: 12.5px; color: #5f524d; line-height: 1.5 }
         /* Notice */
         .notice-block { background: #FFF7ED; border: 1.5px solid #FCD34D; border-radius: 10px; padding: 14px 18px; margin-top: 24px; font-size: 13px; color: #92400e; line-height: 1.6 }
         /* Footer */
@@ -62,10 +67,46 @@
     </style>
 </head>
 <body>
+@php
+    $logoPath = public_path('images/logo_mesotravo.png');
+    $logoSrc = file_exists($logoPath)
+        ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath))
+        : asset('images/logo_mesotravo.png');
+    $isContractorInvoice = auth()->user()?->role === 'contractor';
+    $commissionDiagnosticRate = ((float) \App\Models\Setting::get('commission_diagnostic', 10)) / 100;
+    $commissionMainOeuvreRate = ((float) \App\Models\Setting::get('commission_main_oeuvre', 10)) / 100;
+    $diagnosticTotal = 0;
+    $mainOeuvreTotal = 0;
+
+    foreach (($mission->quote?->items ?? collect()) as $line) {
+        $lineTotal = (float) $line->quantity * (float) $line->unit_price;
+
+        if ($line->type === 'diagnostic') {
+            $diagnosticTotal += $lineTotal;
+        } elseif ($line->type === 'labor') {
+            $mainOeuvreTotal += $lineTotal;
+        }
+    }
+
+    if (($mission->quote?->items?->count() ?? 0) === 0) {
+        $mainOeuvreTotal = (float) $mission->total_amount;
+    }
+
+    $contractorAmount = max(0, round(
+        ($diagnosticTotal * (1 - $commissionDiagnosticRate))
+        + ($mainOeuvreTotal * (1 - $commissionMainOeuvreRate)),
+        2
+    ));
+
+    $verificationUrl = \Illuminate\Support\Facades\URL::signedRoute('invoices.verify', [
+        'mission' => $mission->id,
+    ]);
+    $qrImageUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' . urlencode($verificationUrl);
+@endphp
 
 <div class="print-bar">
-    <button class="btn-close" onclick="window.history.back()">← Retour</button>
-    <button class="btn-print" onclick="window.print()">🖨️ Imprimer / Enregistrer PDF</button>
+    <button class="btn-close" onclick="window.history.back()">Retour</button>
+    <button class="btn-print" onclick="window.print()">Imprimer / Enregistrer PDF</button>
 </div>
 
 <div class="doc">
@@ -74,9 +115,9 @@
     <div class="doc-header">
         <div>
             <div class="doc-brand">
-                <img src="{{ asset('images/logo_mesotravo.png') }}" alt="Mesotravo">
+                <img src="{{ $logoSrc }}" alt="Mesotravo">
             </div>
-            <div class="doc-subtitle">Facture — Devis approuvé</div>
+            <div class="doc-subtitle">Facture payée</div>
         </div>
         <div class="doc-badge">
             <div class="doc-badge-num">N° {{ str_pad($mission->id, 6, '0', STR_PAD_LEFT) }}</div>
@@ -86,18 +127,13 @@
 
     <div class="doc-body">
 
-        <div class="doc-status">
-            <span class="doc-status-icon">📋</span>
-            <span>Devis approuvé — En attente de paiement</span>
-        </div>
-
         {{-- Parties --}}
         <div class="section-title">Parties</div>
         <div class="info-grid">
             <div class="info-item">
                 <label>Client</label>
                 <strong>
-                    {{ trim(($mission->client->first_name ?? '') . ' ' . ($mission->client->last_name ?? '')) ?: '—' }}
+                    {{ trim(($mission->client->first_name ?? '') . ' ' . ($mission->client->last_name ?? '')) ?: '-' }}
                     @if($mission->client->account_type === 'business' && $mission->client->company_name)
                         <br><small style="font-weight:400;color:#8A7D78">{{ $mission->client->company_name }}</small>
                     @endif
@@ -106,7 +142,7 @@
             <div class="info-item">
                 <label>Prestataire</label>
                 <strong>
-                    {{ trim(($mission->contractor->first_name ?? '') . ' ' . ($mission->contractor->last_name ?? '')) ?: '—' }}
+                    {{ trim(($mission->contractor->first_name ?? '') . ' ' . ($mission->contractor->last_name ?? '')) ?: '-' }}
                     @if($mission->contractor->specialty ?? null)
                         <br><small style="font-weight:400;color:#8A7D78">{{ $mission->contractor->specialty }}</small>
                     @endif
@@ -123,7 +159,7 @@
             </div>
             <div class="info-item">
                 <label>Type</label>
-                <strong>{{ $mission->location_type === 'business' ? '🏢 Entreprise' : '🏠 Domicile' }}</strong>
+                <strong>{{ $mission->location_type === 'business' ? 'Entreprise' : 'Domicile' }}</strong>
             </div>
             <div class="info-item" style="grid-column:1/-1">
                 <label>Adresse d'intervention</label>
@@ -136,13 +172,13 @@
             </div>
             <div class="info-item">
                 <label>Heure</label>
-                <strong>{{ substr($mission->reservation->time ?? '', 0, 5) ?: '—' }}</strong>
+                <strong>{{ substr($mission->reservation->time ?? '', 0, 5) ?: '-' }}</strong>
             </div>
             @endif
         </div>
 
-        {{-- Détail du devis --}}
-        @if($mission->quote && $mission->quote->items->count())
+        {{-- Détail de la facture --}}
+        @if(!$isContractorInvoice && $mission->quote && $mission->quote->items->count())
         <div class="section-title">Détail des prestations</div>
         <table class="quote-table">
             <thead>
@@ -162,7 +198,7 @@
                         <span class="type-chip {{ $item->type }}">
                             {{ match($item->type) {
                                 'diagnostic' => 'Diagnostic',
-                                'labor'      => 'Main d\'œuvre',
+                                'labor'      => 'Main d’œuvre',
                                 'material'   => 'Matériel',
                                 default      => ucfirst($item->type),
                             } }}
@@ -180,15 +216,19 @@
         {{-- Totaux --}}
         <div class="totals-block">
             <div class="totals-row total-final">
-                <span>💳 Total à payer</span>
-                <span>{{ number_format($mission->total_amount, 0, ',', ' ') }} FCFA</span>
+                <span>{{ $isContractorInvoice ? 'Montant reçu par le prestataire' : 'Montant payé' }}</span>
+                <span>{{ number_format($isContractorInvoice ? $contractorAmount : $mission->total_amount, 0, ',', ' ') }} FCFA</span>
             </div>
         </div>
 
-        <div class="notice-block">
-            ⏳ <strong>Cette facture est en attente de paiement.</strong><br>
-            Le paiement s'effectue exclusivement via MTN Mobile Money sur la plateforme Mesotravo.
-            Aucun paiement en dehors de la plateforme n'est accepté.
+        <div class="qr-block">
+            <img src="{{ $qrImageUrl }}" alt="QR code de vérification de la facture Mesotravo">
+            <div>
+                <div class="qr-title">Vérification Mesotravo</div>
+                <div class="qr-text">
+                    Scannez ce QR code pour afficher les détails de la facture et confirmer qu'elle a bien été émise par Mesotravo.
+                </div>
+            </div>
         </div>
 
     </div>
@@ -196,7 +236,7 @@
     {{-- Footer --}}
     <div class="doc-footer">
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            <img src="{{ asset('images/logo_mesotravo.png') }}" alt="Mesotravo" style="height:28px;width:auto;opacity:.7">
+            <img src="{{ $logoSrc }}" alt="Mesotravo" style="height:28px;width:auto;opacity:.7">
             <span>Plateforme de mise en relation artisans &amp; particuliers</span>
         </div>
         <div style="text-align:right">
@@ -207,3 +247,4 @@
 </div>
 </body>
 </html>
+

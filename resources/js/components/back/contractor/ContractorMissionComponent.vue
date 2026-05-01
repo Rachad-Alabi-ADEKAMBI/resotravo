@@ -74,7 +74,15 @@
                         </div>
                     </div>
                 </div>
-                <div class="ctm-avatar">{{ userInitials }}</div>
+                <div class="ctm-avatar" :class="{ 'has-photo': user.photo_url }">
+                    <img
+                        v-if="user.photo_url"
+                        :src="user.photo_url"
+                        :alt="user.name"
+                        class="ctm-avatar-img"
+                    />
+                    <span v-else>{{ userInitials }}</span>
+                </div>
             </div>
         </div>
 
@@ -127,7 +135,7 @@
                                 </div>
                             </div>
                             <div class="ctm-item-right">
-                                <span class="ctm-badge ctm-badge-locked">🔒 Non disponible</span>
+                                <span class="ctm-badge ctm-badge-locked">🔒 Documents à vérifier</span>
                             </div>
                         </div>
                     </div>
@@ -1209,7 +1217,7 @@ export default {
         },
         availableMissionsMessage() {
             if (this.userStatus === 'pending') {
-                return 'Merci de faire vérifier vos documents et obtenir une accréditation pour accepter ces missions.';
+                return 'Vous pouvez consulter les missions proposées par les clients, mais vous devez faire vérifier vos documents avant de pouvoir postuler.';
             }
             return 'Vous devez obtenir des accréditations pour postuler aux missions.';
         },
@@ -2325,6 +2333,16 @@ ${quote.diagnosis ? `<div class="diag-box"><div class="diag-label">🔍 Diagnost
     font-weight: 800;
     font-size: 13px;
     flex-shrink: 0;
+    overflow: hidden;
+}
+.ctm-avatar.has-photo {
+    background: #fff;
+}
+.ctm-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 .ad-burger {
     background: none;

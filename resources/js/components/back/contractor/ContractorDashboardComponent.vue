@@ -163,6 +163,18 @@
                 <span class="ctr-badge-certified">🏅 Certifié</span>
             </div>
 
+            <div class="ctr-banner-accreditation" v-if="hasHomeAccreditation">
+                <div class="ctr-banner-icon">🏠</div>
+                <div>
+                    <div class="ctr-banner-title">
+                        Accréditation Domicile obtenue
+                    </div>
+                    <div class="ctr-banner-sub">
+                        {{ homeAccreditationMessage }}
+                    </div>
+                </div>
+            </div>
+
             <!-- KPIs -->
             <div class="ctr-kpis">
                 <div
@@ -236,7 +248,7 @@
                                     </div>
                                 </div>
                                 <div class="ctr-mission-right">
-                                    <span class="ctr-badge-locked">🔒 Non disponible</span>
+                                    <span class="ctr-badge-locked">🔒 Documents à vérifier</span>
                                 </div>
                             </div>
                         </div>
@@ -356,9 +368,16 @@
                                 class="ctr-profile-av"
                                 :class="{
                                     certified: userStatus === 'approved',
+                                    'has-photo': contractorProfile.profile_picture,
                                 }"
                             >
-                                {{ contractor.initials }}
+                                <img
+                                    v-if="contractorProfile.profile_picture"
+                                    :src="contractorProfile.profile_picture"
+                                    :alt="contractor.full_name"
+                                    class="ctr-profile-img"
+                                />
+                                <span v-else>{{ contractor.initials }}</span>
                                 <span
                                     class="ctr-certified-dot"
                                     v-if="userStatus === 'approved'"
@@ -471,8 +490,8 @@
                             >
                                 <span>Horaires</span>
                                 <strong
-                                    >{{ contractorProfile.start_time }} —
-                                    {{ contractorProfile.end_time }}</strong
+                                    >{{ formatTime(contractorProfile.start_time) }} —
+                                    {{ formatTime(contractorProfile.end_time) }}</strong
                                 >
                             </div>
                             <div class="ctr-dispo-row">
@@ -1077,30 +1096,6 @@
                         </div>
                     </div>
 
-                    <!-- Tarif diagnostic -->
-                    <div class="ctr-schedule-section">
-                        <div class="ctr-schedule-section-title">
-                            💰 Mon tarif diagnostic
-                        </div>
-                        <div class="ctr-schedule-sub" style="font-size:12px;color:var(--grm);margin-bottom:8px;">
-                            Montant pré-rempli dans vos devis. Mesotravo retient 30% sur le diagnostic.
-                        </div>
-                        <div class="ctr-diag-fee-row">
-                            <input
-                                type="number"
-                                class="ctr-input"
-                                min="0"
-                                step="500"
-                                v-model.number="scheduleModal.diagnostic_fee"
-                                placeholder="Ex : 5000"
-                            />
-                            <span class="ctr-fee-unit">FCFA</span>
-                        </div>
-                        <div class="ctr-fee-hint" v-if="scheduleModal.diagnostic_fee > 0">
-                            Votre net : <strong>{{ formatPrice(scheduleModal.diagnostic_fee * 0.7) }}</strong>
-                            · Mesotravo : {{ formatPrice(scheduleModal.diagnostic_fee * 0.3) }}
-                        </div>
-                    </div>
                 </div>
                 <div class="ctr-modal-footer">
                     <button
@@ -1517,6 +1512,7 @@ export default {
                 intervention_zone: "",
                 experience_years: 0,
                 bio: "",
+                profile_picture: null,
                 accreditation: "none",
                 available: true,
                 start_time: "08:00",
@@ -1702,6 +1698,37 @@ export default {
             );
         },
 
+        hasHomeAccreditation() {
+            return ["home", "both"].includes(this.contractorProfile.accreditation);
+        },
+
+        completedMissionsCount() {
+            return Number(this.contractorProfile.completed_missions ?? 0);
+        },
+
+        remainingBusinessMissions() {
+            return Math.max(0, 5 - this.completedMissionsCount);
+        },
+
+        homeAccreditationMessage() {
+            const missionText =
+                this.remainingBusinessMissions > 1 ? "missions" : "mission";
+            const receiveText =
+                this.userStatus === "approved"
+                    ? "Vous pouvez recevoir les missions à faire à domicile."
+                    : "Vous pourrez recevoir les missions à faire à domicile dès validation de votre dossier.";
+
+            if (this.contractorProfile.accreditation === "both") {
+                return `${receiveText} Vous avez aussi l'accréditation Entreprise et pouvez recevoir les missions à faire dans les entreprises.`;
+            }
+
+            if (this.remainingBusinessMissions === 0) {
+                return `${receiveText} Vous pouvez maintenant faire une demande pour obtenir l'accréditation Entreprise et recevoir aussi les missions à faire dans les entreprises.`;
+            }
+
+            return `${receiveText} Après 5 missions terminées, vous pourrez faire une demande pour obtenir l'accréditation Entreprise et recevoir aussi les missions à faire dans les entreprises. Il vous reste ${this.remainingBusinessMissions} ${missionText}.`;
+        },
+
         showAvailableMissions() {
             if (this.userStatus === 'pending') return true;
             if (this.userStatus === 'approved' && this.contractorProfile.accreditation === 'none') return true;
@@ -1710,7 +1737,7 @@ export default {
 
         availableMissionsMessage() {
             if (this.userStatus === 'pending') {
-                return 'Merci de faire vérifier vos documents et obtenir une accréditation pour accepter ces missions.';
+                return 'Vous pouvez consulter les missions proposées par les clients, mais vous devez faire vérifier vos documents avant de pouvoir postuler.';
             }
             return 'Vous devez obtenir des accréditations pour postuler aux missions.';
         },
@@ -1993,7 +2020,6 @@ export default {
                 ).substring(0, 5),
                 working_days: [...(this.contractorProfile.working_days ?? [])],
                 radius_km: this.contractorProfile.radius_km ?? 10,
-                diagnostic_fee: Number(this.contractorProfile.diagnostic_fee ?? 0),
                 loading: false,
             };
         },
@@ -2010,7 +2036,6 @@ export default {
                     end_time: this.scheduleModal.end_time,
                     working_days: this.scheduleModal.working_days,
                     radius_km: this.scheduleModal.radius_km,
-                    diagnostic_fee: Number(this.scheduleModal.diagnostic_fee ?? 0),
                 };
                 console.log("[Horaires] URL    :", this.routes.availability);
                 console.log(
@@ -2054,7 +2079,6 @@ export default {
                 this.contractorProfile.working_days =
                     this.scheduleModal.working_days;
                 this.contractorProfile.radius_km = this.scheduleModal.radius_km;
-                this.contractorProfile.diagnostic_fee = this.scheduleModal.diagnostic_fee;
                 this.scheduleModal.visible = false;
                 this.showToast(
                     "✅ Horaires mis à jour avec succès.",
@@ -2066,6 +2090,10 @@ export default {
             } finally {
                 this.scheduleModal.loading = false;
             }
+        },
+
+        formatTime(value) {
+            return (value || "").toString().substring(0, 5);
         },
 
         // ── Disponibilité rapide (topbar) ─────────────────────────
@@ -3299,7 +3327,8 @@ export default {
 /* BANNIÈRES */
 .ctr-banner-pending,
 .ctr-banner-certified,
-.ctr-banner-warning {
+.ctr-banner-warning,
+.ctr-banner-accreditation {
     border-radius: 14px;
     padding: 16px 20px;
     display: flex;
@@ -3318,6 +3347,10 @@ export default {
 .ctr-banner-certified {
     background: #f0fdf4;
     border: 1.5px solid #bbf7d0;
+}
+.ctr-banner-accreditation {
+    background: #eff6ff;
+    border: 1.5px solid #bfdbfe;
 }
 .ctr-banner-icon {
     font-size: 28px;
@@ -3664,10 +3697,20 @@ export default {
     justify-content: center;
     flex-shrink: 0;
     position: relative;
+    overflow: hidden;
 }
 .ctr-profile-av.certified {
     background: linear-gradient(135deg, var(--or), var(--or2));
     color: #fff;
+}
+.ctr-profile-av.has-photo {
+    background: #fff;
+}
+.ctr-profile-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 .ctr-certified-dot {
     position: absolute;

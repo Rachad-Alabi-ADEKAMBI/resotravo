@@ -160,11 +160,10 @@
         {{-- Navigation — toujours visible --}}
         <div class="ab-nav-section">
             <a class="ab-nav-item {{ $active === 'dashboard' ? 'active' : '' }}" href="{{ route('client.dashboard') }}">
-                <div class="ab-section-lbl">Espace</div>
                 <span class="ab-nav-icon">🏠</span><span>Tableau de bord</span>
             </a>
             <a class="ab-nav-item {{ $active === 'missions' ? 'active' : '' }}" href="{{ route('client.missions.page') }}">
-                <span class="ab-nav-icon">📋</span><span>Commandes</span>
+                <span class="ab-nav-icon">📋</span><span>Mes commandes</span>
             </a>
         </div>
 

@@ -26,6 +26,7 @@
                     v-model="period"
                     @change="fetchRevenus"
                 >
+                    <option value="all">Toutes</option>
                     <option value="week">Cette semaine</option>
                     <option value="month">Ce mois</option>
                     <option value="quarter">Ce trimestre</option>
@@ -106,7 +107,7 @@
                             formatPrice(stats.total_revenus)
                         }}</span>
                     </div>
-                    <div class="rv-kpi-label">Revenus totaux</div>
+                    <div class="rv-kpi-label">Revenus nets encaissés</div>
                 </div>
                 <div class="rv-kpi rv-kpi--orange">
                     <div class="rv-kpi-icon">✅</div>
@@ -115,16 +116,6 @@
                         <span v-else>{{ stats.missions_terminees }}</span>
                     </div>
                     <div class="rv-kpi-label">Missions terminées</div>
-                </div>
-                <div class="rv-kpi rv-kpi--blue">
-                    <div class="rv-kpi-icon">📊</div>
-                    <div class="rv-kpi-val">
-                        <span v-if="loading" class="rv-skeleton"></span>
-                        <span v-else>{{
-                            formatPrice(stats.revenu_moyen)
-                        }}</span>
-                    </div>
-                    <div class="rv-kpi-label">Revenu moyen / mission</div>
                 </div>
                 <div class="rv-kpi rv-kpi--purple">
                     <div class="rv-kpi-icon">⏳</div>
@@ -181,8 +172,8 @@
                                 <th>Service</th>
                                 <th>Client</th>
                                 <th>Date</th>
-                                <th>Montant</th>
-                                <th>Statut</th>
+                                <th>Net prestataire</th>
+                                <th>Facture</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -202,20 +193,20 @@
                                         )
                                     }}
                                 </td>
-                                <td data-label="Montant">
-                                    <span class="rv-amount">{{
-                                        m.total_amount
-                                            ? formatPrice(m.total_amount)
-                                            : "—"
-                                    }}</span>
+                                <td data-label="Net prestataire">
+                                    <span class="rv-net">{{ formatPrice(m.net_amount) }}</span>
                                 </td>
-                                <td data-label="Statut">
-                                    <span
-                                        class="rv-badge"
-                                        :class="badgeClass(m.status)"
+                                <td data-label="Facture">
+                                    <a
+                                        v-if="m.invoice_url"
+                                        class="rv-invoice-link"
+                                        :href="m.invoice_url"
+                                        target="_blank"
+                                        rel="noopener"
                                     >
-                                        {{ statusLabel(m.status) }}
-                                    </span>
+                                        Télécharger
+                                    </a>
+                                    <span v-else>—</span>
                                 </td>
                             </tr>
                         </tbody>
@@ -325,7 +316,7 @@ export default {
             error: "",
 
             // ── Filtres ──────────────────────────────────
-            period: "month",
+            period: "all",
             search: "",
             currentPage: 1,
             perPage: 10,
@@ -489,30 +480,6 @@ export default {
                 month: "short",
                 year: "numeric",
             });
-        },
-
-        statusLabel(status) {
-            return (
-                {
-                    completed: "Terminée",
-                    closed: "Clôturée",
-                    pending: "En attente",
-                    active: "En cours",
-                    cancelled: "Annulée",
-                }[status] ?? status
-            );
-        },
-
-        badgeClass(status) {
-            return (
-                {
-                    completed: "rv-badge--green",
-                    closed: "rv-badge--green",
-                    pending: "rv-badge--orange",
-                    active: "rv-badge--blue",
-                    cancelled: "rv-badge--red",
-                }[status] ?? ""
-            );
         },
 
         // ── Notifications ─────────────────────────────────────────
@@ -861,7 +828,7 @@ export default {
 /* ── KPIs ── */
 .rv-kpis {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 16px;
 }
 .rv-kpi {
@@ -1070,9 +1037,28 @@ export default {
     white-space: nowrap;
     font-size: 13px;
 }
-.rv-amount {
+.rv-net {
+    font-weight: 800;
+    color: #15803d;
+    white-space: nowrap;
+}
+.rv-invoice-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 30px;
+    padding: 0 12px;
+    border-radius: 8px;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    color: #ea580c;
+    font-size: 12px;
     font-weight: 700;
-    color: #1c1412;
+    text-decoration: none;
+    white-space: nowrap;
+}
+.rv-invoice-link:hover {
+    background: #ffedd5;
 }
 
 /* Badges statut */
@@ -1260,4 +1246,3 @@ export default {
     }
 }
 </style>
-

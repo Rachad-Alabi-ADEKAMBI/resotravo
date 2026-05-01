@@ -75,7 +75,7 @@
                 <!-- â”€â”€ Frais de diagnostic â”€â”€ -->
                 <div class="acfg-section">
                     <div class="acfg-section-header">
-                        <div class="acfg-section-icon">ðŸ”</div>
+                        <div class="acfg-section-icon">&#128269;</div>
                         <div>
                             <h2 class="acfg-section-title">Frais de diagnostic</h2>
                             <p class="acfg-section-desc">
@@ -190,56 +190,6 @@
                     </div>
                 </div>
 
-                <!-- Icones du site -->
-                <div class="acfg-section">
-                    <div class="acfg-section-header">
-                        <div class="acfg-section-icon">🔧</div>
-                        <div>
-                            <h2 class="acfg-section-title">Icones du site</h2>
-                            <p class="acfg-section-desc">
-                                Choisissez le style d'icones utilise sur toutes les pages du site.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="acfg-fields">
-                        <div class="acfg-field">
-                            <label class="acfg-label" for="site_icon_mode">
-                                Bibliotheque d'icones
-                            </label>
-                            <p class="acfg-hint">
-                                "Actuel" conserve les icones deja en place. "Font Awesome" remplace les icones compatibles.
-                            </p>
-                            <div class="acfg-select-group">
-                                <select
-                                    id="site_icon_mode"
-                                    class="acfg-input"
-                                    v-model="form.site_icon_mode"
-                                >
-                                    <option value="current">Actuel</option>
-                                    <option value="fontawesome">Font Awesome</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="acfg-actions">
-                        <button
-                            class="acfg-btn acfg-btn-green"
-                            :disabled="saving"
-                            @click="saveSettings"
-                        >
-                            <span v-if="saving" class="acfg-btn-spinner"></span>
-                            {{ saving ? "Enregistrement..." : "Enregistrer" }}
-                        </button>
-                        <transition name="acfg-fade">
-                            <span class="acfg-save-ok" v-if="saveSuccess">
-                                Enregistre avec succes
-                            </span>
-                        </transition>
-                        <span class="acfg-save-err" v-if="saveError">{{ saveError }}</span>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -266,7 +216,6 @@ export default {
                 diagnostic_fee: 5000,
                 commission_diagnostic: 10,
                 commission_main_oeuvre: 10,
-                site_icon_mode: "current",
             },
 
             // Sidebar
@@ -321,9 +270,6 @@ export default {
                 this.form.diagnostic_fee        = parseFloat(data.diagnostic_fee)        || 5000;
                 this.form.commission_diagnostic = parseFloat(data.commission_diagnostic) || 10;
                 this.form.commission_main_oeuvre= parseFloat(data.commission_main_oeuvre)|| 10;
-                this.form.site_icon_mode = ["current", "fontawesome"].includes(data.site_icon_mode)
-                    ? data.site_icon_mode
-                    : "current";
             } catch (e) {
                 this.loadError = "Impossible de charger la configuration.";
             } finally {
@@ -337,7 +283,6 @@ export default {
             this.saveError = null;
 
             try {
-                const previousIconMode = window.MESOTRAVO_ICON_MODE || "current";
                 const res = await fetch(this.routes.settings_update, {
                     method: "PUT",
                     headers: {
@@ -351,7 +296,6 @@ export default {
                         diagnostic_fee:        this.form.diagnostic_fee,
                         commission_diagnostic: this.form.commission_diagnostic,
                         commission_main_oeuvre:this.form.commission_main_oeuvre,
-                        site_icon_mode:        this.form.site_icon_mode,
                     }),
                 });
 
@@ -363,10 +307,6 @@ export default {
                 }
 
                 this.saveSuccess = true;
-                if (previousIconMode !== this.form.site_icon_mode) {
-                    setTimeout(() => window.location.reload(), 600);
-                    return;
-                }
                 setTimeout(() => (this.saveSuccess = false), 3000);
             } catch (e) {
                 this.saveError = e.message;

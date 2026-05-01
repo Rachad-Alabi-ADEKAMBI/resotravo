@@ -21,7 +21,7 @@ class MessageController extends Controller
         $user = Auth::user();
 
         $conversations = Conversation::whereHas('participants', fn($q) => $q->where('user_id', $user->id))
-            ->with(['participants', 'mission'])
+            ->with(['participants.client', 'participants.contractor', 'participants.documents', 'mission'])
             ->orderByDesc('last_message_at')
             ->get()
             ->map(fn($c) => $this->formatConversation($c, $user->id));
@@ -74,7 +74,7 @@ class MessageController extends Controller
         $this->markRead($conversation, $user->id);
 
         return response()->json([
-            'conversation' => $this->formatConversation($conversation->fresh(['participants', 'mission']), $user->id),
+            'conversation' => $this->formatConversation($conversation->fresh(['participants.client', 'participants.contractor', 'participants.documents', 'mission']), $user->id),
             'messages'     => $messages->map->toArray()->values(),
         ]);
     }
@@ -183,7 +183,7 @@ class MessageController extends Controller
         $message->load('sender');
 
         $conversation->update([
-            'last_message'    => $isImage ? '📷 Photo' : ($isAudio ? '🎵 ' . $file->getClientOriginalName() : '📎 ' . $file->getClientOriginalName()),
+            'last_message'    => $isImage ? 'Photo' : ($isAudio ? 'Audio : ' . $file->getClientOriginalName() : 'Fichier : ' . $file->getClientOriginalName()),
             'last_message_at' => now(),
         ]);
 
@@ -201,7 +201,7 @@ class MessageController extends Controller
         $user = Auth::user();
 
         $conversations = Conversation::whereHas('participants', fn($q) => $q->where('user_id', $user->id))
-            ->with(['participants', 'mission'])
+            ->with(['participants.client', 'participants.contractor', 'participants.documents', 'mission'])
             ->get();
 
         $total     = 0;
@@ -272,11 +272,35 @@ class MessageController extends Controller
             'last_message'    => $c->last_message,
             'last_message_at' => $c->last_message_at?->locale('fr')->diffForHumans(),
             'unread_count'    => $c->unreadCountFor($userId),
-            'other_name'      => $other?->name ?? '—',
+            'other_name'      => $other?->name ?? '-',
             'other_role'      => $other?->role ?? '',
+            'other_photo_url' => $this->profilePhotoUrl($other),
             'mission_service' => $c->mission?->service,
             'mission_address' => $c->mission?->address,
             'mission_status'  => $c->mission?->status,
         ];
+    }
+
+    private function profilePhotoUrl($user): ?string
+    {
+        if (! $user) {
+            return null;
+        }
+
+        $profilePicture = $user->role === 'contractor'
+            ? $user->contractor?->profile_picture
+            : $user->client?->profile_picture;
+
+        if ($profilePicture) {
+            return Storage::disk('public')->url($profilePicture);
+        }
+
+        $documentType = $user->role === 'client' ? 'photo_profil' : 'photo';
+        $hasApprovedPhoto = $user->documents()
+            ->where('type', $documentType)
+            ->where('status', 'approved')
+            ->exists();
+
+        return $hasApprovedPhoto ? route('profile.photo.user', ['userId' => $user->id]) : null;
     }
 }

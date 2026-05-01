@@ -55,6 +55,18 @@ Route::get('/momo-apikey', function () {
     ];
 });
 
+Route::get('/factures/{mission}/verification', function (\Illuminate\Http\Request $request, \App\Models\Mission $mission) {
+    if (! $request->hasValidSignature()) {
+        abort(403, 'Lien de vérification invalide.');
+    }
+
+    $mission->load(['client', 'contractor', 'reservation']);
+
+    return view('receipts.invoice-verify', [
+        'mission' => $mission,
+    ]);
+})->name('invoices.verify');
+
 
 
 Route::get('/', function (Illuminate\Http\Request $request) {
@@ -397,7 +409,6 @@ Route::middleware('auth')->group(function () {
                 'diagnostic_fee'         => (float) \App\Models\Setting::get('diagnostic_fee', '5000'),
                 'commission_diagnostic'  => (float) \App\Models\Setting::get('commission_diagnostic', '10'),
                 'commission_main_oeuvre' => (float) \App\Models\Setting::get('commission_main_oeuvre', '10'),
-                'site_icon_mode'         => \App\Models\Setting::get('site_icon_mode', 'current'),
             ]);
         })->name('configuration.settings');
 
@@ -406,13 +417,11 @@ Route::middleware('auth')->group(function () {
                 'diagnostic_fee'         => 'required|numeric|min:0',
                 'commission_diagnostic'  => 'required|numeric|min:0|max:100',
                 'commission_main_oeuvre' => 'required|numeric|min:0|max:100',
-                'site_icon_mode'         => 'required|in:current,fontawesome',
             ]);
 
             \App\Models\Setting::set('diagnostic_fee',         $validated['diagnostic_fee']);
             \App\Models\Setting::set('commission_diagnostic',  $validated['commission_diagnostic']);
             \App\Models\Setting::set('commission_main_oeuvre', $validated['commission_main_oeuvre']);
-            \App\Models\Setting::set('site_icon_mode',         $validated['site_icon_mode']);
 
             return response()->json(['message' => 'Configuration mise a jour.']);
         })->name('configuration.settings.update');
@@ -975,6 +984,7 @@ Route::middleware('auth')->group(function () {
                     'revenus_index'     => route('contractor.revenus.index'),
                     'notifications'     => route('notifications.index'),
                     'notifications_all' => route('notifications.read-all'),
+                    'mission_invoice'   => url('/contractor/missions/{id}/invoice'),
                 ],
             ]);
         })->name('revenus');
@@ -983,37 +993,83 @@ Route::middleware('auth')->group(function () {
         Route::get('/revenus/data', function (\Illuminate\Http\Request $request) {
             $user        = Auth::user();
             $contractor  = $user->contractor;
-            $period      = $request->get('period', 'month');
+            $period      = $request->get('period', 'all');
 
             $dateFrom = match($period) {
                 'week'    => now()->startOfWeek(),
                 'month'   => now()->startOfMonth(),
                 'quarter' => now()->startOfQuarter(),
                 'year'    => now()->startOfYear(),
-                default   => now()->startOfMonth(),
+                default   => null,
             };
 
+            $commissionDiagnostic = ((float) \App\Models\Setting::get('commission_diagnostic', 10)) / 100;
+            $commissionMainOeuvre = ((float) \App\Models\Setting::get('commission_main_oeuvre', 10)) / 100;
+
             $missions = \App\Models\Mission::where('contractor_id', $contractor?->id)
-                ->whereIn('status', ['completed', 'closed'])
-                ->where('updated_at', '>=', $dateFrom)
-                ->with('client.user')
+                ->where('status', 'closed')
+                ->when($dateFrom, fn($query) => $query->where('completed_at', '>=', $dateFrom))
+                ->with(['client.user', 'quote.items'])
                 ->latest()
                 ->get()
-                ->map(fn($m) => [
-                    'id'           => $m->id,
-                    'service'      => $m->service,
-                    'client_name'  => $m->client?->user?->name ?? '—',
-                    'total_amount' => $m->total_amount,
-                    'status'       => $m->status,
-                    'completed_at' => $m->updated_at,
-                    'created_at'   => $m->created_at,
-                ]);
+                ->map(function ($m) use ($commissionDiagnostic, $commissionMainOeuvre) {
+                    $items = $m->quote?->items ?? collect();
+                    $diagnosticTotal = 0;
+                    $mainOeuvreTotal = 0;
+                    $piecesTotal = 0;
 
-            $total     = $missions->sum('total_amount');
+                    foreach ($items as $item) {
+                        $lineTotal = (float) $item->quantity * (float) $item->unit_price;
+
+                        if ($item->type === 'diagnostic') {
+                            $diagnosticTotal += $lineTotal;
+                        } elseif ($item->type === 'labor') {
+                            $mainOeuvreTotal += $lineTotal;
+                        } else {
+                            $piecesTotal += $lineTotal;
+                        }
+                    }
+
+                    $totalAmount = (float) ($m->total_amount ?? $m->quote?->amount_incl_tax ?? 0);
+
+                    if ($items->isEmpty()) {
+                        $mainOeuvreTotal = $totalAmount;
+                    }
+
+                    $commissionDiagnosticAmount = round($diagnosticTotal * $commissionDiagnostic, 2);
+                    $commissionMainOeuvreAmount = round($mainOeuvreTotal * $commissionMainOeuvre, 2);
+                    $commissionTotal = $commissionDiagnosticAmount + $commissionMainOeuvreAmount;
+                    $netAmount = max(0, round(
+                        ($diagnosticTotal - $commissionDiagnosticAmount)
+                        + ($mainOeuvreTotal - $commissionMainOeuvreAmount),
+                        2
+                    ));
+
+                    return [
+                        'id'                            => $m->id,
+                        'service'                       => $m->service,
+                        'client_name'                   => $m->client?->user?->name ?? '-',
+                        'total_amount'                  => $totalAmount,
+                        'diagnostic_total'              => $diagnosticTotal,
+                        'main_oeuvre_total'             => $mainOeuvreTotal,
+                        'pieces_total'                  => $piecesTotal,
+                        'commission_diagnostic_amount'  => $commissionDiagnosticAmount,
+                        'commission_main_oeuvre_amount' => $commissionMainOeuvreAmount,
+                        'commission_total'              => $commissionTotal,
+                        'net_amount'                    => $netAmount,
+                        'is_paid'                       => (bool) $m->paid_at || $m->status === 'closed',
+                        'invoice_url'                   => route('contractor.missions.invoice', $m),
+                        'status'                        => $m->status,
+                        'status_label'                  => $m->status_label,
+                        'completed_at'                  => $m->completed_at ?? $m->updated_at,
+                        'paid_at'                       => $m->paid_at,
+                        'created_at'                    => $m->created_at,
+                    ];
+                });
+
+            $total     = $missions->sum('net_amount');
             $count     = $missions->count();
-            $enAttente = \App\Models\Mission::where('contractor_id', $contractor?->id)
-                ->where('status', 'active')
-                ->sum('total_amount');
+            $enAttente = 0;
 
             return response()->json([
                 'missions'            => $missions,
@@ -1021,6 +1077,11 @@ Route::middleware('auth')->group(function () {
                 'missions_terminees'  => $count,
                 'revenu_moyen'        => $count > 0 ? round($total / $count) : 0,
                 'en_attente'          => $enAttente,
+                'commission_totale'   => $missions->sum('commission_total'),
+                'commission_rates'    => [
+                    'diagnostic'  => $commissionDiagnostic * 100,
+                    'main_oeuvre' => $commissionMainOeuvre * 100,
+                ],
             ]);
         })->name('revenus.index');
 
@@ -1140,6 +1201,7 @@ Route::middleware('auth')->group(function () {
 
         Route::get  ('/missions',                  [MissionController::class, 'index'])        ->name('missions.index');
         Route::get  ('/missions/{mission}',        [MissionController::class, 'show'])         ->name('missions.show');
+        Route::get  ('/missions/{mission}/invoice', [PaymentController::class, 'invoice'])     ->name('missions.invoice');
         Route::patch('/missions/{mission}/status', [MissionController::class, 'updateStatus']) ->name('missions.status');
 
         // ── Devis ─────────────────────────────────────────────────

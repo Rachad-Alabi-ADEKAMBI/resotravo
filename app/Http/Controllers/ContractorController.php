@@ -80,7 +80,11 @@ class ContractorController extends Controller
             'end_time'          => ['nullable', 'date_format:H:i'],
         ]);
 
-        $contractor = Contractor::create([...$data, 'user_id' => Auth::id()]);
+        $contractor = Contractor::create([
+            ...$data,
+            'user_id'       => Auth::id(),
+            'accreditation' => 'home',
+        ]);
 
         return response()->json([
             'message'    => 'Profile created successfully.',

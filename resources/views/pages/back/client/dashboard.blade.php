@@ -20,6 +20,9 @@
             'phone'               => $user->client?->phone,
             'address'             => $user->client?->address,
             'city'                => $user->client?->city ?? 'Cotonou',
+            'profile_picture'     => $user->client?->profile_picture
+                ? \Illuminate\Support\Facades\Storage::disk('public')->url($user->client->profile_picture)
+                : route('profile.photo.user', ['userId' => $user->id]),
             'account_type'        => $user->client?->account_type ?? 'individual',
             'company_name'        => $user->client?->company_name,
             'completed_missions'  => $completedMissions,

@@ -22,6 +22,9 @@
             'intervention_zone'  => $contractor?->intervention_zone  ?? '',
             'experience_years'   => $contractor?->experience_years   ?? 0,
             'bio'                => $contractor?->bio                ?? '',
+            'profile_picture'    => $contractor?->profile_picture
+                ? \Illuminate\Support\Facades\Storage::disk('public')->url($contractor->profile_picture)
+                : route('profile.photo.user', ['userId' => $user->id]),
             'accreditation'      => $contractor?->accreditation      ?? 'none',
             'available'          => $contractor?->available          ?? true,
             'start_time'         => $contractor?->start_time         ?? '08:00',

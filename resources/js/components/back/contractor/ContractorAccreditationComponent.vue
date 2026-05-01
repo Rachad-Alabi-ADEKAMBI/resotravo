@@ -232,14 +232,12 @@
                             Demande d'accréditation Entreprise
                         </div>
                         <div class="cac-request-desc">
-                            Pour obtenir l'accréditation Entreprise, envoyez une
-                            demande à l'équipe Mesotravo. Une vérification
-                            complémentaire sera effectuée avant attribution.
+                            {{ businessRequestMessage }}
                         </div>
                         <button
                             class="cac-btn cac-btn-orange"
                             @click="openRequestModal"
-                            :disabled="requestSent"
+                            :disabled="requestSent || !canRequestBusiness"
                         >
                             {{
                                 requestSent
@@ -408,6 +406,33 @@ export default {
         hasBusiness() {
             return ["business", "both"].includes(this.accreditation);
         },
+        completedMissionsCount() {
+            return Number(this.contractor.completed_missions ?? 0);
+        },
+        remainingBusinessMissions() {
+            return Math.max(0, 5 - this.completedMissionsCount);
+        },
+        canRequestBusiness() {
+            return this.contractorStatus === "approved" && this.remainingBusinessMissions === 0;
+        },
+        homeAccreditationMessage() {
+            if (this.hasBusiness) {
+                return "Vous pouvez recevoir les missions à faire à domicile et dans les entreprises.";
+            }
+
+            if (this.remainingBusinessMissions === 0) {
+                return "Vous pouvez recevoir les missions à faire à domicile. Vous pouvez maintenant faire une demande pour obtenir l'accréditation Entreprise et recevoir aussi les missions à faire dans les entreprises.";
+            }
+
+            return `Vous pouvez recevoir les missions à faire à domicile. Après 5 missions terminées, vous pourrez faire une demande pour obtenir l'accréditation Entreprise et recevoir aussi les missions à faire dans les entreprises. Il vous reste ${this.remainingBusinessMissions} mission${this.remainingBusinessMissions > 1 ? "s" : ""}.`;
+        },
+        businessRequestMessage() {
+            if (this.canRequestBusiness) {
+                return "Vous avez terminé 5 missions. Vous pouvez faire une demande à l'équipe Mesotravo pour obtenir l'accréditation Entreprise.";
+            }
+
+            return `Vous pourrez faire cette demande après 5 missions terminées. Missions terminées : ${Math.min(this.completedMissionsCount, 5)} / 5.`;
+        },
 
         bannerClass() {
             if (this.accreditation === "both") return "banner-both";
@@ -467,6 +492,13 @@ export default {
 
         // ── Modal demande ─────────────────────────────────────────
         openRequestModal() {
+            if (!this.canRequestBusiness) {
+                this.showToast(
+                    "Vous pourrez faire cette demande après 5 missions terminées.",
+                    "error"
+                );
+                return;
+            }
             this.requestModal = { visible: true, message: "", loading: false };
         },
         async submitRequest() {
@@ -848,6 +880,30 @@ export default {
     color: var(--dk);
 }
 .cac-banner-sub {
+    font-size: 13px;
+    color: var(--gr);
+    margin-top: 4px;
+    line-height: 1.5;
+}
+.cac-info-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 20px;
+    border-radius: 14px;
+    background: #eff6ff;
+    border: 1.5px solid #bfdbfe;
+}
+.cac-info-icon {
+    font-size: 26px;
+    flex-shrink: 0;
+}
+.cac-info-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--dk);
+}
+.cac-info-sub {
     font-size: 13px;
     color: var(--gr);
     margin-top: 4px;

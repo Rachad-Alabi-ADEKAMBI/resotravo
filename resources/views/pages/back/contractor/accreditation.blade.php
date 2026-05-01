@@ -13,8 +13,9 @@
             'role' => $user->role,
         ]) }}"
         :contractor="{{ json_encode([
-            'accreditation' => $contractor?->accreditation ?? 'none',
-            'status'        => $user->status ?? 'pending',
+            'accreditation'      => $contractor?->accreditation ?? 'none',
+            'status'             => $user->status ?? 'pending',
+            'completed_missions' => $contractor?->completed_missions ?? 0,
         ]) }}"
         :routes="{{ json_encode($routes) }}"
     ></contractor-accreditation-component>

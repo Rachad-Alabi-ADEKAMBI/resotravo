@@ -75,7 +75,15 @@
                     </div>
                 </div>
 
-                <div class="clm-avatar">{{ userInitials }}</div>
+                <div class="clm-avatar" :class="{ 'has-photo': user.photo_url || clientProfile.profile_picture }">
+                    <img
+                        v-if="user.photo_url || clientProfile.profile_picture"
+                        :src="user.photo_url || clientProfile.profile_picture"
+                        :alt="user.name"
+                        class="clm-avatar-img"
+                    />
+                    <span v-else>{{ userInitials }}</span>
+                </div>
 
                 <button class="clm-btn clm-btn-orange" @click="openNewMission">
                     + Nouvelle commande
@@ -88,13 +96,13 @@
             <!-- Filtres -->
             <div class="clm-filters">
                 <div class="clm-search-wrap">
-                    <span class="clm-search-icon">??</span>
+                    <span class="clm-search-icon">&#128269;</span>
                     <input
                         class="clm-search"
                         type="text"
                         v-model="search"
                         @input="currentPage = 1"
-                        placeholder="Rechercher une mission�"
+                        placeholder="Rechercher une mission..."
                     />
                 </div>
                 <div class="clm-tabs">
@@ -123,29 +131,29 @@
 
             <!-- Erreur -->
             <div class="clm-alert-error" v-else-if="error">
-                ?? {{ error }}
+                {{ error }}
                 <button
                     class="clm-btn clm-btn-ghost clm-btn-sm"
                     @click="fetchMissions"
                 >
-                    R�essayer
+                    Réessayer
                 </button>
             </div>
 
             <!-- Vide -->
             <div class="clm-empty" v-else-if="totalFiltered === 0">
-                <div class="clm-empty-icon">??</div>
+                <div class="clm-empty-icon">&#128230;</div>
                 <div class="clm-empty-title">Aucune mission</div>
                 <div class="clm-empty-sub">
-                    Publiez votre premi�re mission pour trouver un prestataire
-                    certifi�.
+                    Publiez votre première mission pour trouver un prestataire
+                    certifié.
                 </div>
                 <button
                     class="clm-btn clm-btn-orange"
                     @click="openNewMission"
                     style="margin-top: 16px"
                 >
-                    + Cr�er une mission
+                    + Créer une mission
                 </button>
             </div>
 
@@ -175,21 +183,21 @@
                                 :class="m.location_type"
                             >
                                 {{
-                                    m.location_type === "business" ? "??" : "??"
+                                    m.location_type === "business" ? "Entreprise" : "Domicile"
                                 }}
                             </span>
                         </div>
                         <div class="clm-item-meta">
                             {{
                                 m.contractor && m.contractor.name
-                                    ? "?? " + m.contractor.name
+                                    ? m.contractor.name
                                     : m.contractor
-                                    ? "?? Prestataire assign�"
-                                    : "? Attribution en cours�"
+                                    ? "Prestataire assigné"
+                                    : "Attribution en cours..."
                             }}
-                            � {{ formatDateTime(m.created_at) }}
+                            - {{ formatDateTime(m.created_at) }}
                         </div>
-                        <div class="clm-item-addr">?? {{ m.address }}</div>
+                        <div class="clm-item-addr">{{ m.address }}</div>
                         <div class="clm-item-reservation" v-if="m.reservation">
                             &#128197; Planifi&eacute; le
                             {{
@@ -220,7 +228,7 @@
                             class="clm-msg-unread"
                             v-if="unreadByMission[m.id]"
                         >
-                            ?? {{ unreadByMission[m.id] }} message{{
+                            {{ unreadByMission[m.id] }} message{{
                                 unreadByMission[m.id] > 1 ? "s" : ""
                             }}
                             non lu{{ unreadByMission[m.id] > 1 ? "s" : "" }}
@@ -233,13 +241,13 @@
                         <div class="clm-item-price" v-if="m.total_amount">
                             {{ formatPrice(m.total_amount) }}
                         </div>
-                        <!-- Bouton Lire message � ouvre direct le chat sans ouvrir le panel -->
+                        <!-- Bouton Lire message ouvre direct le chat sans ouvrir le panel -->
                         <button
                             class="clm-read-msg-btn"
                             v-if="unreadByMission[m.id]"
                             @click.stop="openChat(m.id)"
                             :title="
-                                'Ouvrir la conversation � ' +
+                                'Ouvrir la conversation - ' +
                                 unreadByMission[m.id] +
                                 ' non lu(s)'
                             "
@@ -260,14 +268,14 @@
                     @click="currentPage = 1"
                     :disabled="currentPage === 1"
                 >
-                    �
+                    &lt;&lt;
                 </button>
                 <button
                     class="clm-page-btn"
                     @click="currentPage--"
                     :disabled="currentPage === 1"
                 >
-                    �
+                    &lt;
                 </button>
                 <button
                     class="clm-page-btn"
@@ -283,17 +291,17 @@
                     @click="currentPage++"
                     :disabled="currentPage === totalPages"
                 >
-                    �
+                    &gt;
                 </button>
                 <button
                     class="clm-page-btn"
                     @click="currentPage = totalPages"
                     :disabled="currentPage === totalPages"
                 >
-                    �
+                    &gt;&gt;
                 </button>
                 <span class="clm-page-info">
-                    {{ (currentPage - 1) * perPage + 1 }}�{{
+                    {{ (currentPage - 1) * perPage + 1 }}-{{
                         Math.min(currentPage * perPage, totalFiltered)
                     }}
                     sur {{ totalFiltered }}
@@ -301,7 +309,7 @@
             </div>
         </div>
 
-        <!-- -------------- PANEL D�TAIL MISSION -------------- -->
+        <!-- -------------- PANEL DÉTAIL MISSION -------------- -->
         <div
             class="clm-panel-overlay"
             v-if="activeMission"
@@ -331,7 +339,7 @@
                     <div>
                         <h2>{{ activeMission.service }}</h2>
                         <div class="clm-panel-sub">
-                            Mission #{{ activeMission.id }} �
+                            Mission #{{ activeMission.id }} -
                             {{ formatDateTime(activeMission.created_at) }}
                         </div>
                     </div>
@@ -352,7 +360,7 @@
 
                 <!-- Barre de progression + fil bullet -->
                 <div class="clm-workflow">
-                    <!-- Barre lin�aire -->
+                    <!-- Barre linéaire -->
                     <div class="clm-workflow-track">
                         <div
                             class="clm-workflow-fill"
@@ -361,7 +369,7 @@
                             }"
                         ></div>
                     </div>
-                    <!-- Fil d'�tapes avec labels -->
+                    <!-- Fil d'étapes avec labels -->
                     <div class="clm-wf-steps">
                         <div
                             class="clm-wf-step"
@@ -384,14 +392,14 @@
                         <!-- Infos -->
                         <div class="clm-info-col">
                             <div class="clm-section">
-                                <div class="clm-section-title">?? D�tails</div>
+                                <div class="clm-section-title">Détails</div>
                                 <div class="clm-row">
                                     <span>Type</span
                                     ><strong>{{
                                         activeMission.location_type ===
                                         "business"
-                                            ? "?? Entreprise"
-                                            : "?? Domicile"
+                                            ? "Entreprise"
+                                            : "Domicile"
                                     }}</strong>
                                 </div>
                                 <div class="clm-row">
@@ -405,14 +413,14 @@
                                     ><strong>{{
                                         activeMission.latitude &&
                                         activeMission.longitude
-                                            ? "?? G�olocalisation"
-                                            : "?? Saisie manuelle"
+                                            ? "Géolocalisation"
+                                            : "Saisie manuelle"
                                     }}</strong>
                                 </div>
                                 <div class="clm-row">
                                     <span>Description</span
                                     ><strong>{{
-                                        activeMission.description ?? "�"
+                                        activeMission.description ?? "-"
                                     }}</strong>
                                 </div>
                                 <div
@@ -448,7 +456,7 @@
                                     class="clm-row"
                                     v-if="activeMission.accepted_at"
                                 >
-                                    <span>Accept�e le</span>
+                                    <span>Acceptée le</span>
                                     <strong>{{
                                         formatDate(activeMission.accepted_at)
                                     }}</strong>
@@ -460,7 +468,7 @@
                                 v-if="activeMission.contractor"
                             >
                                 <div class="clm-section-title">
-                                    ?? Prestataire
+                                    Prestataire
                                 </div>
                                 <div class="clm-row">
                                     <span>Nom</span
@@ -469,7 +477,7 @@
                                     }}</strong>
                                 </div>
                                 <div class="clm-row">
-                                    <span>Sp�cialit�</span
+                                    <span>Spécialité</span
                                     ><strong>{{
                                         activeMission.contractor.specialty
                                     }}</strong>
@@ -477,29 +485,29 @@
                                 <div class="clm-row">
                                     <span>Note</span
                                     ><strong
-                                        >?
+                                        >&#9733;
                                         {{
                                             activeMission.contractor
-                                                .average_rating ?? "�"
+                                                .average_rating ?? "-"
                                         }}</strong
                                     >
                                 </div>
                                 <div class="clm-row">
                                     <span>Contact</span
                                     ><strong class="clm-masked"
-                                        >?? Num�ro masqu� � utilisez la
+                                        >Numéro masqué - utilisez la
                                         messagerie</strong
                                     >
                                 </div>
                             </div>
 
                             <div class="clm-section clm-section-pending" v-else>
-                                <div class="clm-pending-icon">?</div>
+                                <div class="clm-pending-icon">&#8987;</div>
                                 <div class="clm-pending-title">
                                     Attribution en cours
                                 </div>
                                 <div class="clm-pending-sub">
-                                    Un prestataire certifi� va �tre attribu�
+                                    Un prestataire certifié va être attribué
                                     automatiquement sous peu.
                                 </div>
                             </div>
@@ -507,7 +515,7 @@
 
                         <!-- Actions -->
                         <div class="clm-actions-col">
-                            <!-- -- Devis soumis � EN ATTENTE D'APPROBATION -- -->
+                            <!-- -- Devis soumis - EN ATTENTE D'APPROBATION -- -->
                             <div
                                 class="clm-action-block clm-action-quote"
                                 v-if="
@@ -517,15 +525,13 @@
                                     activeMission.quote.status !== 'rejected'
                                 "
                             >
-                                <!-- En-t�te devis -->
+                                <!-- En-tête devis -->
                                 <div class="clm-quote-header">
                                     <div class="clm-quote-header-left">
-                                        <div class="clm-action-quote-icon">
-                                            ??
-                                        </div>
+                                        <div class="clm-action-quote-icon"></div>
                                         <div>
                                             <div class="clm-action-quote-title">
-                                                Devis � approuver
+                                                Devis à approuver
                                             </div>
                                             <div
                                                 class="clm-quote-version"
@@ -534,7 +540,7 @@
                                                         .version > 1
                                                 "
                                             >
-                                                R�vision v{{
+                                                Révision v{{
                                                     activeMission.quote.version
                                                 }}
                                             </div>
@@ -543,9 +549,9 @@
                                     <button
                                         class="clm-btn-download"
                                         @click="downloadQuotePdf(activeMission)"
-                                        title="T�l�charger PDF"
+                                        title="Télécharger PDF"
                                     >
-                                        ? PDF
+                                        PDF
                                     </button>
                                 </div>
 
@@ -555,7 +561,7 @@
                                     v-if="activeMission.quote.diagnosis"
                                 >
                                     <div class="clm-quote-diag-label">
-                                        ?? Diagnostic
+                                        Diagnostic
                                     </div>
                                     <div class="clm-quote-diag-text">
                                         {{ activeMission.quote.diagnosis }}
@@ -571,8 +577,8 @@
                                     "
                                 >
                                     <div class="clm-quote-lines-head">
-                                        <span class="ql-desc">D�signation</span>
-                                        <span class="ql-qty">Qt�</span>
+                                        <span class="ql-desc">Désignation</span>
+                                        <span class="ql-qty">Qté</span>
                                         <span class="ql-pu">P.U.</span>
                                         <span class="ql-total">Total</span>
                                     </div>
@@ -630,7 +636,7 @@
                                         "
                                         :disabled="actionLoading"
                                     >
-                                        ? Refuser
+                                        Refuser
                                     </button>
                                     <button
                                         class="clm-btn clm-btn-green"
@@ -641,12 +647,12 @@
                                             class="clm-spinner"
                                             v-if="actionLoading"
                                         ></div>
-                                        <span v-else>? Approuver</span>
+                                        <span v-else>Approuver</span>
                                     </button>
                                 </div>
                             </div>
 
-                            <!-- -- Devis refus� � bloc informatif -- -->
+                            <!-- -- Devis refusé - bloc informatif -- -->
                             <div
                                 class="clm-action-block clm-action-quote-rejected"
                                 v-if="
@@ -656,21 +662,21 @@
                                     activeMission.quote.status === 'rejected'
                                 "
                             >
-                                <div class="clm-qr-icon">?</div>
-                                <div class="clm-qr-title">Devis refus�</div>
+                                <div class="clm-qr-icon">&#9888;</div>
+                                <div class="clm-qr-title">Devis refusé</div>
                                 <div
                                     class="clm-qr-reason"
                                     v-if="activeMission.reported_issue"
                                 >
                                     Motif transmis :
                                     <em
-                                        >�
-                                        {{ activeMission.reported_issue }} �</em
+                                        >"
+                                        {{ activeMission.reported_issue }} "</em
                                     >
                                 </div>
                                 <div class="clm-qr-sub">
-                                    Le prestataire a �t� notifi�. Il peut vous
-                                    soumettre un nouveau devis r�vis� ou
+                                    Le prestataire a été notifié. Il peut vous
+                                    soumettre un nouveau devis révisé ou
                                     abandonner la mission.
                                 </div>
                             </div>
@@ -682,13 +688,13 @@
                                     activeMission.status === 'awaiting_confirm'
                                 "
                             >
-                                <div class="clm-action-confirm-icon">??</div>
+                                <div class="clm-action-confirm-icon"></div>
                                 <div class="clm-action-confirm-title">
-                                    Travaux termin�s
+                                    Travaux terminés
                                 </div>
                                 <div class="clm-action-confirm-sub">
-                                    Le prestataire a marqu� l'intervention comme
-                                    termin�e. Confirmez-vous la fin des travaux
+                                    Le prestataire a marqué l'intervention comme
+                                    terminée. Confirmez-vous la fin des travaux
                                     ?
                                 </div>
                                 <div class="clm-action-row">
@@ -696,7 +702,7 @@
                                         class="clm-btn clm-btn-ghost"
                                         @click="openSignalProblem"
                                     >
-                                        ?? Signaler un probl�me
+                                        Signaler un problème
                                     </button>
                                     <button
                                         class="clm-btn clm-btn-green"
@@ -709,47 +715,48 @@
                                             class="clm-spinner"
                                             v-if="actionLoading"
                                         ></div>
-                                        <span v-else>? Confirmer la fin</span>
+                                        <span v-else>Confirmer la fin</span>
                                     </button>
                                 </div>
                             </div>
 
-                            <!-- Paiement MoMo � visible d�s completed, m�me apr�s avis -->
+                            <!-- Paiement MoMo -->
                             <div
                                 class="clm-action-block clm-action-pay"
                                 v-if="
+                                    activeMission.status !== 'closed' &&
                                     !activeMission.paid_at &&
                                     (activeMission.payment_unlocked ||
                                         activeMission.status === 'completed')
                                 "
                             >
-                                <div class="clm-action-pay-icon">??</div>
+                                <div class="clm-action-pay-icon"></div>
                                 <div class="clm-action-pay-title">
                                     Paiement requis
                                 </div>
                                 <div class="clm-action-pay-sub">
-                                    Choisissez votre r�seau et proc�dez au
-                                    paiement mobile pour cl�turer la mission.
+                                    Choisissez votre réseau et procédez au
+                                    paiement mobile pour clôturer la mission.
                                 </div>
                                 <button
                                     class="clm-btn clm-btn-orange clm-btn-full"
                                     @click="openMomoModal(activeMission)"
                                 >
-                                    ?? Payer via Mobile Money ?
+                                    Payer via Mobile Money
                                 </button>
                             </div>
 
-                            <!-- Re�u � mission pay�e -->
+                            <!-- Reçu - mission payée -->
                             <div
                                 class="clm-action-block clm-action-receipt"
                                 v-if="activeMission.paid_at"
                             >
-                                <div class="clm-action-pay-icon">??</div>
+                                <div class="clm-action-pay-icon"></div>
                                 <div class="clm-action-pay-title">
-                                    Mission cl�tur�e &amp; pay�e
+                                    Mission clôturée &amp; payée
                                 </div>
                                 <div class="clm-action-pay-sub">
-                                    Le paiement a �t� confirm�.
+                                    Le paiement a été confirmé.
                                 </div>
                                 <a
                                     :href="routes.receipt.replace('{id}', activeMission.id)"
@@ -757,42 +764,41 @@
                                     class="clm-btn clm-btn-green clm-btn-full"
                                     style="text-decoration:none;display:block;text-align:center"
                                 >
-                                    ?? T�l�charger le re�u
+                                    Télécharger le reçu
                                 </a>
                             </div>
 
-                            <!-- Facture disponible d�s que le devis est approuv� -->
+                            <!-- Facture disponible dès que le devis est approuvé -->
                             <div
                                 class="clm-action-block clm-action-invoice"
                                 v-if="['order_placed','awaiting_confirm','completed','closed'].includes(activeMission.status)"
                             >
-                                <div class="clm-invoice-icon">??</div>
+                                <div class="clm-invoice-icon"></div>
                                 <div class="clm-invoice-title">Facture disponible</div>
-                                <div class="clm-invoice-sub">Votre devis a �t� approuv�. T�l�chargez votre facture.</div>
+                                <div class="clm-invoice-sub">Votre devis a été approuvé. Téléchargez votre facture.</div>
                                 <a
                                     :href="routes.invoice.replace('{id}', activeMission.id)"
                                     target="_blank"
                                     class="clm-btn clm-btn-green clm-btn-full"
                                     style="text-decoration:none;display:block;text-align:center"
                                 >
-                                    ?? T�l�charger la facture
+                                    Télécharger la facture
                                 </a>
                             </div>
 
-                            <!-- Avis prestataire (statut completed) -->
+                            <!-- Avis prestataire -->
                             <div
                                 class="clm-action-block clm-action-review"
                                 v-if="activeMission.status === 'completed'"
                             >
                                 <div class="clm-review-header">
-                                    <span class="clm-review-icon">?</span>
+                                    <span class="clm-review-icon">&#9733;</span>
                                     <div>
                                         <div class="clm-review-title">
-                                            �valuez le prestataire
+                                            Évaluez le prestataire
                                         </div>
                                         <div class="clm-review-sub">
-                                            Votre avis aide la communaut�
-                                            Mesotravo
+                                            Votre avis aide la communauté Mesotravo
                                         </div>
                                     </div>
                                 </div>
@@ -801,13 +807,11 @@
                                         class="clm-star"
                                         v-for="n in 5"
                                         :key="n"
-                                        :class="{
-                                            active: n <= reviewModal.rating,
-                                        }"
+                                        :class="{ active: n <= reviewModal.rating }"
                                         @click="reviewModal.rating = n"
                                         type="button"
                                     >
-                                        ?
+                                        &#9733;
                                     </button>
                                     <span
                                         class="clm-star-label"
@@ -819,7 +823,7 @@
                                 <textarea
                                     class="clm-review-textarea"
                                     v-model="reviewModal.comment"
-                                    placeholder="D�crivez votre exp�rience (optionnel)�"
+                                    placeholder="Décrivez votre expérience (optionnel)..."
                                     rows="3"
                                     maxlength="500"
                                 ></textarea>
@@ -829,19 +833,13 @@
                                 <button
                                     class="clm-btn clm-btn-green clm-btn-full"
                                     @click="submitReviewAndClose(activeMission)"
-                                    :disabled="
-                                        !reviewModal.rating ||
-                                        reviewModal.loading
-                                    "
+                                    :disabled="!reviewModal.rating || reviewModal.loading"
                                 >
                                     <div
                                         class="clm-spinner"
                                         v-if="reviewModal.loading"
                                     ></div>
-                                    <span v-else
-                                        >? Soumettre l'avis et cl�turer la
-                                        mission</span
-                                    >
+                                    <span v-else>Soumettre l'avis et clôturer la mission</span>
                                 </button>
                                 <div class="clm-review-skip">
                                     <button
@@ -849,7 +847,7 @@
                                         @click="closeMissionOnly(activeMission)"
                                         :disabled="reviewModal.loading"
                                     >
-                                        Passer et cl�turer sans avis ?
+                                        Passer et clôturer sans avis ?
                                     </button>
                                 </div>
                             </div>
@@ -875,7 +873,7 @@
                                 </div>
                             </div>
 
-                            <!-- -- Banni�re s�curit� : prestataire en route / sur place -- -->
+                            <!-- -- Bannière sécurité : prestataire en route / sur place -- -->
                             <div
                                 class="clm-security-banner"
                                 v-if="
@@ -886,40 +884,40 @@
                                     ].includes(activeMission.status)
                                 "
                             >
-                                <div class="clm-security-icon">???</div>
+                                <div class="clm-security-icon">&#128274;</div>
                                 <div class="clm-security-body">
                                     <div class="clm-security-title">
-                                        Recommandations de s�curit�
+                                        Recommandations de sécurité
                                     </div>
                                     <ul class="clm-security-list">
                                         <li>
-                                            ? V�rifiez l'identit� du
-                                            prestataire � son arriv�e
+                                            Vérifiez l'identité du
+                                            prestataire à son arrivée
                                         </li>
                                         <li>
-                                            ?? Contr�lez son badge
+                                            Contrôlez son badge
                                             <strong
-                                                >Profil Certifi�
+                                                >Profil Certifié
                                                 Mesotravo</strong
                                             >
                                         </li>
                                         <li>
-                                            ?? N'effectuez aucun paiement en
+                                            N'effectuez aucun paiement en
                                             dehors de la plateforme
                                         </li>
                                         <li>
-                                            ?? Tout contact passe par la
-                                            messagerie int�gr�e
+                                            Tout contact passe par la
+                                            messagerie intégrée
                                         </li>
                                     </ul>
                                     <div class="clm-security-note">
-                                        Tout paiement hors-plateforme d�gage
-                                        Mesotravo de toute responsabilit�.
+                                        Tout paiement hors-plateforme dégage
+                                        Mesotravo de toute responsabilité.
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- -- Devis approuv� � consulter apr�s approbation -- -->
+                            <!-- -- Devis approuvé à consulter après approbation -- -->
                             <div
                                 class="clm-action-block clm-action-quote-approved"
                                 v-if="
@@ -930,7 +928,7 @@
                             >
                                 <div class="clm-qa-header">
                                     <div class="clm-qa-left">
-                                        <span class="clm-qa-icon">??</span>
+                                        <span class="clm-qa-icon"></span>
                                         <div>
                                             <div class="clm-qa-title">
                                                 Devis
@@ -958,9 +956,9 @@
                                     <button
                                         class="clm-btn-download"
                                         @click="downloadQuotePdf(activeMission)"
-                                        title="Consulter / T�l�charger PDF"
+                                        title="Consulter / Télécharger PDF"
                                     >
-                                        ? PDF
+                                        PDF
                                     </button>
                                 </div>
                             </div>
@@ -982,7 +980,7 @@
                                     ].includes(activeMission.status)
                                 "
                             >
-                                ?? Contacter le prestataire
+                                Contacter le prestataire
                                 <span
                                     class="clm-chat-badge"
                                     v-if="unreadByMission[activeMission.id]"
@@ -1005,7 +1003,7 @@
         >
             <div class="clm-modal clm-modal-lg">
                 <div class="clm-modal-header">
-                    <h3>? Nouvelle commande</h3>
+                    <h3>Nouvelle commande</h3>
                     <button
                         class="clm-modal-close"
                         @click="showNewMission = false"
@@ -1049,7 +1047,7 @@
                             </label>
                         </div>
                     </div>
-                    <!-- Date & Heure si planifi� -->
+                    <!-- Date & Heure si planifié -->
                     <div
                         class="clm-field"
                         v-if="form.schedule_type === 'later'"
@@ -1076,7 +1074,7 @@
                     <div class="clm-field">
                         <label>Prestation <span class="clm-req">*</span></label>
                         <select class="clm-input" v-model="form.service">
-                            <option value="">S�lectionner�</option>
+                            <option value="">Sélectionner...</option>
                             <option
                                 v-for="s in services"
                                 :key="s.value"
@@ -1094,7 +1092,7 @@
                             class="clm-input clm-textarea"
                             v-model="form.description"
                             rows="4"
-                            placeholder="D�crivez votre besoin en d�tail (min. 20 caract�res)�"
+                            placeholder="Décrivez votre besoin en détail (min. 20 caractères)..."
                         ></textarea>
                         <div
                             class="clm-char-count"
@@ -1116,7 +1114,7 @@
                                     v-model="address_mode"
                                     value="manual"
                                 />
-                                ?? Saisir manuellement
+                                Saisir manuellement
                             </label>
                             <label
                                 class="clm-addr-mode-label"
@@ -1127,7 +1125,7 @@
                                     v-model="address_mode"
                                     value="geo"
                                 />
-                                ?? G�olocalisation
+                                Géolocalisation
                             </label>
                         </div>
                     </div>
@@ -1142,7 +1140,7 @@
                         />
                     </div>
 
-                    <!-- G�olocalisation : carte -->
+                    <!-- Géolocalisation : carte -->
                     <div v-if="address_mode === 'geo'" class="clm-field">
                         <button
                             class="clm-btn-geo"
@@ -1150,21 +1148,21 @@
                             @click="openMapModal"
                             v-if="!geoOk"
                         >
-                            ??? Ouvrir la carte
+                            Ouvrir la carte
                         </button>
                         <div class="clm-geo-ok" v-if="geoOk">
-                            <span>??</span>
+                            <span>&#10003;</span>
                             <span class="clm-geo-ok-addr">{{
                                 form.address
                             }}</span>
                             <button class="clm-geo-reset" @click="resetGeo">
-                                ?
+                                &#215;
                             </button>
                         </div>
                     </div>
                     <!-- Images optionnelles -->
                     <div class="clm-field">
-                        <label>Photos (optionnel, max 5 � 10 Mo)</label>
+                        <label>Photos (optionnel, max 5 à 10 Mo)</label>
                         <div class="clm-img-upload-row">
                             <label
                                 class="clm-img-add-btn"
@@ -1190,7 +1188,7 @@
                                     class="clm-img-remove"
                                     @click.prevent="removeImage(i)"
                                 >
-                                    ?
+                                    &#215;
                                 </button>
                             </div>
                         </div>
@@ -1221,21 +1219,21 @@
         <div class="clm-modal-overlay" v-if="showPublishConfirm" @click.self="showPublishConfirm = false">
             <div class="clm-modal" style="max-width:480px;width:95vw">
                 <div class="clm-modal-header">
-                    <h3>?? Informations importantes</h3>
+                    <h3>Informations importantes</h3>
                     <button class="clm-modal-close" @click="showPublishConfirm = false">&#215;</button>
                 </div>
                 <div class="clm-modal-body" style="text-align:center;padding:28px 24px">
-                    <div style="font-size:2.5rem;margin-bottom:16px">??</div>
+                    <div style="font-size:2.5rem;margin-bottom:16px"></div>
                     <p style="font-size:1rem;font-weight:700;color:#1c1412;margin-bottom:12px">
                         Frais de diagnostic
                     </p>
                     <p style="font-size:0.9rem;color:#4b5563;line-height:1.6;margin-bottom:20px">
-                        Une fois le prestataire arriv� chez vous, des <strong>frais de diagnostic de
-                        {{ diagnosticFee.toLocaleString('fr-FR') }} FCFA</strong> vous seront factur�s
+                        Une fois le prestataire arrivé chez vous, des <strong>frais de diagnostic de
+                        {{ diagnosticFee.toLocaleString('fr-FR') }} FCFA</strong> vous seront facturés
                         avant qu'il commence l'intervention.
                     </p>
                     <p style="font-size:0.82rem;color:#9ca3af;margin-bottom:24px">
-                        Ces frais couvrent le d�placement et l'�valuation initiale de la mission.
+                        Ces frais couvrent le déplacement et l'évaluation initiale de la mission.
                     </p>
                     <div style="display:flex;gap:12px;justify-content:center">
                         <button class="clm-btn clm-btn-ghost" @click="showPublishConfirm = false">Annuler</button>
@@ -1256,7 +1254,7 @@
         >
             <div class="clm-modal" style="max-width: 660px; width: 95vw">
                 <div class="clm-modal-header">
-                    <h3>??? Choisir la position</h3>
+                    <h3>Choisir la position</h3>
                     <button class="clm-modal-close" @click="closeMapModal">
                         &#215;
                     </button>
@@ -1267,7 +1265,7 @@
                             class="clm-input clm-map-search-input"
                             type="text"
                             v-model="mapSearch"
-                            placeholder="Rechercher une adresse, un quartier�"
+                            placeholder="Rechercher une adresse, un quartier..."
                             @keydown.enter.prevent="searchOnMap"
                         />
                         <button
@@ -1275,7 +1273,7 @@
                             type="button"
                             @click="searchOnMap"
                         >
-                            ?? Rechercher
+                            Rechercher
                         </button>
                     </div>
                     <p
@@ -1305,7 +1303,7 @@
                             color: var(--dk);
                         "
                     >
-                        ?? <strong>{{ mapAddress }}</strong>
+                        <strong>{{ mapAddress }}</strong>
                     </div>
                     <div
                         v-if="geoLoading"
@@ -1315,7 +1313,7 @@
                             color: var(--grm);
                         "
                     >
-                        ? Localisation en cours�
+                        Localisation en cours...
                     </div>
                 </div>
                 <div class="clm-modal-footer">
@@ -1330,7 +1328,7 @@
                         @click="validatePosition"
                         :disabled="!mapLat"
                     >
-                        ? Valider cette position
+                        Valider cette position
                     </button>
                 </div>
             </div>
@@ -1344,7 +1342,7 @@
         >
             <div class="clm-modal">
                 <div class="clm-modal-header">
-                    <h3>?? Signaler un probl�me</h3>
+                    <h3>Signaler un problème</h3>
                     <button
                         class="clm-modal-close"
                         @click="signalModal.visible = false"
@@ -1361,7 +1359,7 @@
                             line-height: 1.6;
                         "
                     >
-                        D�crivez le probl�me rencontr�. Un agent Mesotravo vous
+                        Décrivez le problème rencontré. Un agent Mesotravo vous
                         contactera sous 24h.
                     </p>
                     <label class="clm-form-label"
@@ -1371,7 +1369,7 @@
                         class="clm-input clm-textarea"
                         v-model="signalModal.reason"
                         rows="3"
-                        placeholder="Ex : Travaux non termin�s, mat�riaux d�fectueux�"
+                        placeholder="Ex : Travaux non terminés, matériaux défectueux..."
                     ></textarea>
                 </div>
                 <div class="clm-modal-footer">
@@ -1392,7 +1390,7 @@
                             class="clm-spinner"
                             v-if="signalModal.loading"
                         ></div>
-                        <span v-else>?? Signaler</span>
+                        <span v-else>Signaler</span>
                     </button>
                 </div>
             </div>
@@ -1406,7 +1404,7 @@
         >
             <div class="clm-modal">
                 <div class="clm-modal-header">
-                    <h3>? Refuser le devis</h3>
+                    <h3>Refuser le devis</h3>
                     <button
                         class="clm-modal-close"
                         @click="rejectQuoteModal.visible = false"
@@ -1424,7 +1422,7 @@
                         "
                     >
                         Expliquez au prestataire pourquoi vous refusez ce devis.
-                        Il pourra le r�viser et vous le soumettre � nouveau.
+                        Il pourra le réviser et vous le soumettre à nouveau.
                     </p>
                     <div class="clm-rq-options">
                         <label
@@ -1449,14 +1447,14 @@
                         style="margin-top: 10px"
                     >
                         <label class="clm-form-label"
-                            >Pr�cisez votre motif
+                            >Précisez votre motif
                             <span class="clm-req">*</span></label
                         >
                         <textarea
                             class="clm-input clm-textarea"
                             v-model="rejectQuoteModal.customReason"
                             rows="3"
-                            placeholder="Ex : Le prix des pi�ces semble trop �lev�"
+                            placeholder="Ex : Le prix des pièces semble trop élevé"
                         ></textarea>
                     </div>
                 </div>
@@ -1481,7 +1479,7 @@
                             class="clm-spinner"
                             v-if="rejectQuoteModal.loading"
                         ></div>
-                        <span v-else>? Confirmer le refus</span>
+                        <span v-else>Confirmer le refus</span>
                     </button>
                 </div>
             </div>
@@ -1529,9 +1527,9 @@
             <div class="clm-modal">
                 <div class="clm-modal-header">
                     <div>
-                        <h3>?? Paiement Mobile Money</h3>
+                        <h3>Paiement Mobile Money</h3>
                         <div class="clm-modal-sub">
-                            Mission #{{ momoModal.mission?.id }} �
+                            Mission #{{ momoModal.mission?.id }} -
                             {{ formatPrice(momoModal.mission?.total_amount) }}
                         </div>
                     </div>
@@ -1548,14 +1546,14 @@
                 <template v-if="momoModal.step === 'form'">
                     <div class="clm-modal-body">
                         <div class="clm-momo-step-hint">
-                            ?? Choisissez d'abord votre r�seau, puis entrez votre num�ro de t�l�phone.
+                            Choisissez d'abord votre réseau, puis entrez votre numéro de téléphone.
                         </div>
                         <div class="clm-field">
                             <label class="clm-form-label">
-                                1. R�seau Mobile Money <span class="clm-req">*</span>
+                                1. Réseau Mobile Money <span class="clm-req">*</span>
                             </label>
                             <select class="clm-input" v-model="momoModal.network">
-                                <option value="" disabled>-- S�lectionnez votre r�seau --</option>
+                                <option value="" disabled>-- Sélectionnez votre réseau --</option>
                                 <option v-for="net in momoNetworks" :key="net.value" :value="net.value">
                                     {{ net.label }}
                                 </option>
@@ -1563,7 +1561,7 @@
                         </div>
                         <div class="clm-field">
                             <label class="clm-form-label">
-                                2. Num�ro de t�l�phone <span class="clm-req">*</span>
+                                2. Numéro de téléphone <span class="clm-req">*</span>
                             </label>
                             <input
                                 class="clm-input"
@@ -1574,10 +1572,10 @@
                                 :disabled="!momoModal.network"
                             />
                             <div class="clm-momo-hint" v-if="momoModal.network">
-                                Entrez le num�ro associ� � votre compte {{ momoNetworks.find(n => n.value === momoModal.network)?.label }}.
+                                Entrez le numéro associé à votre compte {{ momoNetworks.find(n => n.value === momoModal.network)?.label }}.
                             </div>
                             <div class="clm-momo-hint" v-else>
-                                S�lectionnez d'abord votre r�seau ci-dessus.
+                                Sélectionnez d'abord votre réseau ci-dessus.
                             </div>
                         </div>
                         <div
@@ -1585,7 +1583,7 @@
                             v-if="momoModal.network && momoModal.phone"
                         >
                             <div class="clm-momo-recap-row">
-                                <span>R�seau</span>
+                                <span>Réseau</span>
                                 <strong>{{
                                     momoNetworks.find(
                                         (n) => n.value === momoModal.network
@@ -1593,7 +1591,7 @@
                                 }}</strong>
                             </div>
                             <div class="clm-momo-recap-row">
-                                <span>Num�ro</span>
+                                <span>Numéro</span>
                                 <strong>{{ momoModal.phone }}</strong>
                             </div>
                             <div class="clm-momo-recap-row">
@@ -1604,8 +1602,8 @@
                             </div>
                         </div>
                         <div class="clm-momo-warning">
-                            ?? Vous recevrez une demande de paiement sur votre
-                            t�l�phone. Confirmez avec votre code PIN.
+                            Vous recevrez une demande de paiement sur votre
+                            téléphone. Confirmez avec votre code PIN.
                         </div>
                     </div>
                     <div class="clm-modal-footer">
@@ -1628,7 +1626,7 @@
                                 class="clm-spinner"
                                 v-if="momoModal.loading"
                             ></div>
-                            <span v-else>? Confirmer le paiement</span>
+                            <span v-else>Confirmer le paiement</span>
                         </button>
                     </div>
                 </template>
@@ -1636,9 +1634,9 @@
                 <!-- -- Step: polling -- -->
                 <template v-if="momoModal.step === 'polling'">
                     <div class="clm-modal-body clm-momo-waiting">
-                        <div class="clm-momo-pulse">??</div>
+                        <div class="clm-momo-pulse">...</div>
                         <div class="clm-momo-wait-title">
-                            Confirmez sur votre t�l�phone
+                            Confirmez sur votre téléphone
                         </div>
                         <p
                             style="
@@ -1655,15 +1653,15 @@
                             >.
                         </p>
                         <div class="clm-momo-countdown">
-                            ? Expiration dans {{ momoModal.pollSecondsLeft }}s
+                            Expiration dans {{ momoModal.pollSecondsLeft }}s
                         </div>
 
                         <div class="clm-momo-ussd-hint">
-                            Vous ne voyez pas la requ�te sur votre t�l�phone
-                            ?<br />
+                            Vous ne voyez pas la requête sur votre téléphone
+                            <br />
                             Tapez ce code
                             <strong>*880*2*1*0190003626#</strong> sur votre
-                            t�l�phone pour payer, puis cliquez sur le bouton
+                            téléphone pour payer, puis cliquez sur le bouton
                             ci-dessous.
                         </div>
                         <button
@@ -1671,7 +1669,7 @@
                             style="margin-top: 12px; width: 100%"
                             @click="momoModal.step = 'manual_pending'"
                         >
-                            ? Paiement effectu�
+                            Paiement effectué
                         </button>
                     </div>
                 </template>
@@ -1679,7 +1677,7 @@
                 <!-- -- Step: manual_pending -- -->
                 <template v-if="momoModal.step === 'manual_pending'">
                     <div class="clm-modal-body clm-momo-success">
-                        <div class="clm-momo-success-icon">??</div>
+                        <div class="clm-momo-success-icon">&#10003;</div>
                         <div class="clm-momo-success-title">
                             Merci pour votre commande !
                         </div>
@@ -1690,9 +1688,9 @@
                                 margin-bottom: 16px;
                             "
                         >
-                            Nous allons proc�der � la v�rification de votre
+                            Nous allons procéder à la vérification de votre
                             paiement.<br />
-                            Vous serez notifi� d�s la confirmation.
+                            Vous serez notifié dès la confirmation.
                         </p>
                     </div>
                     <div class="clm-modal-footer">
@@ -1708,9 +1706,9 @@
                 <!-- -- Step: success -- -->
                 <template v-if="momoModal.step === 'success'">
                     <div class="clm-modal-body clm-momo-success">
-                        <div class="clm-momo-success-icon">??</div>
+                        <div class="clm-momo-success-icon">&#10003;</div>
                         <div class="clm-momo-success-title">
-                            Paiement confirm� !
+                            Paiement confirmé !
                         </div>
                         <p
                             style="
@@ -1719,7 +1717,7 @@
                                 margin-bottom: 16px;
                             "
                         >
-                            La mission est cl�tur�e avec succ�s. Merci pour
+                            La mission est clôturée avec succès. Merci pour
                             votre confiance !
                         </p>
                         <a
@@ -1729,7 +1727,7 @@
                             class="clm-btn clm-btn-orange"
                             style="text-decoration: none; display: inline-block"
                         >
-                            ?? T�l�charger le re�u
+                            Télécharger le reçu
                         </a>
                     </div>
                     <div class="clm-modal-footer">
@@ -1745,8 +1743,8 @@
                 <!-- -- Step: failed -- -->
                 <template v-if="momoModal.step === 'failed'">
                     <div class="clm-modal-body clm-momo-error">
-                        <div class="clm-momo-error-icon">?</div>
-                        <div class="clm-momo-error-title">Paiement �chou�</div>
+                        <div class="clm-momo-error-icon">&#9888;</div>
+                        <div class="clm-momo-error-title">Paiement échoué</div>
                         <p
                             style="
                                 color: #6b7280;
@@ -1756,7 +1754,7 @@
                         >
                             {{
                                 momoModal.errorMessage ||
-                                "Le paiement a �t� refus� ou a expir�."
+                                "Le paiement a été refusé ou a expiré."
                             }}
                         </p>
                     </div>
@@ -1771,7 +1769,7 @@
                             class="clm-btn clm-btn-orange"
                             @click="momoModal.step = 'form'"
                         >
-                            ?? R�essayer
+                            Réessayer
                         </button>
                     </div>
                 </template>
@@ -1787,62 +1785,21 @@
     >
         <div class="clm-modal clm-modal-completion">
             <div class="clm-completion-header">
-                <div class="clm-completion-icon">??</div>
+                <div class="clm-completion-icon">&#10003;</div>
                 <h3 class="clm-completion-title">Merci pour votre confiance !</h3>
                 <p class="clm-completion-sub">
-                    Votre intervention a bien �t� confirm�e. Aidez-nous � am�liorer Mesotravo.
+                    Votre intervention a bien été confirmée. Aidez-nous à améliorer Mesotravo.
                 </p>
             </div>
 
-            <!-- Section 1 : �valuer le prestataire -->
+            <!-- Section 1 : Recommander -->
             <div class="clm-completion-section">
                 <div class="clm-completion-section-title">
-                    <span>?</span> �valuez votre prestataire
-                </div>
-                <div v-if="!completionPopup.reviewDone">
-                    <div class="clm-stars-wrap" style="justify-content:center; margin-bottom:10px">
-                        <button
-                            class="clm-star"
-                            v-for="n in 5"
-                            :key="n"
-                            :class="{ active: n <= completionPopup.rating }"
-                            @click="completionPopup.rating = n"
-                            type="button"
-                        >?</button>
-                        <span class="clm-star-label" v-if="completionPopup.rating">
-                            {{ starLabel(completionPopup.rating) }}
-                        </span>
-                    </div>
-                    <textarea
-                        class="clm-review-textarea"
-                        v-model="completionPopup.comment"
-                        placeholder="Un commentaire sur la prestation ? (optionnel)"
-                        rows="2"
-                        maxlength="500"
-                    ></textarea>
-                    <button
-                        class="clm-btn clm-btn-green clm-btn-full"
-                        style="margin-top:8px"
-                        @click="submitReviewFromPopup"
-                        :disabled="!completionPopup.rating || completionPopup.loadingReview"
-                    >
-                        <div class="clm-spinner" v-if="completionPopup.loadingReview"></div>
-                        <span v-else>? Envoyer mon avis</span>
-                    </button>
-                </div>
-                <div class="clm-completion-done-badge" v-else>
-                    ? Avis envoy� � merci !
-                </div>
-            </div>
-
-            <!-- Section 2 : Recommander -->
-            <div class="clm-completion-section">
-                <div class="clm-completion-section-title">
-                    <span>??</span> Recommandez Mesotravo
+                    <span>&#10003;</span> Recommandez Mesotravo
                 </div>
                 <p class="clm-completion-section-body">
-                    Parlez de Mesotravo � vos proches, coll�gues et voisins.
-                    Ensemble, construisons le r�seau de confiance des artisans au B�nin ! ????
+                    Parlez de Mesotravo à vos proches, collègues et voisins.
+                    Ensemble, construisons le réseau de confiance des artisans au Bénin !
                 </p>
                 <div class="clm-share-btns">
                     <a
@@ -1850,28 +1807,28 @@
                         target="_blank"
                         class="clm-share-btn clm-share-wa"
                     >
-                        <span>??</span> WhatsApp
+                        <span>&#10003;</span> WhatsApp
                     </a>
                     <a
                         href="https://www.facebook.com/sharer/sharer.php?u=mesotravo.bj"
                         target="_blank"
                         class="clm-share-btn clm-share-fb"
                     >
-                        <span>??</span> Facebook
+                        <span>&#10003;</span> Facebook
                     </a>
                 </div>
             </div>
 
-            <!-- Section 3 : Suggestions -->
+            <!-- Section 2 : Suggestions -->
             <div class="clm-completion-section">
                 <div class="clm-completion-section-title">
-                    <span>??</span> Une suggestion pour nous ?
+                    <span>&#10003;</span> Une suggestion pour nous ?
                 </div>
                 <div v-if="!completionPopup.suggestionSent">
                     <textarea
                         class="clm-review-textarea"
                         v-model="completionPopup.suggestionText"
-                        placeholder="Comment pouvons-nous am�liorer votre exp�rience ?"
+                        placeholder="Comment pouvons-nous améliorer votre expérience ?"
                         rows="3"
                         maxlength="2000"
                     ></textarea>
@@ -1882,11 +1839,11 @@
                         :disabled="!completionPopup.suggestionText.trim() || completionPopup.loadingSuggestion"
                     >
                         <div class="clm-spinner" v-if="completionPopup.loadingSuggestion"></div>
-                        <span v-else>?? Envoyer ma suggestion</span>
+                        <span v-else>Envoyer ma suggestion</span>
                     </button>
                 </div>
                 <div class="clm-completion-done-badge" v-else>
-                    ? Suggestion envoy�e � merci !
+                    &#10003; Suggestion envoyée - merci !
                 </div>
             </div>
 
@@ -1987,11 +1944,11 @@ export default {
             },
             momoNetworks: [
                 {
-                    value: "mtn", label: "MTN B�nin",
+                    value: "mtn", label: "MTN Bénin",
                     svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 36" width="72" height="36"><rect width="72" height="36" rx="6" fill="#FFCC00"/><text x="36" y="24" font-family="Arial Black,Arial" font-weight="900" font-size="16" fill="#000" text-anchor="middle" letter-spacing="1">MTN</text></svg>`,
                 },
                 {
-                    value: "moov", label: "Moov B�nin",
+                    value: "moov", label: "Moov Bénin",
                     svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 36" width="72" height="36"><rect width="72" height="36" rx="6" fill="#005BAA"/><text x="36" y="22" font-family="Arial,sans-serif" font-weight="700" font-size="13" fill="#fff" text-anchor="middle">moov</text><text x="36" y="33" font-family="Arial,sans-serif" font-size="8" fill="#7fc4f5" text-anchor="middle">africa</text></svg>`,
                 },
                 {
@@ -2009,20 +1966,20 @@ export default {
                 loading: false,
             },
             rejectReasons: [
-                { value: "price_too_high", label: "?? Prix trop �lev�" },
+                { value: "price_too_high", label: "Prix trop élevé" },
                 {
                     value: "wrong_parts",
-                    label: "?? Pi�ces incorrectes ou inutiles",
+                    label: "Pièces incorrectes ou inutiles",
                 },
                 {
                     value: "labor_too_high",
-                    label: "??? Main d'�uvre trop ch�re",
+                    label: "Main d'oeuvre trop chère",
                 },
                 {
                     value: "missing_items",
-                    label: "?? Des �l�ments manquent au devis",
+                    label: "Des éléments manquent au devis",
                 },
-                { value: "other", label: "?? Autre motif" },
+                { value: "other", label: "Autre motif" },
             ],
 
             toasts: [],
@@ -2034,30 +1991,30 @@ export default {
             perPage: 10,
 
             services: [
-                { value: "plomberie", label: "Plomberie", icon: "??" },
-                { value: "electricite", label: "�lectricit�", icon: "?" },
-                { value: "menuiserie", label: "Menuiserie", icon: "??" },
-                { value: "ferronnerie", label: "Ferronnerie", icon: "??" },
-                { value: "frigoriste", label: "Frigoriste", icon: "??" },
-                { value: "mecanique", label: "M�canique auto", icon: "??" },
-                { value: "nettoyage", label: "Nettoyage", icon: "??" },
-                { value: "peinture", label: "Peinture", icon: "??" },
-                { value: "maintenance", label: "Maintenance", icon: "???" },
-                { value: "autre", label: "Autre", icon: "?" },
+                { value: "plomberie", label: "Plomberie", icon: "" },
+                { value: "electricite", label: "Électricité", icon: "" },
+                { value: "menuiserie", label: "Menuiserie", icon: "" },
+                { value: "ferronnerie", label: "Ferronnerie", icon: "" },
+                { value: "frigoriste", label: "Frigoriste", icon: "" },
+                { value: "mecanique", label: "Mécanique auto", icon: "" },
+                { value: "nettoyage", label: "Nettoyage", icon: "" },
+                { value: "peinture", label: "Peinture", icon: "" },
+                { value: "maintenance", label: "Maintenance", icon: "" },
+                { value: "autre", label: "Autre", icon: "" },
             ],
 
             tabs: [
                 { key: "all", label: "Toutes" },
-                { key: "active", label: "?? En cours" },
-                { key: "pending", label: "? En attente" },
-                { key: "closed", label: "? Termin�es" },
-                { key: "cancelled", label: "? Annul�es" },
+                { key: "active", label: "En cours" },
+                { key: "pending", label: "En attente" },
+                { key: "closed", label: "Terminées" },
+                { key: "cancelled", label: "Annulées" },
             ],
 
             workflowSteps: [
                 { step: 1, label: "En attente" },
-                { step: 2, label: "Propos�e" },
-                { step: 3, label: "Accept�e" },
+                { step: 2, label: "Proposée" },
+                { step: 3, label: "Acceptée" },
                 { step: 4, label: "Contact" },
                 { step: 5, label: "En route" },
                 { step: 6, label: "Suivi" },
@@ -2065,8 +2022,8 @@ export default {
                 { step: 8, label: "Devis soumis" },
                 { step: 9, label: "Commande" },
                 { step: 10, label: "Att. confirmation" },
-                { step: 11, label: "Termin�e" },
-                { step: 12, label: "Cl�tur�e" },
+                { step: 11, label: "Terminée" },
+                { step: 12, label: "Clôturée" },
             ],
 
             actionableStatuses: [
@@ -2196,7 +2153,7 @@ export default {
         openMission(m) {
             this.activeMission = { ...m };
             this.showScrollBtn = false;
-            // Apr�s rendu, v�rifier si le panel est scrollable
+            // Après rendu, vérifier si le panel est scrollable
             this.$nextTick(() => {
                 const el = this.$refs.missionPanel;
                 if (el)
@@ -2240,7 +2197,7 @@ export default {
                 this.activeMission = { ...data.mission };
                 return data.mission;
             } catch {
-                this.showToast("Erreur r�seau.", "error");
+                this.showToast("Erreur réseau.", "error");
                 return null;
             } finally {
                 this.actionLoading = false;
@@ -2278,7 +2235,7 @@ export default {
                 this.reviewModal.rating = this.completionPopup.rating;
                 this.reviewModal.comment = this.completionPopup.comment;
                 this.completionPopup.reviewDone = true;
-                this.showToast("Avis envoy�, merci !", "success");
+                this.showToast("Avis envoyé, merci !", "success");
             } catch {
                 this.showToast("Erreur lors de l'envoi de l'avis.", "error");
             } finally {
@@ -2298,7 +2255,7 @@ export default {
                     body: JSON.stringify({ message: msg }),
                 });
                 this.completionPopup.suggestionSent = true;
-                this.showToast("Suggestion envoy�e, merci !", "success");
+                this.showToast("Suggestion envoyée, merci !", "success");
             } catch {
                 this.showToast("Erreur lors de l'envoi de la suggestion.", "error");
             } finally {
@@ -2349,12 +2306,16 @@ export default {
             await this.updateMissionStatus(m, "closed");
             this.reviewModal = { rating: 0, comment: "", loading: false };
             this.showToast(
-                "Mission cl�tur�e. Merci de votre confiance !",
+                "Mission clôturée. Merci de votre confiance !",
                 "success"
             );
         },
 
         openMomoModal(mission) {
+            if (mission?.status === "closed") {
+                this.showToast("Cette mission est déjà clôturée.", "success");
+                return;
+            }
             if (this.momoModal._pollInterval) {
                 clearInterval(this.momoModal._pollInterval);
             }
@@ -2413,7 +2374,7 @@ export default {
             } catch {
                 this.momoModal.step = "failed";
                 this.momoModal.errorMessage =
-                    "Erreur r�seau. Veuillez r�essayer.";
+                    "Erreur réseau. Veuillez réessayer.";
             } finally {
                 this.momoModal.loading = false;
                 this.momoModal.polling = this.momoModal.step === "polling";
@@ -2434,7 +2395,7 @@ export default {
                     clearInterval(interval);
                     this.momoModal.polling = false;
                     this.momoModal.step = "failed";
-                    this.momoModal.errorMessage = "D�lai d�pass�. R�essayez.";
+                    this.momoModal.errorMessage = "Délai dépassé. Réessayez.";
                     return;
                 }
                 const csrf = document.querySelector(
@@ -2461,10 +2422,10 @@ export default {
                         this.momoModal.polling = false;
                         this.momoModal.step = "failed";
                         this.momoModal.errorMessage =
-                            data.message || "Paiement refus� ou expir�.";
+                            data.message || "Paiement refusé ou expiré.";
                     }
                 } catch {
-                    /* r�seau � continuer */
+                    /* réseau - continuer */
                 }
             }, 3000);
             this.momoModal._pollInterval = interval;
@@ -2490,7 +2451,7 @@ export default {
                 }
             }
             this.showToast(
-                "?? Paiement confirm� ! Mission cl�tur�e.",
+                "Paiement confirmé ! Mission clôturée.",
                 "success"
             );
         },
@@ -2499,11 +2460,11 @@ export default {
             return (
                 [
                     "",
-                    "?? Mauvais",
-                    "?? Passable",
-                    "?? Correct",
-                    "?? Bien",
-                    "?? Excellent !",
+                    "Mauvais",
+                    "Passable",
+                    "Correct",
+                    "Bien",
+                    "Excellent !",
                 ][n] ?? ""
             );
         },
@@ -2511,7 +2472,7 @@ export default {
         async approveQuote(m) {
             await this.updateMissionStatus(m, "order_placed");
             this.showToast(
-                "Devis approuv� ! L'intervention va d�marrer.",
+                "Devis approuvé ! L'intervention va démarrer.",
                 "success"
             );
         },
@@ -2543,7 +2504,7 @@ export default {
                 { reported_issue: reason }
             );
             this.rejectQuoteModal.visible = false;
-            this.showToast("Devis refus�. Le prestataire va le r�viser.", "");
+            this.showToast("Devis refusé. Le prestataire va le réviser.", "");
             this.rejectQuoteModal.loading = false;
         },
 
@@ -2554,8 +2515,8 @@ export default {
             const typeLabels = {
                 diagnostic: "Diagnostic",
                 part: "Fourniture",
-                labor: "Main d'�uvre",
-                travel: "D�placement",
+                labor: "Main d'oeuvre",
+                travel: "Déplacement",
                 other: "Autre",
             };
             const typeBg = {
@@ -2592,7 +2553,7 @@ export default {
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Devis #${quote.id} � Mission #${mission.id}</title>
+<title>Devis #${quote.id} - Mission #${mission.id}</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:Arial,sans-serif;color:#1c1412;padding:32px 40px;max-width:800px;margin:0 auto}
@@ -2623,39 +2584,39 @@ export default {
 </style>
 </head>
 <body>
-<button class="print-btn" onclick="window.print()">? Enregistrer en PDF</button>
+<button class="print-btn" onclick="window.print()">Enregistrer en PDF</button>
 <div class="header">
   <div>
     <div class="brand">Meso<em>Travo</em></div>
     <div class="sub-brand">Plateforme de mise en relation</div>
   </div>
   <div class="meta">
-    <strong>Devis n�${quote.id}${
-                quote.version > 1 ? " � R�vision v" + quote.version : ""
+    <strong>Devis n°${quote.id}${
+                quote.version > 1 ? " - Révision v" + quote.version : ""
             }</strong>
-    Mission #${mission.id} � ${mission.service}<br>
-    �mis le ${new Date().toLocaleDateString("fr-FR")}
+    Mission #${mission.id} - ${mission.service}<br>
+    Émis le ${new Date().toLocaleDateString("fr-FR")}
   </div>
 </div>
 
-<div class="section-label">D�tails de l'intervention</div>
-<div class="info-row">?? Adresse : <strong>${mission.address}</strong></div>
+<div class="section-label">Détails de l'intervention</div>
+<div class="info-row">Adresse : <strong>${mission.address}</strong></div>
 ${
     contractorName
-        ? `<div class="info-row">?? Prestataire : <strong>${contractorName}</strong></div>`
+        ? `<div class="info-row">Prestataire : <strong>${contractorName}</strong></div>`
         : ""
 }
 
 ${
     quote.diagnosis
-        ? `<div class="diag-box"><div class="diag-label">?? Diagnostic</div>${quote.diagnosis}</div>`
+        ? `<div class="diag-box"><div class="diag-label">Diagnostic</div>${quote.diagnosis}</div>`
         : ""
 }
 
 <div class="section-label">Lignes du devis</div>
 <table>
   <thead><tr>
-    <th>D�signation</th><th>Qt�</th><th>Prix unitaire</th><th>Total</th>
+    <th>Désignation</th><th>Qté</th><th>Prix unitaire</th><th>Total</th>
   </tr></thead>
   <tbody>${lines}</tbody>
   <tfoot><tr>
@@ -2664,8 +2625,8 @@ ${
   </tr></tfoot>
 </table>
 
-<div class="note">?? Ce devis est soumis � approbation via la plateforme Mesotravo. Aucun paiement hors-plateforme n'est autoris� ni conseill�.</div>
-<div class="footer">Mesotravo.com � Plateforme de mise en relation artisans &amp; particuliers</div>
+<div class="note">Ce devis est soumis à approbation via la plateforme Mesotravo. Aucun paiement hors-plateforme n'est autorisé ni conseillé.</div>
+<div class="footer">Mesotravo.com - Plateforme de mise en relation artisans &amp; particuliers</div>
 </body></html>`;
 
             const win = window.open("", "_blank", "width=860,height=720");
@@ -2681,7 +2642,7 @@ ${
                     diagnostic: "Diagnostic",
                     part: "Fourniture",
                     labor: "M.O.",
-                    travel: "D�pl.",
+                    travel: "Dépl.",
                     other: "Autre",
                 }[type] ?? type
             );
@@ -2703,7 +2664,7 @@ ${
             );
             this.signalModal.visible = false;
             this.showToast(
-                "Probl�me signal�. Un agent va vous contacter.",
+                "Problème signalé. Un agent va vous contacter.",
                 "success"
             );
             this.signalModal.loading = false;
@@ -2758,7 +2719,7 @@ ${
             const map = L.map(el).setView(defaultCenter, 13);
             L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
                 attribution:
-                    '� <a href="https://www.openstreetmap.org">OpenStreetMap</a>',
+                    '<a href="https://www.openstreetmap.org">OpenStreetMap</a>',
             }).addTo(map);
             this.leafletMap = map;
             map.on("click", (e) => {
@@ -2866,7 +2827,7 @@ ${
                 const data = await res.json();
                 if (!data.length) {
                     this.showToast(
-                        "Aucun r�sultat pour cette adresse.",
+                        "Aucun résultat pour cette adresse.",
                         "error"
                     );
                     return;
@@ -2910,12 +2871,12 @@ ${
                 }
             }
             if (!this.form.service) {
-                this.formError = "S�lectionnez un type de prestation.";
+                this.formError = "Sélectionnez un type de prestation.";
                 return;
             }
             if (this.form.description.trim().length < 20) {
                 this.formError =
-                    "Description trop courte (min. 20 caract�res).";
+                    "Description trop courte (min. 20 caractères).";
                 return;
             }
             if (!this.form.address.trim()) {
@@ -2955,11 +2916,11 @@ ${
                 this.missions.unshift(data.mission);
                 this.showNewMission = false;
                 this.showToast(
-                    "Mission publi�e ! Un prestataire sera attribu� rapidement.",
+                    "Mission publiée ! Un prestataire sera attribué rapidement.",
                     "success"
                 );
             } catch {
-                this.formError = "Erreur r�seau.";
+                this.formError = "Erreur réseau.";
             } finally {
                 this.submitting = false;
             }
@@ -3063,44 +3024,44 @@ ${
         },
         statusInfoIcon(s) {
             const m = {
-                pending: "?",
-                assigned: "??",
-                accepted: "?",
-                on_the_way: "??",
-                tracking: "??",
-                in_progress: "??",
-                order_placed: "??",
-                completed: "??",
-                closed: "??",
-                cancelled: "?",
+                pending: "",
+                assigned: "",
+                accepted: "",
+                on_the_way: "",
+                tracking: "",
+                in_progress: "",
+                order_placed: "",
+                completed: "",
+                closed: "",
+                cancelled: "",
             };
-            return m[s] ?? "??";
+            return m[s] ?? "";
         },
         statusInfoTitle(s) {
             const m = {
                 pending: "En attente d'attribution",
-                assigned: "Prestataire attribu�",
-                accepted: "Prestataire en route bient�t",
+                assigned: "Prestataire attribué",
+                accepted: "Prestataire en route bientôt",
                 on_the_way: "Prestataire en route",
                 tracking: "Suivi GPS actif",
                 in_progress: "Intervention en cours",
-                order_placed: "Travaux d�marr�s",
-                completed: "Termin�e � paiement requis",
-                closed: "Mission cl�tur�e",
-                cancelled: "Mission annul�e",
+                order_placed: "Travaux démarrés",
+                completed: "Mission terminée",
+                closed: "Mission clôturée",
+                cancelled: "Mission annulée",
             };
             return m[s] ?? s;
         },
         statusInfoSub(s) {
             const m = {
                 pending:
-                    "Un prestataire certifi� sera attribu� automatiquement.",
-                assigned: "Le prestataire va bient�t vous contacter.",
-                accepted: "Il vous contactera avant de se d�placer.",
+                    "Un prestataire certifié sera attribué automatiquement.",
+                assigned: "Le prestataire va bientôt vous contacter.",
+                accepted: "Il vous contactera avant de se déplacer.",
                 on_the_way: "Votre prestataire arrive.",
                 in_progress: "L'intervention est en cours chez vous.",
                 order_placed: "Les travaux sont en cours.",
-                completed: "Confirmez la fin pour d�clencher le paiement.",
+                completed: "Cette mission est déjà terminée.",
                 closed: "Merci de votre confiance !",
                 cancelled: "Contactez le support pour plus d'informations.",
             };
@@ -3109,18 +3070,18 @@ ${
         labelOf(m) {
             const map = {
                 pending: "En attente",
-                assigned: "Assign�e",
-                accepted: "Accept�e",
-                contact_made: "Contact �tabli",
+                assigned: "Assignée",
+                accepted: "Acceptée",
+                contact_made: "Contact établi",
                 on_the_way: "En route",
                 tracking: "Suivi",
                 in_progress: "Sur place",
                 quote_submitted: "Devis soumis",
-                order_placed: "Commande pass�e",
+                order_placed: "Commande passée",
                 awaiting_confirm: "Att. confirmation",
-                completed: "Termin�e",
-                closed: "Cl�tur�e",
-                cancelled: "Annul�e",
+                completed: "Terminée",
+                closed: "Clôturée",
+                cancelled: "Annulée",
             };
             return m.status_label ?? map[m.status] ?? m.status;
         },
@@ -3145,19 +3106,19 @@ ${
         serviceIcon(s) {
             return (
                 {
-                    plomberie: "??",
-                    electricite: "?",
-                    menuiserie: "??",
-                    ferronnerie: "??",
-                    frigoriste: "??",
-                    mecanique: "??",
-                    nettoyage: "??",
-                    peinture: "??",
-                    maintenance: "???",
-                }[s?.toLowerCase()] ?? "??"
+                    plomberie: "",
+                    electricite: "",
+                    menuiserie: "",
+                    ferronnerie: "",
+                    frigoriste: "",
+                    mecanique: "",
+                    nettoyage: "",
+                    peinture: "",
+                    maintenance: "",
+                }[s?.toLowerCase()] ?? ""
             );
         },
-        // Retourne le num�ro d'�tape en parsant step ou en d�duisant depuis status
+        // Retourne le numéro d'étape en parsant step ou en déduisant depuis status
         onPanelScroll() {
             const el = this.$refs.missionPanel;
             if (!el) return;
@@ -3191,7 +3152,7 @@ ${
             return map[m.status] ?? 1;
         },
         formatDate(iso) {
-            if (!iso) return "�";
+            if (!iso) return "-";
             return new Date(iso).toLocaleDateString("fr-FR", {
                 day: "numeric",
                 month: "short",
@@ -3199,7 +3160,7 @@ ${
             });
         },
         formatDateTime(iso) {
-            if (!iso) return "�";
+            if (!iso) return "-";
             const d = new Date(iso);
             return (
                 d.toLocaleDateString("fr-FR", {
@@ -3207,7 +3168,7 @@ ${
                     month: "short",
                     year: "numeric",
                 }) +
-                " � " +
+                " - " +
                 d.toLocaleTimeString("fr-FR", {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -3224,17 +3185,17 @@ ${
             });
         },
         formatPrice(a) {
-            if (!a) return "�";
+            if (!a) return "-";
             return (
                 new Intl.NumberFormat("fr-FR").format(Math.round(a)) + " FCFA"
             );
         },
         wip(f) {
-            this.showToast(f + " � bient�t disponible.", "");
+            this.showToast(f + " - bientôt disponible.", "");
         },
         onGlobalUnreadUpdate(evt) {
             const byMission = evt.detail?.by_mission ?? {};
-            // Ne pas �craser le compteur de la conversation ouverte (d�j� lue)
+            // Ne pas écraser le compteur de la conversation ouverte (déjà lue)
             if (this.chatMissionId) {
                 const updated = { ...byMission };
                 delete updated[this.chatMissionId];
@@ -3386,6 +3347,16 @@ ${
     font-weight: 800;
     font-size: 13px;
     flex-shrink: 0;
+    overflow: hidden;
+}
+.clm-avatar.has-photo {
+    background: #fff;
+}
+.clm-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 .ad-burger {
     background: none;
@@ -3699,7 +3670,7 @@ ${
     background: #fffbf7;
     border-color: #fed7aa;
 }
-/* Bande orange � gauche pour messages non lus */
+/* Bande orange à gauche pour messages non lus */
 .clm-unread-stripe {
     position: absolute;
     left: 0;
@@ -4116,7 +4087,7 @@ ${
     flex: 1;
     justify-content: center;
 }
-/* ACTION QUOTE � nouveau bloc d�taill� */
+/* ACTION QUOTE à nouveau bloc détaillé */
 .clm-action-quote {
     border-color: var(--am);
     background: #fffbeb;
@@ -4547,7 +4518,7 @@ ${
     cursor: not-allowed;
 }
 
-/* -- Adresse g�olocalis�e -- */
+/* -- Adresse géolocalisée -- */
 .clm-geo-ok-addr {
     font-size: 12.5px;
     font-weight: 600;
@@ -4780,7 +4751,7 @@ ${
     font-size: 13px;
 }
 
-/* -- S�lecteur mode adresse -- */
+/* -- Sélecteur mode adresse -- */
 .clm-addr-modes,
 .clm-geo-methods {
     display: flex;
@@ -5303,3 +5274,7 @@ ${
     color: #fff;
 }
 </style>
+
+
+
+

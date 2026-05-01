@@ -92,19 +92,19 @@
 
         <!-- -------------- BODY -------------- -->
         <div class="msg-body">
-            <!-- ---- COLONNE GAUCHE — liste conversations ---- -->
+            <!-- ---- COLONNE GAUCHE â€” liste conversations ---- -->
             <div
                 class="msg-left"
-                :class="{ 'msg-left-hidden': activeConv && isMobile }"
+                :class="{ 'msg-left-hidden': activeConv }"
             >
                 <!-- Recherche -->
                 <div class="msg-search-wrap">
-                    <span class="msg-search-icon">??</span>
+                    <span class="msg-search-icon">&#128269;</span>
                     <input
                         class="msg-search"
                         type="text"
                         v-model="search"
-                        placeholder="Rechercher…"
+                        placeholder="Rechercherâ€¦"
                     />
                 </div>
 
@@ -115,10 +115,10 @@
 
                 <!-- Erreur -->
                 <div class="msg-state-block" v-else-if="convError">
-                    <div class="msg-state-icon">??</div>
+                    <div class="msg-state-icon">&#9888;</div>
                     <div class="msg-state-text">{{ convError }}</div>
                     <button class="msg-btn-ghost" @click="fetchConversations">
-                        Réessayer
+                        RÃ©essayer
                     </button>
                 </div>
 
@@ -127,10 +127,10 @@
                     class="msg-state-block"
                     v-else-if="filteredConvs.length === 0"
                 >
-                    <div class="msg-state-icon">??</div>
+                    <div class="msg-state-icon">&#128172;</div>
                     <div class="msg-state-title">Aucune conversation</div>
                     <div class="msg-state-sub">
-                        Vos échanges avec vos interlocuteurs apparaîtront ici.
+                        Vos Ã©changes avec vos interlocuteurs apparaÃ®tront ici.
                     </div>
                 </div>
 
@@ -144,10 +144,19 @@
                             'msg-conv-active': activeConv?.id === c.id,
                             'msg-conv-unread': c.unread_count > 0,
                         }"
-                        @click="openConversation(c)"
+                        @click.prevent.stop="selectConversation(c)"
+                        @keydown.enter.prevent="selectConversation(c)"
+                        role="button"
+                        tabindex="0"
                     >
-                        <div class="msg-conv-av">
-                            {{ initials(c.other_name) }}
+                        <div class="msg-conv-av" :class="{ 'has-photo': c.other_photo_url }">
+                            <img
+                                v-if="c.other_photo_url"
+                                :src="c.other_photo_url"
+                                :alt="c.other_name"
+                                class="msg-other-avatar-img"
+                            />
+                            <span v-else>{{ initials(c.other_name) }}</span>
                             <span
                                 class="msg-conv-badge"
                                 v-if="c.unread_count > 0"
@@ -161,7 +170,7 @@
                                 class="msg-conv-mission"
                                 v-if="c.mission_service"
                             >
-                                ?? {{ c.mission_service }}
+                                <span aria-hidden="true">&#128736;</span> {{ c.mission_service }}
                                 <span v-if="c.mission_id" class="msg-mission-id"
                                     >#{{ c.mission_id }}</span
                                 >
@@ -176,7 +185,7 @@
                                 class="msg-conv-address"
                                 v-if="c.mission_address"
                             >
-                                ?? {{ c.mission_address }}
+                                <span aria-hidden="true">&#128205;</span> {{ c.mission_address }}
                             </div>
                             <div class="msg-conv-last">
                                 {{ c.last_message ?? "Aucun message" }}
@@ -189,22 +198,22 @@
                 </div>
             </div>
 
-            <!-- ---- COLONNE DROITE — zone chat ---- -->
-            <div class="msg-right">
-                <!-- État vide — aucune conversation sélectionnée -->
+            <!-- ---- COLONNE DROITE â€” zone chat ---- -->
+            <div class="msg-right" :class="{ 'msg-right-active': activeConv }">
+                <!-- Ã‰tat vide â€” aucune conversation sÃ©lectionnÃ©e -->
                 <div class="msg-no-conv" v-if="!activeConv">
-                    <div class="msg-no-conv-icon">??</div>
+                    <div class="msg-no-conv-icon">&#128172;</div>
                     <div class="msg-no-conv-title">
-                        Sélectionnez une conversation
+                        SÃ©lectionnez une conversation
                     </div>
                     <div class="msg-no-conv-sub">
-                        Choisissez une conversation à gauche pour afficher les
+                        Choisissez une conversation Ã  gauche pour afficher les
                         messages.
                     </div>
                 </div>
 
                 <!-- -- Chat actif -- -->
-                <template v-else>
+                <div class="msg-chat-panel" v-else>
                     <!-- Header chat -->
                     <div class="msg-chat-header">
                         <button
@@ -223,8 +232,14 @@
                                 <polyline points="15 18 9 12 15 6" />
                             </svg>
                         </button>
-                        <div class="msg-chat-av">
-                            {{ initials(activeConv.other_name) }}
+                        <div class="msg-chat-av" :class="{ 'has-photo': activeConv.other_photo_url }">
+                            <img
+                                v-if="activeConv.other_photo_url"
+                                :src="activeConv.other_photo_url"
+                                :alt="activeConv.other_name"
+                                class="msg-other-avatar-img"
+                            />
+                            <span v-else>{{ initials(activeConv.other_name) }}</span>
                         </div>
                         <div class="msg-chat-info">
                             <div class="msg-chat-name">
@@ -234,7 +249,7 @@
                                 class="msg-chat-mission"
                                 v-if="activeConv.mission_service"
                             >
-                                ?? {{ activeConv.mission_service }}
+                                <span aria-hidden="true">&#128736;</span> {{ activeConv.mission_service }}
                                 <span
                                     v-if="activeConv.mission_id"
                                     class="msg-mission-id"
@@ -259,14 +274,14 @@
                                 class="msg-chat-address"
                                 v-if="activeConv.mission_address"
                             >
-                                ?? {{ activeConv.mission_address }}
+                                <span aria-hidden="true">&#128205;</span> {{ activeConv.mission_address }}
                             </div>
                         </div>
                         <div
                             class="msg-masked-badge"
-                            title="Numéro masqué — utilisez la messagerie"
+                            title="NumÃ©ro masquÃ© â€” utilisez la messagerie"
                         >
-                            ?? Numéro masqué
+                            NumÃ©ro masquÃ©
                         </div>
                     </div>
 
@@ -274,11 +289,11 @@
                     <div class="msg-messages" ref="messagesEl">
                         <div class="msg-chat-loading" v-if="chatLoading">
                             <div class="msg-spinner"></div>
-                            <span>Chargement…</span>
+                            <span>Chargementâ€¦</span>
                         </div>
 
                         <div class="msg-chat-error" v-else-if="chatError">
-                            <div style="font-size: 28px">??</div>
+                            <div style="font-size: 28px">&#9888;</div>
                             <div style="font-weight: 600; margin: 6px 0 4px">
                                 Erreur de chargement
                             </div>
@@ -293,9 +308,9 @@
                             </div>
                             <button
                                 class="msg-btn-ghost"
-                                @click="openConversation(activeConv)"
+                                @click="openConversation(activeConv, true)"
                             >
-                                ?? Réessayer
+                                RÃ©essayer
                             </button>
                         </div>
 
@@ -303,7 +318,7 @@
                             class="msg-chat-empty"
                             v-else-if="messages.length === 0"
                         >
-                            <div>??</div>
+                            <div>&#128172;</div>
                             <div>Aucun message. Envoyez le premier !</div>
                         </div>
 
@@ -377,7 +392,7 @@
                                                 m.attachment_url
                                             "
                                         >
-                                            <span>??</span>
+                                            <span>Audio</span>
                                             <audio
                                                 controls
                                                 :src="m.attachment_url"
@@ -395,7 +410,7 @@
                                             target="_blank"
                                             rel="noopener"
                                         >
-                                            <span>??</span>
+                                            <span>Fichier</span>
                                             <span class="msg-file-name">{{
                                                 m.attachment_name
                                             }}</span>
@@ -412,7 +427,7 @@
                                                     m.sender_id === user.id &&
                                                     m.id < lastMsgId
                                                 "
-                                                >??</span
+                                                >Lu</span
                                             >
                                             <span
                                                 class="msg-tick"
@@ -428,7 +443,7 @@
                         </template>
                     </div>
 
-                    <!-- Preview pièce jointe -->
+                    <!-- Preview piÃ¨ce jointe -->
                     <div class="msg-attach-preview" v-if="attachPreview">
                         <div class="msg-preview-inner">
                             <img
@@ -439,10 +454,10 @@
                                 v-else-if="attachPreview.isAudio"
                                 class="msg-preview-file"
                             >
-                                ?? {{ attachPreview.name }}
+                                Audio : {{ attachPreview.name }}
                             </div>
                             <div v-else class="msg-preview-file">
-                                ?? {{ attachPreview.name }}
+                                Fichier : {{ attachPreview.name }}
                             </div>
                         </div>
                         <button class="msg-preview-remove" @click="clearAttach">
@@ -481,7 +496,7 @@
                             class="msg-input"
                             ref="inputEl"
                             v-model="draft"
-                            placeholder="Votre message…"
+                            placeholder="Votre messageâ€¦"
                             rows="1"
                             @keydown.enter.exact.prevent="send"
                             @keydown.enter.shift.exact="draft += '\n'"
@@ -502,7 +517,7 @@
                             </svg>
                         </button>
                     </div>
-                </template>
+                </div>
             </div>
         </div>
 
@@ -570,7 +585,7 @@ export default {
                     .map((w) => w[0])
                     .join("")
                     .toUpperCase()
-                    .slice(0, 2) || "??"
+                    .slice(0, 2) || "--"
             );
         },
         totalUnread() {
@@ -606,7 +621,7 @@ export default {
     methods: {
         // -- Initiales --------------------------------------------
         initials(name) {
-            return (name ?? "??")
+            return (name ?? "--")
                 .split(" ")
                 .map((w) => w[0])
                 .join("")
@@ -625,12 +640,12 @@ export default {
                 if (!res.ok) throw new Error("HTTP " + res.status);
                 this.conversations = await res.json();
 
-                // Ouvrir directement si openConversationId passé
+                // Ouvrir directement si openConversationId passÃ©
                 if (this.openConversationId) {
                     const c = this.conversations.find(
                         (c) => c.id === this.openConversationId
                     );
-                    if (c) this.openConversation(c);
+                    if (c) this.selectConversation(c);
                 }
             } catch (e) {
                 this.convError = "Impossible de charger les conversations.";
@@ -639,12 +654,19 @@ export default {
             }
         },
 
+        // -- Selectionner une conversation --------------------------
+        selectConversation(conv) {
+            if (!conv) return;
+            this.activeConv = conv;
+            this.$nextTick(() => this.openConversation(conv, true));
+        },
+
         // -- Ouvrir une conversation -------------------------------
-        async openConversation(conv) {
-            if (this.activeConv?.id === conv.id) return;
+        async openConversation(conv, force = false) {
+            if (!conv) return;
+            if (!force && this.activeConv?.id === conv.id && !this.chatError) return;
 
             this.stopPolling();
-            this.activeConv = conv;
             this.messages = [];
             this.chatError = null;
             this.lastMsgId = 0;
@@ -674,13 +696,13 @@ export default {
                     data = JSON.parse(rawText);
                 } catch {
                     console.error(
-                        "[MessagesComponent] Réponse non-JSON reçue — probablement une redirection ou erreur HTML. Début:",
+                        "[MessagesComponent] RÃ©ponse non-JSON reÃ§ue â€” probablement une redirection ou erreur HTML. DÃ©but:",
                         rawText.slice(0, 200)
                     );
                     throw new Error(
-                        "Le serveur a retourné une page HTML au lieu de JSON (statut " +
+                        "Le serveur a retournÃ© une page HTML au lieu de JSON (statut " +
                             res.status +
-                            "). Vérifiez la route et l'authentification."
+                            "). VÃ©rifiez la route et l'authentification."
                     );
                 }
 
@@ -703,10 +725,10 @@ export default {
             } catch (e) {
                 if (e.name === "AbortError") {
                     console.error(
-                        "[MessagesComponent] Timeout : le serveur n'a pas répondu en 10s"
+                        "[MessagesComponent] Timeout : le serveur n'a pas rÃ©pondu en 10s"
                     );
                     this.chatError =
-                        "?? Le serveur ne répond pas. Vérifiez que la route admin est correcte.";
+                        "Le serveur ne rÃ©pond pas. VÃ©rifiez la route de messagerie.";
                 } else {
                     console.error(
                         "[MessagesComponent] openConversation error:",
@@ -796,13 +818,13 @@ export default {
                 const data = await res.json();
                 this.messages.push(data.message);
                 this.lastMsgId = data.message.id;
-                // Mettre à jour le dernier message dans la liste
+                // Mettre Ã  jour le dernier message dans la liste
                 const c = this.conversations.find(
                     (c) => c.id === this.activeConv.id
                 );
                 if (c) {
                     c.last_message = body;
-                    c.last_message_at = "À l'instant";
+                    c.last_message_at = "Ã€ l'instant";
                 }
                 await this.scrollBottomAfterRender(true);
             } catch {
@@ -813,7 +835,7 @@ export default {
             }
         },
 
-        // -- Envoi pièce jointe ------------------------------------
+        // -- Envoi piÃ¨ce jointe ------------------------------------
         async sendAttachment() {
             if (!this.pendingFile || this.sending) return;
             this.sending = true;
@@ -901,7 +923,7 @@ export default {
         },
         async scrollBottomAfterRender(force = false) {
             await this.$nextTick();
-            // Double RAF pour s'assurer que le DOM est complètement rendu
+            // Double RAF pour s'assurer que le DOM est complÃ¨tement rendu
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     this.scrollBottom(force);
@@ -942,19 +964,19 @@ export default {
         missionStatusLabel(status) {
             const map = {
                 pending: "En attente",
-                assigned: "Assignée",
-                accepted: "Acceptée",
-                contact_made: "Contact établi",
+                assigned: "AssignÃ©e",
+                accepted: "AcceptÃ©e",
+                contact_made: "Contact Ã©tabli",
                 on_the_way: "En route",
                 in_progress: "En cours",
                 quote_submitted: "Devis soumis",
                 order_placed: "Commande",
                 awaiting_confirm: "Att. confirmation",
-                completed: "Terminée",
-                closed: "Clôturée",
-                cancelled: "Annulée",
+                completed: "TerminÃ©e",
+                closed: "ClÃ´turÃ©e",
+                cancelled: "AnnulÃ©e",
             };
-            return map[status] ?? status ?? "—";
+            return map[status] ?? status ?? "-";
         },
         missionChipClass(status) {
             if (["completed", "closed"].includes(status)) return "chip-green";
@@ -1069,7 +1091,7 @@ export default {
     font-family: "Poppins", sans-serif;
     color: var(--dk);
     background: #f8f4f0;
-    height: 100vh; /* hauteur fixe — empêche le scroll global */
+    height: 100vh; /* hauteur fixe â€” empÃªche le scroll global */
     overflow: hidden; /* AUCUN scroll sur le wrapper */
     display: flex;
     flex-direction: column;
@@ -1287,7 +1309,7 @@ export default {
     border-right: 2px solid var(--grl);
     display: flex;
     flex-direction: column;
-    overflow: hidden; /* la liste enfant scrolle, pas la colonne entière */
+    overflow: hidden; /* la liste enfant scrolle, pas la colonne entiÃ¨re */
     min-height: 0;
     height: 100%; /* remplit toute la hauteur du body */
 }
@@ -1360,6 +1382,17 @@ export default {
     justify-content: center;
     flex-shrink: 0;
     position: relative;
+    overflow: hidden;
+}
+.msg-conv-av.has-photo,
+.msg-chat-av.has-photo {
+    background: #fff;
+}
+.msg-other-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 .msg-conv-badge {
     position: absolute;
@@ -1455,7 +1488,7 @@ export default {
     color: #1d4ed8;
 }
 
-/* -- ÉTAT VIDE / ERREUR -- */
+/* -- Ã‰TAT VIDE / ERREUR -- */
 .msg-state-block {
     flex: 1;
     display: flex;
@@ -1534,8 +1567,14 @@ export default {
     min-height: 0;
     height: 100%; /* remplit toute la hauteur du body */
 }
+.msg-chat-panel {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
 
-/* Pas de conv sélectionnée */
+/* Pas de conv sÃ©lectionnÃ©e */
 .msg-no-conv {
     flex: 1;
     display: flex;
@@ -1604,6 +1643,7 @@ export default {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    overflow: hidden;
 }
 .msg-chat-info {
     flex: 1;
@@ -1676,7 +1716,7 @@ export default {
     }
 }
 
-/* Séparateur date */
+/* SÃ©parateur date */
 .msg-date-sep {
     text-align: center;
     position: relative;
@@ -1802,7 +1842,7 @@ export default {
     white-space: nowrap;
 }
 
-/* Preview pièce jointe */
+/* Preview piÃ¨ce jointe */
 .msg-attach-preview {
     border-top: 1px solid var(--grl);
     padding: 8px 14px;
@@ -1953,6 +1993,39 @@ export default {
    RESPONSIVE MOBILE
 ------------------------------------------- */
 @media (max-width: 767px) {
+    .msg-topbar {
+        height: 64px;
+        padding: 0 12px;
+        gap: 8px;
+    }
+    .msg-topbar-left {
+        flex: 1;
+        min-width: 0;
+        gap: 8px;
+    }
+    .msg-topbar-left > div {
+        min-width: 0;
+    }
+    .msg-page-title,
+    .msg-page-sub {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .msg-page-title {
+        font-size: 15px;
+    }
+    .msg-topbar-right {
+        flex-shrink: 0;
+        gap: 8px;
+    }
+    .msg-notif-btn {
+        padding: 4px;
+    }
+    .msg-avatar {
+        width: 34px;
+        height: 34px;
+    }
     .msg-left {
         width: 100%;
         border-right: none;
@@ -1961,7 +2034,11 @@ export default {
         display: none;
     }
     .msg-right {
+        display: none;
         width: 100%;
+    }
+    .msg-right-active {
+        display: flex;
     }
     .msg-masked-badge {
         display: none;

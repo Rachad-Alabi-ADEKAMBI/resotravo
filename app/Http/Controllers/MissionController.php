@@ -695,6 +695,10 @@ class MissionController extends Controller
 
         $isContractor = ($user->id === $contractorUserId) || $hasProposal;
 
+        if (in_array($status, $contractorOnly) && $user->status !== 'approved') {
+            abort(403, "Vos documents doivent être vérifiés avant de pouvoir postuler à une mission.");
+        }
+
         if (in_array($status, $clientOnly) && $user->id !== $clientUserId) {
             abort(403, 'Seul le client peut faire cette action.');
         }

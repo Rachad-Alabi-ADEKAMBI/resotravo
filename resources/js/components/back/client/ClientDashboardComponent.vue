@@ -87,50 +87,52 @@
              CONTENU
         ---------------------------------- -->
         <div class="cd-content">
-            <!-- -- Badge Identité vérifiée -- -->
+            <!-- -- Badge IdentitÃ© vÃ©rifiÃ©e -- -->
             <div class="cd-banner-verified" v-if="isIdentityVerified">
-                <span class="cd-verified-icon">?</span>
+                <span class="cd-verified-icon">&#10003;</span>
                 <div>
-                    <div class="cd-verified-title">Identité vérifiée</div>
+                    <div class="cd-verified-title">IdentitÃ© vÃ©rifiÃ©e</div>
                     <div class="cd-verified-sub">
-                        Votre compte bénéficie du badge de confiance Mesotravo.
+                        Votre compte bÃ©nÃ©ficie du badge de confiance Mesotravo.
                     </div>
                 </div>
             </div>
 
-            <!-- -- Bannière obtenir le badge (si pas encore vérifié) -- -->
+            <!-- -- BanniÃ¨re obtenir le badge (si pas encore vÃ©rifiÃ©) -- -->
             <div class="cd-banner-pending" v-else-if="!isIdentityVerified">
                 <div class="cd-banner-pending-left">
                     <div class="cd-banner-pending-icon">
                         {{
                             isApproved
                                 ? clientProfile.completed_missions >= 1
-                                    ? "?"
-                                    : "??"
+                                    ? "OK"
+                                    : "DOC"
                                 : docProgress.percentage === 0
-                                ? "??"
+                                ? "DOC"
                                 : docProgress.percentage < 100
-                                ? "?"
-                                : "??"
+                                ? "..."
+                                : "OK"
                         }}
                     </div>
                     <div>
                         <div class="cd-banner-pending-title">
                             {{
                                 isApproved
-                                    ? "Plus qu'une mission pour obtenir le badge Identité vérifiée"
+                                    ? clientProfile.completed_missions >= 1
+                                        ? "IdentitÃ© vÃ©rifiÃ©e"
+                                        : "Plus qu'une mission pour obtenir le badge IdentitÃ© vÃ©rifiÃ©e"
                                     : docProgress.percentage < 100
-                                    ? "Obtenez le badge « Identité vérifiée »"
-                                    : "Dossier en cours de vérification"
+                                    ? "Obtenez le badge IdentitÃ© vÃ©rifiÃ©e"
+                                    : "Dossier en cours de vÃ©rification"
                             }}
                         </div>
                         <div class="cd-banner-pending-sub">
                             {{
                                 isApproved
-                                    ? "Complétez 1 mission pour obtenir le badge !"
+                                    ? "ComplÃ©tez 1 mission pour obtenir le badge !"
                                     : docProgress.percentage < 100
-                                    ? "Déposez votre pièce d'identité et une photo de profil, puis complétez 1 mission pour obtenir le badge."
-                                    : "Vos documents ont été reçus. La validation prend généralement moins de 24h."
+                                    ? "DÃ©posez votre piÃ¨ce d'identitÃ© et une photo de profil, puis complÃ©tez 1 mission pour obtenir le badge."
+                                    : "Vos documents ont Ã©tÃ© reÃ§us. La validation prend gÃ©nÃ©ralement moins de 24h."
                             }}
                         </div>
                         <!-- Progression documents si pas encore soumis -->
@@ -147,7 +149,7 @@
                                 {{ docProgress.approved }}/{{
                                     docProgress.total
                                 }}
-                                documents validés
+                                documents validÃ©s
                             </span>
                         </div>
                         <!-- Progression missions si documents OK -->
@@ -162,7 +164,7 @@
                             </div>
                             <span class="cd-banner-progress-label">
                                 {{ clientProfile.completed_missions ?? 0 }}/1
-                                mission terminée
+                                mission terminÃ©e
                             </span>
                         </div>
                     </div>
@@ -174,18 +176,18 @@
                 >
                     {{
                         docProgress.percentage < 100
-                            ? "?? Déposer mes documents"
-                            : "?? Voir mon dossier"
+                            ? "DÃ©poser mes documents"
+                            : "Voir mon dossier"
                     }}
                 </a>
             </div>
 
-            <!-- -- Bannière compte entreprise -- -->
+            <!-- -- BanniÃ¨re compte entreprise -- -->
             <div
                 class="cd-banner-company"
                 v-if="client.account_type === 'company'"
             >
-                ?? <strong>{{ client.company_name }}</strong> — Compte
+                <strong>{{ client.company_name }}</strong> â€” Compte
                 entreprise
                 <span class="cd-banner-badge"
                     >Appels d'offres & Espace Talents disponibles</span
@@ -200,13 +202,15 @@
                     :key="kpi.label"
                     :class="kpi.color"
                 >
-                    <div class="cd-kpi-icon">{{ kpi.icon }}</div>
                     <div class="cd-kpi-val">
                         <span
                             v-if="missionsLoading"
                             class="cd-skeleton-val"
                         ></span>
-                        <span v-else>{{ kpi.value }}</span>
+                        <template v-else>
+                            <span class="cd-kpi-icon" v-html="kpi.icon"></span>
+                            <span>{{ kpi.value }}</span>
+                        </template>
                     </div>
                     <div class="cd-kpi-label">{{ kpi.label }}</div>
                 </div>
@@ -217,7 +221,7 @@
                 <!-- Missions en cours -->
                 <div class="cd-card cd-card-main">
                     <div class="cd-card-header">
-                        <h3>?? Missions en cours</h3>
+                        <h3>Missions en cours</h3>
                         <button
                             class="cd-btn cd-btn-ghost cd-btn-sm"
                             @click="tab = 'all'"
@@ -253,12 +257,12 @@
 
                     <!-- Erreur -->
                     <div class="cd-alert-error" v-else-if="missionsError">
-                        ?? {{ missionsError }}
+                        {{ missionsError }}
                         <button
                             class="cd-btn cd-btn-ghost cd-btn-sm"
                             @click="fetchMissions"
                         >
-                            Réessayer
+                            RÃ©essayer
                         </button>
                     </div>
 
@@ -267,7 +271,7 @@
                         class="cd-empty"
                         v-else-if="filteredMissions.length === 0"
                     >
-                        <div class="cd-empty-icon">??</div>
+                        <div class="cd-empty-icon">0</div>
                         <div class="cd-empty-title">
                             Aucune mission{{
                                 tab !== "all" ? " " + tabLabel : ""
@@ -278,7 +282,7 @@
                             @click="openNewMission"
                             style="margin-top: 12px"
                         >
-                            Créer une mission
+                            CrÃ©er une mission
                         </button>
                     </div>
 
@@ -311,7 +315,7 @@
                                                 ? m.contractor.name
                                                 : "Attribution en cours..."
                                         }}
-                                        · {{ formatDate(m.created_at) }}
+                                        Â· {{ formatDate(m.created_at) }}
                                     </div>
                                     <!-- Miniatures images -->
                                     <div class="cd-mission-imgs" v-if="m.images && m.images.length">
@@ -323,7 +327,7 @@
                                         class="cd-msg-unread"
                                         v-if="unreadByMission[m.id]"
                                     >
-                                        ?? {{ unreadByMission[m.id] }} message{{
+                                        {{ unreadByMission[m.id] }} message{{
                                             unreadByMission[m.id] > 1 ? "s" : ""
                                         }}
                                         non lu{{
@@ -345,13 +349,13 @@
                                 >
                                     {{ formatPrice(m.total_amount) }}
                                 </div>
-                                <!-- Bouton Lire message — stoppe la propagation pour ouvrir direct le chat -->
+                                <!-- Bouton Lire message â€” stoppe la propagation pour ouvrir direct le chat -->
                                 <button
                                     class="cd-read-msg-btn"
                                     v-if="unreadByMission[m.id]"
                                     @click.stop="chatMissionId = m.id"
                                     :title="
-                                        'Ouvrir la conversation — ' +
+                                        'Ouvrir la conversation â€” ' +
                                         unreadByMission[m.id] +
                                         ' non lu(s)'
                                     "
@@ -371,7 +375,7 @@
                     <!-- Profil rapide -->
                     <div class="cd-card">
                         <div class="cd-card-header">
-                            <h3>?? Mon profil</h3>
+                            <h3>Mon profil</h3>
                             <a
                                 class="cd-btn cd-btn-ghost cd-btn-sm"
                                 :href="routes.parameters_page"
@@ -380,8 +384,16 @@
                             </a>
                         </div>
                         <div class="cd-profile-info">
-                            <div class="cd-profile-av">
+                            <div class="cd-profile-av" :class="{ 'has-photo': client.profile_picture }">
+                                <img
+                                    v-if="client.profile_picture"
+                                    :src="client.profile_picture"
+                                    :alt="client.display_name"
+                                    class="cd-profile-img"
+                                />
+                                <span v-else>
                                 {{ client.initials }}
+                                </span>
                             </div>
                             <div>
                                 <div class="cd-profile-name">
@@ -394,7 +406,7 @@
                                     {{ client.phone }}
                                 </div>
                                 <div class="cd-profile-meta">
-                                    ?? {{ client.city }}
+                                    {{ client.city }}
                                 </div>
                             </div>
                         </div>
@@ -405,8 +417,8 @@
                             >
                                 {{
                                     client.account_type === "company"
-                                        ? "?? Entreprise"
-                                        : "?? Particulier"
+                                        ? "Entreprise"
+                                        : "Particulier"
                                 }}
                             </span>
                         </div>
@@ -417,7 +429,7 @@
             <!-- -- Section Documents -- -->
             <div class="cd-card cd-docs-card" ref="docsSection">
                 <div class="cd-card-header">
-                    <h3>?? Mes documents</h3>
+                    <h3>Mes documents</h3>
                     <div class="cd-doc-header-right">
                         <span
                             class="cd-doc-summary"
@@ -426,35 +438,35 @@
                             }"
                         >
                             {{ docProgress.approved }}/{{ docProgress.total }}
-                            validés
+                            validÃ©s
                         </span>
                         <span
                             class="cd-certified-pill"
                             v-if="isIdentityVerified"
                         >
-                            ? Identité vérifiée
+                            IdentitÃ© vÃ©rifiÃ©e
                         </span>
                     </div>
                 </div>
 
-                <!-- Tous validés -->
+                <!-- Tous validÃ©s -->
                 <div class="cd-docs-certified" v-if="isIdentityVerified">
-                    <div class="cd-docs-certified-icon">?</div>
+                    <div class="cd-docs-certified-icon">&#10003;</div>
                     <div>
                         <div class="cd-docs-certified-title">
-                            Vos documents ont été validés par Mesotravo !
+                            Vos documents ont Ã©tÃ© validÃ©s par Mesotravo !
                         </div>
                         <div class="cd-docs-certified-sub">
-                            Votre identité est vérifiée. Continuez à publier des
+                            Votre identitÃ© est vÃ©rifiÃ©e. Continuez Ã  publier des
                             missions pour obtenir le badge.
                         </div>
                     </div>
                 </div>
 
-                <!-- Info badge si pas encore validé -->
+                <!-- Info badge si pas encore validÃ© -->
                 <div class="cd-docs-badge-info" v-if="!isIdentityVerified">
-                    ?? Déposez votre pièce d'identité et une photo de profil
-                    pour obtenir le badge <strong>Identité vérifiée</strong>.
+                    DÃ©posez votre piÃ¨ce d'identitÃ© et une photo de profil
+                    pour obtenir le badge <strong>IdentitÃ© vÃ©rifiÃ©e</strong>.
                 </div>
 
                 <!-- Barre de progression -->
@@ -466,7 +478,7 @@
                         ></div>
                     </div>
                     <div class="cd-docs-pb-label">
-                        {{ docProgress.percentage }}% validé par l'admin
+                        {{ docProgress.percentage }}% validÃ© par l'admin
                     </div>
                 </div>
 
@@ -497,11 +509,11 @@
                                 Motif : {{ doc.reject_reason }}
                             </div>
                             <div class="cd-doc-filename" v-if="doc.filename">
-                                ?? {{ doc.filename }}
+                                {{ doc.filename }}
                             </div>
                         </div>
                         <div class="cd-doc-actions">
-                            <!-- Déposer ou remplacer si manquant/refusé -->
+                            <!-- DÃ©poser ou remplacer si manquant/refusÃ© -->
                             <label
                                 class="cd-btn cd-btn-orange cd-btn-sm cd-upload-label"
                                 v-if="
@@ -516,8 +528,8 @@
                                 ></div>
                                 <span v-else>{{
                                     doc.status === "missing"
-                                        ? "+ Déposer"
-                                        : "? Remplacer"
+                                        ? "+ DÃ©poser"
+                                        : "Remplacer"
                                 }}</span>
                                 <input
                                     type="file"
@@ -527,7 +539,7 @@
                                     :disabled="doc.uploading"
                                 />
                             </label>
-                            <!-- Remplacer si en attente ou approuvé -->
+                            <!-- Remplacer si en attente ou approuvÃ© -->
                             <label
                                 class="cd-btn cd-btn-ghost cd-btn-sm cd-upload-label"
                                 v-if="
@@ -540,7 +552,7 @@
                                     class="cd-mini-spinner cd-mini-spinner-dark"
                                     v-if="doc.uploading"
                                 ></div>
-                                <span v-else>?</span>
+                                <span v-else>Remplacer</span>
                                 <input
                                     type="file"
                                     accept=".pdf,.jpg,.jpeg,.png"
@@ -554,14 +566,14 @@
                 </div>
 
                 <div class="cd-docs-note">
-                    ?? Formats acceptés : PDF, JPG, PNG — 5 Mo max par document.
-                    Délai de vérification : <strong>24-48h</strong>.
+                    Formats acceptÃ©s : PDF, JPG, PNG â€” 5 Mo max par document.
+                    DÃ©lai de vÃ©rification : <strong>24-48h</strong>.
                 </div>
             </div>
         </div>
 
         <!-- ----------------------------------
-             MODAL DÉTAIL MISSION
+             MODAL DÃ‰TAIL MISSION
         ---------------------------------- -->
         <div
             class="cd-modal-overlay"
@@ -573,7 +585,7 @@
                     <div>
                         <h3>{{ activeMission.service }}</h3>
                         <div class="cd-modal-sub">
-                            Mission #{{ activeMission.id }} ·
+                            Mission #{{ activeMission.id }} Â·
                             {{ formatDate(activeMission.created_at) }}
                         </div>
                     </div>
@@ -605,7 +617,7 @@
                     <div class="cd-detail-row" v-if="activeMission.contractor">
                         <span>Contact</span>
                         <strong class="cd-masked-phone"
-                            >?? Numéro masqué — utilisez la messagerie</strong
+                            >NumÃ©ro masquÃ© â€” utilisez la messagerie</strong
                         >
                     </div>
                     <div class="cd-detail-row">
@@ -614,7 +626,7 @@
                     </div>
                     <div class="cd-detail-row">
                         <span>Mode adresse</span>
-                        <strong>{{ activeMission.latitude && activeMission.longitude ? '?? Géolocalisation' : '?? Saisie manuelle' }}</strong>
+                        <strong>{{ activeMission.latitude && activeMission.longitude ? 'GÃ©olocalisation' : 'Saisie manuelle' }}</strong>
                     </div>
                     <div class="cd-detail-row">
                         <span>Description</span>
@@ -648,19 +660,19 @@
                         }}</strong>
                     </div>
                     <div class="cd-detail-row" v-if="activeMission.accepted_at">
-                        <span>Acceptée le</span>
+                        <span>AcceptÃ©e le</span>
                         <strong>{{
                             formatDate(activeMission.accepted_at)
                         }}</strong>
                     </div>
 
-                    <!-- Action : confirmer fin des travaux (étape 11) -->
+                    <!-- Action : confirmer fin des travaux (Ã©tape 11) -->
                     <div
                         class="cd-action-block"
                         v-if="activeMission.status === 'awaiting_confirm'"
                     >
                         <p>
-                            ? Le prestataire a terminé l'intervention.
+                            Le prestataire a terminÃ© l'intervention.
                             Confirmez-vous la fin des travaux ?
                         </p>
                         <div class="cd-action-row">
@@ -668,7 +680,7 @@
                                 class="cd-btn cd-btn-ghost"
                                 @click="signalProblem"
                             >
-                                ?? Signaler un problème
+                                Signaler un problÃ¨me
                             </button>
                             <button
                                 class="cd-btn cd-btn-orange"
@@ -684,7 +696,7 @@
                         </div>
                     </div>
 
-                    <!-- Action : approuver le devis (étape 8?9) -->
+                    <!-- Action : approuver le devis (Ã©tape 8?9) -->
                     <div
                         class="cd-action-block cd-action-quote"
                         v-if="
@@ -693,7 +705,7 @@
                         "
                     >
                         <p>
-                            ?? Le prestataire a soumis un devis de
+                            Le prestataire a soumis un devis de
                             <strong>{{
                                 formatPrice(activeMission.quote.amount_incl_tax)
                             }}</strong
@@ -721,7 +733,7 @@
                         </div>
                     </div>
 
-                    <!-- Paiement débloqué (étape 11 ? 12) -->
+                    <!-- Paiement dÃ©bloquÃ© (Ã©tape 11 ? 12) -->
                     <div
                         class="cd-action-block cd-action-pay"
                         v-if="
@@ -730,15 +742,15 @@
                         "
                     >
                         <p>
-                            ?? Les travaux sont confirmés. Procédez au paiement
-                            Mobile Money pour clôturer la mission.
+                            Les travaux sont confirmÃ©s. ProcÃ©dez au paiement
+                            Mobile Money pour clÃ´turer la mission.
                         </p>
                         <button
                             class="cd-btn cd-btn-orange"
                             style="width: 100%"
                             @click="openMomoModal(activeMission)"
                         >
-                            ?? Payer via Mobile Money ?
+                            Payer via Mobile Money
                         </button>
                     </div>
                 </div>
@@ -754,7 +766,7 @@
                         @click="chatMissionId = activeMission.id"
                         v-if="activeMission.status !== 'pending'"
                     >
-                        ?? Messages
+                        Messages
                         <span
                             class="cd-chat-badge"
                             v-if="unreadByMission[activeMission.id] > 0"
@@ -775,7 +787,7 @@
         >
             <div class="cd-modal">
                 <div class="cd-modal-header">
-                    <h3>? Nouvelle commande</h3>
+                    <h3>Nouvelle commande</h3>
                     <button
                         class="cd-modal-close"
                         @click="showNewMission = false"
@@ -798,7 +810,7 @@
                             </label>
                         </div>
                     </div>
-                    <!-- Date & Heure si planifié -->
+                    <!-- Date & Heure si planifiÃ© -->
                     <div class="cd-field" v-if="newMissionForm.schedule_type === 'later'" style="display:flex;gap:12px">
                         <div style="flex:1">
                             <label>Date <span class="req">*</span></label>
@@ -818,7 +830,7 @@
                             class="cd-input"
                             v-model="newMissionForm.service"
                         >
-                            <option value="">Sélectionner...</option>
+                            <option value="">SÃ©lectionner...</option>
                             <option
                                 v-for="s in services"
                                 :key="s.value"
@@ -833,7 +845,7 @@
                         <textarea
                             class="cd-input cd-textarea"
                             v-model="newMissionForm.description"
-                            placeholder="Décrivez votre besoin en détail (min. 20 caractères)..."
+                            placeholder="DÃ©crivez votre besoin en dÃ©tail (min. 20 caractÃ¨res)..."
                             rows="4"
                         ></textarea>
                         <div
@@ -851,11 +863,11 @@
                         <div class="cd-addr-modes">
                             <label class="cd-addr-mode-label" :class="{ active: address_mode === 'manual' }">
                                 <input type="radio" v-model="address_mode" value="manual" />
-                                ?? Saisir manuellement
+                                Saisir manuellement
                             </label>
                             <label class="cd-addr-mode-label" :class="{ active: address_mode === 'geo' }">
                                 <input type="radio" v-model="address_mode" value="geo" />
-                                ?? Géolocalisation
+                                GÃ©olocalisation
                             </label>
                         </div>
                     </div>
@@ -870,7 +882,7 @@
                         />
                     </div>
 
-                    <!-- Géolocalisation : carte -->
+                    <!-- GÃ©olocalisation : carte -->
                     <div v-if="address_mode === 'geo'" class="cd-field">
                         <button
                             class="cd-btn-geo"
@@ -878,21 +890,21 @@
                             @click="openMapModal"
                             v-if="!geoOk"
                         >
-                            ??? Ouvrir la carte
+                            Ouvrir la carte
                         </button>
                         <div class="cd-geo-confirmed" v-if="geoOk">
-                            <span style="font-size:18px">??</span>
+                            <span style="font-size:18px">&#10003;</span>
                             <div>
-                                <div class="cd-geo-ok-title">Position enregistrée</div>
+                                <div class="cd-geo-ok-title">Position enregistrÃ©e</div>
                                 <div class="cd-geo-ok-sub">{{ newMissionForm.address }}</div>
                             </div>
-                            <button type="button" class="cd-geo-reset" @click="resetGeo">?</button>
+                            <button type="button" class="cd-geo-reset" @click="resetGeo">Modifier</button>
                         </div>
                     </div>
 
                     <!-- Photos -->
                     <div class="cd-field">
-                        <label>Photos <span class="cd-field-hint">(optionnel, max 5 × 10 Mo)</span></label>
+                        <label>Photos <span class="cd-field-hint">(optionnel, max 5 Ã— 10 Mo)</span></label>
                         <div class="cd-img-upload-row">
                             <label
                                 class="cd-img-add-btn"
@@ -916,11 +928,11 @@
                                 :key="i"
                             >
                                 <img :src="img.url" :alt="img.name" />
-                                <button class="cd-img-remove" @click.prevent="removeImage(i)">?</button>
+                                <button class="cd-img-remove" @click.prevent="removeImage(i)">x</button>
                             </div>
                         </div>
                         <div class="cd-img-count" v-if="imageFiles.length > 0">
-                            {{ imageFiles.length }} / 5 photo{{ imageFiles.length > 1 ? 's' : '' }} sélectionnée{{ imageFiles.length > 1 ? 's' : '' }}
+                            {{ imageFiles.length }} / 5 photo{{ imageFiles.length > 1 ? 's' : '' }} sÃ©lectionnÃ©e{{ imageFiles.length > 1 ? 's' : '' }}
                         </div>
                     </div>
 
@@ -955,7 +967,7 @@
         >
             <div class="cd-modal" style="max-width:860px;width:96vw">
                 <div class="cd-modal-header">
-                    <h3>??? Choisir la position</h3>
+                    <h3>Choisir la position</h3>
                     <button class="cd-modal-close" @click="closeMapModal">&#215;</button>
                 </div>
                 <div class="cd-modal-body" style="padding-bottom:0">
@@ -964,11 +976,11 @@
                             class="cd-input cd-map-search-input"
                             type="text"
                             v-model="mapSearch"
-                            placeholder="Rechercher une adresse, un quartier…"
+                            placeholder="Rechercher une adresse, un quartierâ€¦"
                             @keydown.enter.prevent="searchOnMap"
                         />
                         <button class="cd-btn cd-btn-orange cd-map-search-btn" type="button" @click="searchOnMap">
-                            ?? Rechercher
+                            Rechercher
                         </button>
                     </div>
                     <p style="font-size:12.5px;color:var(--grm);margin-bottom:8px">
@@ -976,16 +988,16 @@
                     </p>
                     <div id="cd-leaflet-map" style="height:440px;width:100%;border-radius:10px;overflow:hidden"></div>
                     <div v-if="mapAddress" style="margin-top:10px;font-size:13px;color:var(--dk)">
-                        ?? <strong>{{ mapAddress }}</strong>
+                        <strong>{{ mapAddress }}</strong>
                     </div>
                     <div v-if="geoLoading" style="margin-top:8px;font-size:13px;color:var(--grm)">
-                        ? Localisation en cours…
+                        Localisation en coursâ€¦
                     </div>
                 </div>
                 <div class="cd-modal-footer">
                     <button class="cd-btn cd-btn-ghost" @click="closeMapModal">Annuler</button>
                     <button class="cd-btn cd-btn-orange success-action" @click="validatePosition" :disabled="!mapLat">
-                        ? Valider cette position
+                        Valider cette position
                     </button>
                 </div>
             </div>
@@ -1017,16 +1029,16 @@
             @click="wipVisible = false"
         >
             <div class="cd-wip-modal" @click.stop>
-                <div class="cd-wip-icon">??</div>
-                <h3>Fonctionnalité en cours de développement</h3>
+                <div class="cd-wip-icon">...</div>
+                <h3>FonctionnalitÃ© en cours de dÃ©veloppement</h3>
                 <p class="cd-wip-feature">{{ wipFeature }}</p>
-                <p>Cette section sera disponible très prochainement.</p>
+                <p>Cette section sera disponible trÃ¨s prochainement.</p>
                 <button
                     class="cd-btn cd-btn-orange"
                     @click="wipVisible = false"
                     style="width: 100%"
                 >
-                    Compris ?
+                    Compris
                 </button>
             </div>
         </div>
@@ -1052,9 +1064,9 @@
             <div class="cd-modal">
                 <div class="cd-modal-header">
                     <div>
-                        <h3>?? Paiement Mobile Money</h3>
+                        <h3>Paiement Mobile Money</h3>
                         <div class="cd-modal-sub">
-                            Mission #{{ momoModal.mission?.id }} —
+                            Mission #{{ momoModal.mission?.id }} â€”
                             {{ formatPrice(momoModal.mission?.total_amount) }}
                         </div>
                     </div>
@@ -1065,10 +1077,10 @@
                     >&#215;</button>
                 </div>
 
-                <!-- -- Saisie réseau + numéro -- -->
+                <!-- -- Saisie rÃ©seau + numÃ©ro -- -->
                 <div class="cd-modal-body" v-if="momoModal.step === 'form'">
                     <div class="cd-field">
-                        <label class="cd-label">Réseau Mobile Money <span class="req">*</span></label>
+                        <label class="cd-label">RÃ©seau Mobile Money <span class="req">*</span></label>
                         <div class="clm-momo-networks">
                             <button
                                 type="button"
@@ -1084,7 +1096,7 @@
                         </div>
                     </div>
                     <div class="cd-field">
-                        <label class="cd-label">Numéro de téléphone <span class="req">*</span></label>
+                        <label class="cd-label">NumÃ©ro de tÃ©lÃ©phone <span class="req">*</span></label>
                         <input
                             class="cd-input"
                             type="tel"
@@ -1093,16 +1105,16 @@
                             maxlength="20"
                         />
                         <div class="clm-momo-hint">
-                            Numéro associé à votre compte {{ momoModal.network ? momoNetworks.find(n => n.value === momoModal.network)?.label : 'Mobile Money' }}.
+                            NumÃ©ro associÃ© Ã  votre compte {{ momoModal.network ? momoNetworks.find(n => n.value === momoModal.network)?.label : 'Mobile Money' }}.
                         </div>
                     </div>
                     <div class="clm-momo-recap" v-if="momoModal.network && momoModal.phone">
                         <div class="clm-momo-recap-row">
-                            <span>Réseau</span>
+                            <span>RÃ©seau</span>
                             <strong>{{ momoNetworks.find(n => n.value === momoModal.network)?.label }}</strong>
                         </div>
                         <div class="clm-momo-recap-row">
-                            <span>Numéro</span>
+                            <span>NumÃ©ro</span>
                             <strong>{{ momoModal.phone }}</strong>
                         </div>
                         <div class="clm-momo-recap-row">
@@ -1111,29 +1123,29 @@
                         </div>
                     </div>
                     <div class="clm-momo-warning">
-                        ?? Une demande de paiement sera envoyée sur votre téléphone. Confirmez avec votre code PIN.
+                        Une demande de paiement sera envoyÃ©e sur votre tÃ©lÃ©phone. Confirmez avec votre code PIN.
                     </div>
                 </div>
 
-                <!-- -- Attente confirmation téléphone -- -->
+                <!-- -- Attente confirmation tÃ©lÃ©phone -- -->
                 <div class="cd-modal-body cd-momo-waiting" v-if="momoModal.step === 'polling'">
-                    <div class="cd-momo-pulse">??</div>
-                    <div class="cd-momo-wait-title">Confirmez sur votre téléphone</div>
+                    <div class="cd-momo-pulse">...</div>
+                    <div class="cd-momo-wait-title">Confirmez sur votre tÃ©lÃ©phone</div>
                     <div class="cd-momo-wait-sub">
                         Une demande de paiement de <strong>{{ formatPrice(momoModal.mission?.total_amount) }}</strong>
-                        a été envoyée au <strong>{{ momoModal.phone }}</strong>.<br>
+                        a Ã©tÃ© envoyÃ©e au <strong>{{ momoModal.phone }}</strong>.<br>
                         Entrez votre code PIN MoMo pour valider.
                     </div>
-                    <div class="cd-momo-wait-timer">? {{ momoModal.pollSecondsLeft }}s restantes</div>
+                    <div class="cd-momo-wait-timer">{{ momoModal.pollSecondsLeft }}s restantes</div>
                 </div>
 
-                <!-- -- Succès -- -->
+                <!-- -- SuccÃ¨s -- -->
                 <div class="cd-modal-body cd-momo-success" v-if="momoModal.step === 'success'">
-                    <div class="cd-momo-success-icon">??</div>
-                    <div class="cd-momo-success-title">Paiement confirmé !</div>
+                    <div class="cd-momo-success-icon">&#10003;</div>
+                    <div class="cd-momo-success-title">Paiement confirmÃ© !</div>
                     <div class="cd-momo-success-sub">
-                        Mission clôturée avec succès.<br>
-                        Montant payé : <strong>{{ formatPrice(momoModal.mission?.total_amount) }}</strong>
+                        Mission clÃ´turÃ©e avec succÃ¨s.<br>
+                        Montant payÃ© : <strong>{{ formatPrice(momoModal.mission?.total_amount) }}</strong>
                     </div>
                     <a
                         v-if="momoModal.receiptUrl"
@@ -1142,17 +1154,17 @@
                         class="cd-btn cd-btn-orange"
                         style="margin-top:16px;display:inline-flex;align-items:center;gap:8px;text-decoration:none"
                     >
-                        ?? Télécharger le reçu
+                        TÃ©lÃ©charger le reÃ§u
                     </a>
                 </div>
 
-                <!-- -- Échec -- -->
+                <!-- -- Ã‰chec -- -->
                 <div class="cd-modal-body cd-momo-error" v-if="momoModal.step === 'failed'">
-                    <div class="cd-momo-error-icon">?</div>
-                    <div class="cd-momo-error-title">Paiement échoué</div>
-                    <div class="cd-momo-error-sub">{{ momoModal.errorMessage || 'Le paiement a été refusé ou a expiré.' }}</div>
+                    <div class="cd-momo-error-icon">!</div>
+                    <div class="cd-momo-error-title">Paiement Ã©chouÃ©</div>
+                    <div class="cd-momo-error-sub">{{ momoModal.errorMessage || 'Le paiement a Ã©tÃ© refusÃ© ou a expirÃ©.' }}</div>
                     <button class="cd-btn cd-btn-ghost" style="margin-top:16px" @click="momoModal.step = 'form'">
-                        ? Réessayer
+                        RÃ©essayer
                     </button>
                 </div>
 
@@ -1171,14 +1183,14 @@
                         :disabled="!momoModal.network || !momoModal.phone.trim() || momoModal.loading"
                     >
                         <div class="cd-spinner" v-if="momoModal.loading"></div>
-                        <span v-else>? Confirmer le paiement</span>
+                        <span v-else>Confirmer le paiement</span>
                     </button>
                 </div>
             </div>
         </div>
 
         <!-- ----------------------------------
-             CHAT MODAL (ouvert depuis liste ou détail mission)
+             CHAT MODAL (ouvert depuis liste ou dÃ©tail mission)
         ---------------------------------- -->
         <mission-chat-modal
             v-if="chatMissionId"
@@ -1237,6 +1249,7 @@ export default {
                 phone: "",
                 address: "",
                 city: "Cotonou",
+                profile_picture: null,
                 account_type: "individual",
                 company_name: null,
             }),
@@ -1299,15 +1312,15 @@ export default {
                 errorMessage: "",
             },
             momoNetworks: [
-                { value: "mtn", label: "MTN Bénin", icon: "??" },
-                { value: "moov", label: "Moov Bénin", icon: "??" },
-                { value: "celtiis", label: "Celtiis", icon: "??" },
+                { value: "mtn", label: "MTN BÃ©nin", icon: "" },
+                { value: "moov", label: "Moov BÃ©nin", icon: "" },
+                { value: "celtiis", label: "Celtiis", icon: "" },
             ],
 
             toasts: [],
             toastId: 0,
 
-            // Adresse / géolocalisation
+            // Adresse / gÃ©olocalisation
             address_mode: "manual",
             showMapModal: false,
             geoLoading: false,
@@ -1326,17 +1339,17 @@ export default {
             unreadCount: 0,
             notifInterval: null,
 
-            // Missions (chargées depuis l'API)
+            // Missions (chargÃ©es depuis l'API)
             missions: [],
             missionsLoading: true,
             missionsError: null,
 
             tabs: [
                 { key: "all", label: "Toutes" },
-                { key: "active", label: "En cours" }, // statuts actifs groupés
+                { key: "active", label: "En cours" }, // statuts actifs groupÃ©s
                 { key: "pending", label: "En attente" },
-                { key: "closed", label: "Terminées" },
-                { key: "cancelled", label: "Annulées" },
+                { key: "closed", label: "TerminÃ©es" },
+                { key: "cancelled", label: "AnnulÃ©es" },
             ],
 
             // Formulaire nouvelle mission
@@ -1351,19 +1364,19 @@ export default {
             },
 
             services: [
-                { value: "plomberie", label: "Plomberie", icon: "??" },
-                { value: "electricite", label: "Électricité", icon: "?" },
-                { value: "menuiserie", label: "Menuiserie", icon: "??" },
-                { value: "ferronnerie", label: "Ferronnerie", icon: "??" },
-                { value: "frigoriste", label: "Frigoriste", icon: "??" },
-                { value: "mecanique", label: "Mécanique auto", icon: "??" },
-                { value: "nettoyage", label: "Nettoyage", icon: "??" },
-                { value: "peinture", label: "Peinture", icon: "??" },
-                { value: "maintenance", label: "Maintenance", icon: "???" },
-                { value: "autre", label: "Autre", icon: "?" },
+                { value: "plomberie", label: "Plomberie", icon: "" },
+                { value: "electricite", label: "Ã‰lectricitÃ©", icon: "" },
+                { value: "menuiserie", label: "Menuiserie", icon: "" },
+                { value: "ferronnerie", label: "Ferronnerie", icon: "" },
+                { value: "frigoriste", label: "Frigoriste", icon: "" },
+                { value: "mecanique", label: "MÃ©canique auto", icon: "" },
+                { value: "nettoyage", label: "Nettoyage", icon: "" },
+                { value: "peinture", label: "Peinture", icon: "" },
+                { value: "maintenance", label: "Maintenance", icon: "" },
+                { value: "autre", label: "Autre", icon: "" },
             ],
 
-            // Prestataires recommandés (statiques pour l'instant)
+            // Prestataires recommandÃ©s (statiques pour l'instant)
             contractors: [
                 {
                     id: 1,
@@ -1379,7 +1392,7 @@ export default {
                     id: 2,
                     initials: "AD",
                     name: "Aminata Diallo",
-                    specialty: "Électricienne",
+                    specialty: "Ã‰lectricienne",
                     rating: 4.8,
                     reviews: 24,
                     zone: "Porto-Novo",
@@ -1398,7 +1411,7 @@ export default {
                 {
                     id: 4,
                     initials: "MO",
-                    name: "Mariam Ouédraogo",
+                    name: "Mariam OuÃ©draogo",
                     specialty: "Peintre",
                     rating: 4.6,
                     reviews: 17,
@@ -1460,13 +1473,13 @@ export default {
             ];
             return [
                 {
-                    icon: "??",
+                    icon: "&#128203;",
                     label: "Missions totales",
                     value: this.missions.length,
                     color: "",
                 },
                 {
-                    icon: "??",
+                    icon: "&#128736;",
                     label: "En cours",
                     value: this.missions.filter((m) =>
                         active.includes(m.status)
@@ -1474,15 +1487,15 @@ export default {
                     color: "orange",
                 },
                 {
-                    icon: "?",
+                    icon: "&#9203;",
                     label: "En attente",
                     value: this.missions.filter((m) => m.status === "pending")
                         .length,
                     color: "",
                 },
                 {
-                    icon: "?",
-                    label: "Terminées",
+                    icon: "&#10003;",
+                    label: "TerminÃ©es",
                     value: this.missions.filter((m) =>
                         ["completed", "closed"].includes(m.status)
                     ).length,
@@ -1550,14 +1563,14 @@ export default {
                 this.missions = Array.isArray(data) ? data : data.data ?? [];
             } catch (e) {
                 this.missionsError =
-                    "Impossible de charger les missions. Vérifiez votre connexion.";
+                    "Impossible de charger les missions. VÃ©rifiez votre connexion.";
                 console.error("[ClientDashboard] fetchMissions error:", e);
             } finally {
                 this.missionsLoading = false;
             }
         },
 
-        // -- Créer une mission -----------------------------------
+        // -- CrÃ©er une mission -----------------------------------
         openNewMission() {
             this.newMissionForm = {
                 schedule_type: "now",
@@ -1595,7 +1608,7 @@ export default {
             this.imagesPreviews.splice(index, 1);
         },
 
-        // -- Adresse / Géolocalisation --------------------------------------
+        // -- Adresse / GÃ©olocalisation --------------------------------------
         openMapModal() {
             this.mapAddress = "";
             this.mapSearch = "";
@@ -1618,7 +1631,7 @@ export default {
             const defaultCenter = [6.3654, 2.4183]; // Cotonou
             const map = L.map(el).setView(defaultCenter, 13);
             L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                attribution: '© <a href="https://www.openstreetmap.org">OpenStreetMap</a>',
+                attribution: 'Â© <a href="https://www.openstreetmap.org">OpenStreetMap</a>',
             }).addTo(map);
             this.leafletMap = map;
             map.on("click", (e) => {
@@ -1705,7 +1718,7 @@ export default {
                 );
                 const data = await res.json();
                 if (!data.length) {
-                    this.showToast("Aucun résultat pour cette adresse.", "error");
+                    this.showToast("Aucun rÃ©sultat pour cette adresse.", "error");
                     return;
                 }
                 const lat = parseFloat(data[0].lat);
@@ -1730,12 +1743,12 @@ export default {
             }
             if (!this.newMissionForm.service) {
                 this.missionError =
-                    "Veuillez sélectionner un type de prestation.";
+                    "Veuillez sÃ©lectionner un type de prestation.";
                 return;
             }
             if (this.newMissionForm.description.trim().length < 20) {
                 this.missionError =
-                    "La description doit faire au moins 20 caractères.";
+                    "La description doit faire au moins 20 caractÃ¨res.";
                 return;
             }
             if (!this.newMissionForm.address.trim()) {
@@ -1780,15 +1793,15 @@ export default {
                     return;
                 }
 
-                // Ajouter la nouvelle mission en tête de liste
+                // Ajouter la nouvelle mission en tÃªte de liste
                 this.missions.unshift(data.mission);
                 this.showNewMission = false;
                 this.showToast(
-                    "Mission publiée ! Un prestataire va être attribué.",
+                    "Mission publiÃ©e ! Un prestataire va Ãªtre attribuÃ©.",
                     "success"
                 );
             } catch (e) {
-                this.missionError = "Erreur réseau. Veuillez réessayer.";
+                this.missionError = "Erreur rÃ©seau. Veuillez rÃ©essayer.";
                 console.error("[ClientDashboard] submitMission error:", e);
             } finally {
                 this.loading = false;
@@ -1820,24 +1833,24 @@ export default {
                 const data = await res.json();
                 if (!res.ok) {
                     this.showToast(
-                        data.message ?? "Erreur lors de la mise à jour.",
+                        data.message ?? "Erreur lors de la mise Ã  jour.",
                         "error"
                     );
                     return;
                 }
 
-                // Mettre à jour la mission dans la liste locale
+                // Mettre Ã  jour la mission dans la liste locale
                 const idx = this.missions.findIndex((m) => m.id === mission.id);
                 if (idx !== -1) this.missions.splice(idx, 1, data.mission);
 
-                // Mettre à jour la modal si ouverte
+                // Mettre Ã  jour la modal si ouverte
                 if (this.activeMission?.id === mission.id) {
                     this.activeMission = data.mission;
                 }
 
                 return data.mission;
             } catch (e) {
-                this.showToast("Erreur réseau.", "error");
+                this.showToast("Erreur rÃ©seau.", "error");
                 console.error("[ClientDashboard] updateStatus error:", e);
             } finally {
                 this.actionLoading = false;
@@ -1847,7 +1860,7 @@ export default {
         async confirmCompletion(mission) {
             await this.updateMissionStatus(mission, "completed");
             this.showToast(
-                "Fin des travaux confirmée. Vous pouvez maintenant procéder au paiement.",
+                "Fin des travaux confirmÃ©e. Vous pouvez maintenant procÃ©der au paiement.",
                 "success"
             );
         },
@@ -1855,22 +1868,22 @@ export default {
         async approveQuote(mission) {
             await this.updateMissionStatus(mission, "order_placed");
             this.showToast(
-                "Devis approuvé ! L'intervention va démarrer.",
+                "Devis approuvÃ© ! L'intervention va dÃ©marrer.",
                 "success"
             );
         },
 
         async rejectQuote(mission) {
             const reason = prompt("Motif du refus (optionnel) :");
-            // On repasse à quote_submitted avec le motif — le prestataire verra le refus
+            // On repasse Ã  quote_submitted avec le motif â€” le prestataire verra le refus
             await this.updateMissionStatus(mission, "quote_submitted", {
                 reported_issue: reason ?? "",
             });
-            this.showToast("Devis refusé. Le prestataire en sera informé.", "");
+            this.showToast("Devis refusÃ©. Le prestataire en sera informÃ©.", "");
         },
 
         signalProblem() {
-            this.wip("Signaler un problème");
+            this.wip("Signaler un problÃ¨me");
         },
 
         // -- Helpers d'affichage ---------------------------------
@@ -1929,21 +1942,21 @@ export default {
 
         serviceIcon(service) {
             const icons = {
-                plomberie: "??",
-                electricite: "?",
-                menuiserie: "??",
-                ferronnerie: "??",
-                frigoriste: "??",
-                mecanique: "??",
-                nettoyage: "??",
-                peinture: "??",
-                maintenance: "???",
+                plomberie: "",
+                electricite: "",
+                menuiserie: "",
+                ferronnerie: "",
+                frigoriste: "",
+                mecanique: "",
+                nettoyage: "",
+                peinture: "",
+                maintenance: "",
             };
-            return icons[service] ?? "??";
+            return icons[service] ?? "";
         },
 
         formatDate(iso) {
-            if (!iso) return "—";
+            if (!iso) return "â€”";
             return new Date(iso).toLocaleDateString("fr-FR", {
                 day: "numeric",
                 month: "short",
@@ -1952,7 +1965,7 @@ export default {
         },
 
         formatPrice(amount) {
-            if (!amount) return "—";
+            if (!amount) return "â€”";
             return new Intl.NumberFormat("fr-FR").format(amount) + " FCFA";
         },
 
@@ -2024,7 +2037,7 @@ export default {
                 }
             } catch {
                 this.momoModal.step = 'failed';
-                this.momoModal.errorMessage = 'Erreur réseau. Veuillez réessayer.';
+                this.momoModal.errorMessage = 'Erreur rÃ©seau. Veuillez rÃ©essayer.';
             } finally {
                 this.momoModal.loading = false;
                 this.momoModal.polling = this.momoModal.step === 'polling';
@@ -2043,7 +2056,7 @@ export default {
                     clearInterval(interval);
                     this.momoModal.step    = 'failed';
                     this.momoModal.polling = false;
-                    this.momoModal.errorMessage = 'Délai expiré. Réessayez.';
+                    this.momoModal.errorMessage = 'DÃ©lai expirÃ©. RÃ©essayez.';
                     return;
                 }
                 try {
@@ -2056,7 +2069,7 @@ export default {
                         clearInterval(interval);
                         this.momoModal.step         = 'failed';
                         this.momoModal.polling      = false;
-                        this.momoModal.errorMessage = data.message || 'Paiement refusé.';
+                        this.momoModal.errorMessage = data.message || 'Paiement refusÃ©.';
                     }
                 } catch { /* silently retry */ }
             }, 3000);
@@ -2073,7 +2086,7 @@ export default {
                     this.activeMission = { ...this.activeMission, ...data.mission };
                 }
             }
-            this.showToast('?? Paiement confirmé ! Mission clôturée.', 'success');
+            this.showToast('Paiement confirmÃ© ! Mission clÃ´turÃ©e.', 'success');
         },
 
         emitToggleSidebar() {
@@ -2085,9 +2098,9 @@ export default {
             );
         },
 
-        // -- Traduction statut en français ------------------------
+        // -- Traduction statut en franÃ§ais ------------------------
         // Utilise status_label si l'API le retourne, sinon fallback local.
-        // Corrige le problème "pending" affiché ou qui disparaît au rechargement.
+        // Corrige le problÃ¨me "pending" affichÃ© ou qui disparaÃ®t au rechargement.
         labelOf(mission) {
             if (
                 mission.status_label &&
@@ -2097,27 +2110,27 @@ export default {
             }
             const map = {
                 pending: "En attente",
-                assigned: "Assignée",
-                accepted: "Acceptée",
-                contact_made: "Contact établi",
+                assigned: "AssignÃ©e",
+                accepted: "AcceptÃ©e",
+                contact_made: "Contact Ã©tabli",
                 on_the_way: "En route",
                 tracking: "Suivi en cours",
                 in_progress: "Intervention en cours",
                 quote_submitted: "Devis soumis",
-                order_placed: "Commande passée",
+                order_placed: "Commande passÃ©e",
                 awaiting_confirm: "En att. de confirmation",
-                completed: "Terminée",
-                closed: "Clôturée",
-                cancelled: "Annulée",
+                completed: "TerminÃ©e",
+                closed: "ClÃ´turÃ©e",
+                cancelled: "AnnulÃ©e",
             };
             return map[mission.status] ?? mission.status;
         },
 
-        // -- "Il y a X" en français (sans dépendre de Laravel) ---
+        // -- "Il y a X" en franÃ§ais (sans dÃ©pendre de Laravel) ---
         agoFr(isoDate) {
             if (!isoDate) return "";
             const diff = Math.floor((Date.now() - new Date(isoDate)) / 1000);
-            if (diff < 60) return "À l'instant";
+            if (diff < 60) return "Ã€ l'instant";
             if (diff < 3600) return `Il y a ${Math.floor(diff / 60)} min`;
             if (diff < 86400) return `Il y a ${Math.floor(diff / 3600)} h`;
             if (diff < 604800) return `Il y a ${Math.floor(diff / 86400)} j`;
@@ -2207,10 +2220,10 @@ export default {
         docStatusLabel(s) {
             return (
                 {
-                    approved: "? Validé",
-                    pending: "? En attente de validation",
-                    rejected: "? Refusé",
-                    missing: "— Non déposé",
+                    approved: "ValidÃ©",
+                    pending: "En attente de validation",
+                    rejected: "RefusÃ©",
+                    missing: "â€” Non dÃ©posÃ©",
                 }[s] ?? s
             );
         },
@@ -2250,7 +2263,7 @@ export default {
                 doc.status = "pending";
                 doc.uploading = false;
                 this.showToast(
-                    `${doc.label} déposé. En attente de vérification admin.`,
+                    `${doc.label} dÃ©posÃ©. En attente de vÃ©rification admin.`,
                     "success"
                 );
                 await this.refreshDocProgress();
@@ -2281,7 +2294,7 @@ export default {
                         localDoc.filename = srv.filename;
                     }
                 });
-                // Utiliser la progression retournée par le serveur
+                // Utiliser la progression retournÃ©e par le serveur
                 if (data.progress) {
                     this.localDocProgress = data.progress;
                 } else {
@@ -2335,8 +2348,8 @@ export default {
         const defaultDocs = [
             {
                 type: "cni",
-                label: "Pièce d'identité valide (CNI / Passeport)",
-                icon: "??",
+                label: "PiÃ¨ce d'identitÃ© valide (CNI / Passeport)",
+                icon: "",
                 status: "missing",
                 uploading: false,
                 filename: null,
@@ -2345,7 +2358,7 @@ export default {
             {
                 type: "photo_profil",
                 label: "Photo de profil",
-                icon: "??",
+                icon: "",
                 status: "missing",
                 uploading: false,
                 filename: null,
@@ -2365,14 +2378,14 @@ export default {
             30000
         );
 
-        // Fermer dropdown au clic extérieur
+        // Fermer dropdown au clic extÃ©rieur
         document.addEventListener("click", this.handleClickOutside);
 
         window.addEventListener("ab-sidebar-close", () => {
             this.sidebarOpen = false;
         });
 
-        // Écouter les mises à jour de messages non lus (même event que MissionComponent)
+        // Ã‰couter les mises Ã  jour de messages non lus (mÃªme event que MissionComponent)
         window.addEventListener("rt-unread-update", this.onGlobalUnreadUpdate);
     },
 
@@ -2571,13 +2584,25 @@ export default {
     background: #f0fdf4;
 }
 .cd-kpi-icon {
-    font-size: 22px;
-    margin-bottom: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    margin-right: 10px;
+    border-radius: 8px;
+    background: rgba(249, 115, 22, 0.1);
+    color: var(--or);
+    font-size: 16px;
+    line-height: 1;
+    flex-shrink: 0;
 }
 .cd-kpi-val {
     font-size: 28px;
     font-weight: 800;
     color: var(--dk);
+    display: flex;
+    align-items: center;
 }
 .cd-kpi-label {
     font-size: 12px;
@@ -2856,6 +2881,16 @@ export default {
     font-weight: 800;
     font-size: 16px;
     flex-shrink: 0;
+    overflow: hidden;
+}
+.cd-profile-av.has-photo {
+    background: #fff;
+}
+.cd-profile-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 .cd-profile-name {
     font-size: 14px;
@@ -3612,7 +3647,7 @@ export default {
     font-size: 13px;
 }
 
-/* -- Sélecteur mode adresse -- */
+/* -- SÃ©lecteur mode adresse -- */
 .cd-addr-modes, .cd-geo-methods {
     display: flex;
     gap: 10px;
@@ -3644,7 +3679,7 @@ export default {
     background: var(--or3);
 }
 
-/* -- Géolocalisation -- */
+/* -- GÃ©olocalisation -- */
 .cd-btn-geo {
     display: flex;
     align-items: center;
@@ -3728,7 +3763,7 @@ export default {
     margin-bottom: 14px;
 }
 
-/* -- Modal géo consentement -- */
+/* -- Modal gÃ©o consentement -- */
 .cd-geo-reasons {
     list-style: none;
     padding: 0;
@@ -3849,7 +3884,7 @@ export default {
     padding: 0 4px;
 }
 
-/* -- Badge Identité vérifiée -- */
+/* -- Badge IdentitÃ© vÃ©rifiÃ©e -- */
 .cd-banner-verified {
     display: flex;
     align-items: center;
@@ -3878,7 +3913,7 @@ export default {
     background: linear-gradient(90deg, #f97316, #ea580c) !important;
 }
 
-/* -- Bannière compte en attente de validation -- */
+/* -- BanniÃ¨re compte en attente de validation -- */
 .cd-banner-pending {
     display: flex;
     align-items: center;
@@ -4287,10 +4322,10 @@ export default {
 }
 
 /* --------------------------------------------------------------
-   MOBILE FIXES — 350 px et plus, zéro débordement horizontal
+   MOBILE FIXES â€” 350 px et plus, zÃ©ro dÃ©bordement horizontal
 -------------------------------------------------------------- */
 
-/* Verrou global : rien ne peut dépasser la largeur de l'écran */
+/* Verrou global : rien ne peut dÃ©passer la largeur de l'Ã©cran */
 .cd-wrap {
     overflow-x: hidden;
     max-width: 100vw;
@@ -4299,7 +4334,7 @@ export default {
 .cd-wrap *::before,
 .cd-wrap *::after {
     box-sizing: border-box;
-    min-width: 0; /* autorise les flex-items à rétrécir sous leur contenu */
+    min-width: 0; /* autorise les flex-items Ã  rÃ©trÃ©cir sous leur contenu */
 }
 
 /* -- TOPBAR --------------------------------------------------- */
@@ -4316,7 +4351,7 @@ export default {
         gap: 6px;
         flex-shrink: 0;
     }
-    /* Titre tronqué */
+    /* Titre tronquÃ© */
     .cd-page-title {
         font-size: 13px;
         max-width: 120px;
@@ -4324,7 +4359,7 @@ export default {
         text-overflow: ellipsis;
         white-space: nowrap;
     }
-    /* Bouton "+ Nouvelle mission" ? icône ronde seulement */
+    /* Bouton "+ Nouvelle mission" ? icÃ´ne ronde seulement */
     .cd-topbar-right .cd-btn.cd-btn-orange {
         width: 36px;
         height: 36px;
@@ -4341,7 +4376,7 @@ export default {
         line-height: 1;
         color: #fff;
     }
-    /* Avatar légèrement plus petit */
+    /* Avatar lÃ©gÃ¨rement plus petit */
     .cd-avatar {
         width: 30px;
         height: 30px;
@@ -4358,7 +4393,7 @@ export default {
     }
 }
 
-/* -- BANNIÈRE PENDING ----------------------------------------- */
+/* -- BANNIÃˆRE PENDING ----------------------------------------- */
 .cd-banner-pending {
     word-break: break-word;
     overflow-wrap: break-word;
@@ -4409,7 +4444,7 @@ export default {
     }
 }
 
-/* -- BANNIÈRE VÉRIFIÉE ---------------------------------------- */
+/* -- BANNIÃˆRE VÃ‰RIFIÃ‰E ---------------------------------------- */
 @media (max-width: 599px) {
     .cd-banner-verified {
         padding: 12px;
@@ -4434,8 +4469,10 @@ export default {
         border-radius: 12px;
     }
     .cd-kpi-icon {
-        font-size: 18px;
-        margin-bottom: 4px;
+        width: 24px;
+        height: 24px;
+        margin-right: 8px;
+        font-size: 14px;
     }
     .cd-kpi-val {
         font-size: 22px;
@@ -4459,7 +4496,7 @@ export default {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        /* largeur calculée par rapport à la colonne gauche disponible */
+        /* largeur calculÃ©e par rapport Ã  la colonne gauche disponible */
         max-width: calc(100vw - 180px);
     }
     .cd-mission-meta {
@@ -4495,7 +4532,7 @@ export default {
 /* -- NOTIFICATIONS dropdown ----------------------------------- */
 @media (max-width: 599px) {
     .cd-notif-dropdown {
-        right: -60px; /* re-centre si elle dépassait à droite */
+        right: -60px; /* re-centre si elle dÃ©passait Ã  droite */
         max-width: calc(100vw - 20px);
         left: auto;
     }

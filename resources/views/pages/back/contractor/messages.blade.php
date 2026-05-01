@@ -1,7 +1,7 @@
 {{-- resources/views/pages/back/contractor/messages.blade.php --}}
 @extends('layouts.back')
 
-@section('title', 'Messages — Mesotravo')
+@section('title', 'Messages - Mesotravo')
 
 @php $active = 'messages'; @endphp
 

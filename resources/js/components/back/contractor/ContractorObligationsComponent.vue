@@ -46,7 +46,15 @@
                         </div>
                     </div>
                 </div>
-                <div class="cob-avatar">{{ userInitials }}</div>
+                <div class="cob-avatar" :class="{ 'has-photo': user.photo_url }">
+                    <img
+                        v-if="user.photo_url"
+                        :src="user.photo_url"
+                        :alt="user.name"
+                        class="cob-avatar-img"
+                    />
+                    <span v-else>{{ userInitials }}</span>
+                </div>
             </div>
         </div>
 
@@ -317,6 +325,17 @@ export default {
     justify-content: center;
     font-weight: 700;
     font-size: 13px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.cob-avatar.has-photo {
+    background: #fff;
+}
+.cob-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 
 /* ── NOTIFICATIONS ── */
@@ -622,7 +641,12 @@ export default {
 /* ── RESPONSIVE ── */
 @media (max-width: 899px) {
     .ad-burger { display: flex; }
-    .cob-topbar { padding: 0 16px; }
+    .cob-topbar {
+        height: auto;
+        min-height: 84px;
+        padding: 14px 16px 12px;
+        align-items: center;
+    }
     .cob-content { padding: 20px 16px; }
     .cob-section { padding: 20px; }
     .cob-info { flex-direction: column; gap: 8px; }

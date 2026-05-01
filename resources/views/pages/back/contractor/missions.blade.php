@@ -1,11 +1,28 @@
 {{-- resources/views/pages/back/contractor/missions.blade.php --}}
 @extends('layouts.back')
 @section('title', 'Mes missions')
-@php $active = 'missions'; @endphp
+@php
+    $active = 'missions';
+    $hasProfilePhoto = \App\Models\Document::where('user_id', $user->id)
+        ->where('type', 'photo')
+        ->where('status', 'approved')
+        ->exists();
+    $profilePhotoUrl = $user->contractor?->profile_picture
+        ? \Illuminate\Support\Facades\Storage::disk('public')->url($user->contractor->profile_picture)
+        : ($hasProfilePhoto ? route('profile.photo.user', ['userId' => $user->id]) : null);
+@endphp
 
 @section('content')
 <contractor-mission-component
-    :user="{{ json_encode(['id' => $user->id, 'name' => $user->name, 'role' => $user->role, 'status' => $user->status, 'accreditation' => $user->contractor?->accreditation ?? 'none', 'completed_missions' => $user->contractor?->completed_missions ?? 0]) }}"
+    :user="{{ json_encode([
+        'id' => $user->id,
+        'name' => $user->name,
+        'role' => $user->role,
+        'status' => $user->status,
+        'photo_url' => $profilePhotoUrl,
+        'accreditation' => $user->contractor?->accreditation ?? 'none',
+        'completed_missions' => $user->contractor?->completed_missions ?? 0,
+    ]) }}"
     :diagnostic-fee="{{ (float) \App\Models\Setting::get('diagnostic_fee', 5000) }}"
     :commission-diagnostic="{{ (float) \App\Models\Setting::get('commission_diagnostic', 10) }}"
     :commission-main-oeuvre="{{ (float) \App\Models\Setting::get('commission_main_oeuvre', 10) }}"

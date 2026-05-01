@@ -135,6 +135,9 @@ class PaymentController extends Controller
         if ($user->role === 'client') {
             $client = Client::where('user_id', $user->id)->firstOrFail();
             abort_unless($mission->client_id === $client->id, 403);
+        } elseif ($user->role === 'contractor') {
+            $contractor = \App\Models\Contractor::where('user_id', $user->id)->firstOrFail();
+            abort_unless($mission->contractor_id === $contractor->id, 403);
         } elseif ($user->role !== 'admin') {
             abort(403);
         }
