@@ -141,7 +141,9 @@
                         <div class="cac-card-desc">
                             Autorise les interventions en milieu professionnel.
                             Délivrée exclusivement par l'équipe Mesotravo après
-                            vérification complémentaire.
+                            vérification complémentaire. Un total de 5 missions
+                            terminées est requis pour demander cette
+                            accréditation.
                         </div>
                     </div>
                     <div class="cac-card-status">

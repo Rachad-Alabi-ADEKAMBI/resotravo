@@ -322,6 +322,9 @@
 
 <style>
 .ab-sidebar{width:250px;flex-shrink:0;background:var(--dk2,#110D0B);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;overflow-y:auto;z-index:50;transition:transform .3s cubic-bezier(.4,0,.2,1);transform:translateX(0)}
+.ab-sidebar::-webkit-scrollbar,.ab-nav::-webkit-scrollbar{width:8px}
+.ab-sidebar::-webkit-scrollbar-track,.ab-nav::-webkit-scrollbar-track{background:var(--cr,#F8F4F0)}
+.ab-sidebar::-webkit-scrollbar-thumb,.ab-nav::-webkit-scrollbar-thumb{background:var(--or,#F97316);border-radius:99px}
 @media(max-width:899px){.ab-sidebar{transform:translateX(-100%);box-shadow:4px 0 24px rgba(0,0,0,.3)}.ab-sidebar.open{transform:translateX(0)}}
 .ab-sidebar-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:49;display:none;cursor:pointer}.ab-sidebar-overlay.open{display:block}
 /* Logo */

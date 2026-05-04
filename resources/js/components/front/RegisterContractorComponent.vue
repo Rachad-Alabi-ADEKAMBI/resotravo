@@ -44,7 +44,25 @@
             <div class="rc-card">
                 <!-- Bouton Google -->
                 <a :href="routes.google_auth" class="rc-google-btn">
-                    <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.14 0 5.95 1.08 8.17 2.85l6.1-6.1C34.46 3.39 29.5 1.5 24 1.5 14.81 1.5 6.97 6.96 3.13 14.72l7.11 5.52C12.04 14.1 17.56 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24c0-1.64-.15-3.22-.42-4.75H24v9h12.7c-.55 2.98-2.19 5.5-4.66 7.19l7.2 5.59C43.32 37.09 46.5 30.97 46.5 24z"/><path fill="#FBBC05" d="M10.24 28.24A14.44 14.44 0 0 1 9.5 24c0-1.47.25-2.89.7-4.23l-7.11-5.52A22.46 22.46 0 0 0 1.5 24c0 3.68.88 7.15 2.44 10.22l6.3-5.98z"/><path fill="#34A853" d="M24 46.5c5.5 0 10.13-1.82 13.51-4.94l-7.2-5.59c-1.84 1.24-4.2 1.97-6.31 1.97-6.44 0-11.96-4.6-13.76-10.74l-6.3 5.98C6.97 41.04 14.81 46.5 24 46.5z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
+                    <svg width="20" height="20" viewBox="0 0 48 48">
+                        <path
+                            fill="#EA4335"
+                            d="M24 9.5c3.14 0 5.95 1.08 8.17 2.85l6.1-6.1C34.46 3.39 29.5 1.5 24 1.5 14.81 1.5 6.97 6.96 3.13 14.72l7.11 5.52C12.04 14.1 17.56 9.5 24 9.5z"
+                        />
+                        <path
+                            fill="#4285F4"
+                            d="M46.5 24c0-1.64-.15-3.22-.42-4.75H24v9h12.7c-.55 2.98-2.19 5.5-4.66 7.19l7.2 5.59C43.32 37.09 46.5 30.97 46.5 24z"
+                        />
+                        <path
+                            fill="#FBBC05"
+                            d="M10.24 28.24A14.44 14.44 0 0 1 9.5 24c0-1.47.25-2.89.7-4.23l-7.11-5.52A22.46 22.46 0 0 0 1.5 24c0 3.68.88 7.15 2.44 10.22l6.3-5.98z"
+                        />
+                        <path
+                            fill="#34A853"
+                            d="M24 46.5c5.5 0 10.13-1.82 13.51-4.94l-7.2-5.59c-1.84 1.24-4.2 1.97-6.31 1.97-6.44 0-11.96-4.6-13.76-10.74l-6.3 5.98C6.97 41.04 14.81 46.5 24 46.5z"
+                        />
+                        <path fill="none" d="M0 0h48v48H0z" />
+                    </svg>
                     S'inscrire avec Google
                 </a>
                 <div class="rc-or-divider"><span>ou avec un email</span></div>
@@ -113,7 +131,11 @@
                                     placeholder="97 XX XX XX"
                                     autocomplete="tel"
                                     maxlength="8"
-                                    @input="form.phone = form.phone.replace(/\D/g, '').slice(0, 8)"
+                                    @input="
+                                        form.phone = form.phone
+                                            .replace(/\D/g, '')
+                                            .slice(0, 8)
+                                    "
                                 />
                             </div>
                             <div class="rc-err" v-if="errors.phone">
@@ -217,13 +239,11 @@
 
                     <!-- Spécialité principale -->
                     <div class="rc-field" style="margin-bottom: 20px">
-                        <label
-                            >Spécialité
-                            <span class="req">*</span></label
-                        >
+                        <label>Spécialité <span class="req">*</span></label>
                         <select
                             class="rc-input"
                             v-model="form.specialty"
+                            @change="syncSelectedSpecialty"
                             :class="{ err: errors.specialty }"
                         >
                             <option value="">
@@ -244,9 +264,13 @@
 
                     <div class="rc-add-note">
                         🆕 Votre métier n'est pas listé ?
-                        <a :href="routes.contact ?? '#'"
-                            >Proposer un nouveau domaine</a
+                        <button
+                            type="button"
+                            class="rc-link-btn"
+                            @click="openSuggestionModal"
                         >
+                            Proposer un nouveau domaine
+                        </button>
                     </div>
 
                     <div class="rc-btn-row">
@@ -556,7 +580,7 @@
                             <p>
                                 <strong>Plateforme</strong> : le site web et les
                                 services Mesotravo accessibles via
-                                mesotravo.bj.<br />
+                                mesotravo.com.<br />
                                 <strong>Client</strong> : toute personne
                                 physique ou morale inscrite en qualité de
                                 client.<br />
@@ -732,10 +756,10 @@
                         <div class="cgu-article">
                             <h4><span class="cgu-num">13</span> Contact</h4>
                             <p>
-                                🌐 <strong>mesotravo.bj</strong><br />
-                                ✉️ contact@mesotravo.bj<br />
-                                📞 +229 01 96 66 36 44<br />
-                                💬 WhatsApp : +229 01 96 66 36 44<br />
+                                🌐 <strong>mesotravo.com</strong><br />
+                                ✉️ contact@mesotravo.com<br />
+                                📞 +229 01 90 00 36 26<br />
+                                💬 WhatsApp : +229 01 90 00 36 26<br />
                                 📍 Cotonou, Bénin
                             </p>
                         </div>
@@ -772,6 +796,64 @@
                         style="flex: 2"
                     >
                         ✓ Oui, j'ai lu et j'accepte
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════ MODAL SUGGESTION DOMAINE ══════════════ -->
+        <div
+            class="rc-modal-overlay"
+            v-if="suggestionModal.visible"
+            @click.self="closeSuggestionModal"
+        >
+            <div class="rc-modal rc-modal-small">
+                <div class="rc-modal-icon">💡</div>
+                <h3 class="rc-modal-title">Proposer un nouveau domaine</h3>
+                <div class="rc-modal-body">
+                    <p class="rc-modal-msg">
+                        Indiquez le domaine que vous souhaitez proposer. Il sera
+                        soumis à validation par l'administration.
+                    </p>
+                    <div class="rc-field">
+                        <label>Domaine <span class="req">*</span></label>
+                        <input
+                            class="rc-input"
+                            :class="{ err: suggestionModal.error }"
+                            type="text"
+                            v-model="suggestionModal.name"
+                            placeholder="Ex : Domotique"
+                            maxlength="100"
+                            @keyup.enter="submitSuggestion"
+                        />
+                        <div class="rc-err" v-if="suggestionModal.error">
+                            {{ suggestionModal.error }}
+                        </div>
+                    </div>
+                    <p class="rc-success-msg" v-if="suggestionModal.success">
+                        {{ suggestionModal.success }}
+                    </p>
+                </div>
+                <div class="rc-modal-actions">
+                    <button
+                        type="button"
+                        class="rc-btn rc-btn-secondary"
+                        @click="closeSuggestionModal"
+                        :disabled="suggestionModal.loading"
+                    >
+                        Fermer
+                    </button>
+                    <button
+                        type="button"
+                        class="rc-btn rc-btn-primary"
+                        @click="submitSuggestion"
+                        :disabled="suggestionModal.loading"
+                    >
+                        {{
+                            suggestionModal.loading
+                                ? "Enregistrement..."
+                                : "Envoyer"
+                        }}
                     </button>
                 </div>
             </div>
@@ -822,6 +904,7 @@ export default {
                 cgu: "/cgu",
                 policy: "/policy",
                 contact: "#",
+                service_suggestions: "/services/suggestions",
             }),
         },
     },
@@ -850,6 +933,7 @@ export default {
                 city: "",
                 bio: "",
                 specialty: "",
+                service_id: null,
                 specialties: [],
                 password: "",
                 password_confirmation: "",
@@ -869,6 +953,15 @@ export default {
                 title: "",
                 message: "",
                 errors: [],
+            },
+
+            suggestionModal: {
+                visible: false,
+                name: "",
+                loading: false,
+                error: "",
+                success: "",
+                serviceName: "",
             },
 
             specialtyList: [
@@ -947,12 +1040,82 @@ export default {
             }
         },
 
+        openSuggestionModal() {
+            this.suggestionModal.visible = true;
+            this.suggestionModal.error = "";
+            this.suggestionModal.success = "";
+            this.suggestionModal.name = "";
+        },
+
+        closeSuggestionModal() {
+            if (this.suggestionModal.loading) return;
+            this.suggestionModal.visible = false;
+        },
+
+        async submitSuggestion() {
+            const name = this.suggestionModal.name.trim();
+
+            this.suggestionModal.error = "";
+            this.suggestionModal.success = "";
+
+            if (!name) {
+                this.suggestionModal.error = "Veuillez saisir un domaine.";
+                return;
+            }
+
+            this.suggestionModal.loading = true;
+
+            try {
+                const response = await window.axios.post(
+                    this.routes.service_suggestions,
+                    {
+                        name,
+                    }
+                );
+                const serviceName = response?.data?.service?.name || name;
+                const serviceId = response?.data?.service?.id || null;
+
+                if (!this.specialtyList.includes(serviceName)) {
+                    this.specialtyList.push(serviceName);
+                }
+
+                this.form.specialty = serviceName;
+                this.form.service_id = serviceId;
+                this.suggestionModal.serviceName = serviceName;
+                this.suggestionModal.success =
+                    response?.data?.message ||
+                    "Votre suggestion a été envoyée et sélectionnée pour votre inscription.";
+
+                setTimeout(() => {
+                    this.closeSuggestionModal();
+                }, 1200);
+            } catch (err) {
+                const data = err?.response?.data;
+
+                if (err?.response?.status === 422 && data?.errors?.name) {
+                    this.suggestionModal.error = data.errors.name[0];
+                } else {
+                    this.suggestionModal.error =
+                        data?.message ||
+                        "Impossible d'enregistrer cette suggestion.";
+                }
+            } finally {
+                this.suggestionModal.loading = false;
+            }
+        },
+
         /* ── Spécialités secondaires ── */
         toggleSpec(s) {
             if (s === this.form.specialty) return; // pas de doublon avec la principale
             const idx = this.form.specialties.indexOf(s);
             if (idx > -1) this.form.specialties.splice(idx, 1);
             else this.form.specialties.push(s);
+        },
+
+        syncSelectedSpecialty() {
+            if (this.form.specialty !== this.suggestionModal.serviceName) {
+                this.form.service_id = null;
+            }
         },
 
         /* ── Validation par étape ── */
@@ -965,7 +1128,8 @@ export default {
                 if (!this.form.last_name.trim())
                     this.errors.last_name = "Last name is required.";
                 if (this.form.phone.replace(/\D/g, "").length !== 8)
-                    this.errors.phone = "Le numéro doit contenir exactement 8 chiffres.";
+                    this.errors.phone =
+                        "Le numéro doit contenir exactement 8 chiffres.";
                 if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.form.email))
                     this.errors.email = "Invalid email address.";
                 if (!this.form.intervention_zone.trim())
@@ -1014,17 +1178,42 @@ export default {
 
         /* ── Navigation ── */
         next() {
-            if (!this.validate()) return;
-            if (this.step < this.totalSteps) this.step++;
+            if (!this.validate()) {
+                this.showValidationErrors();
+                return;
+            }
+            if (this.step < this.totalSteps) {
+                this.step++;
+                this.scrollToStepTop();
+            }
         },
 
         prev() {
             if (this.step > 1) this.step--;
         },
 
+        scrollToStepTop() {
+            this.$nextTick(() => {
+                const target = this.$el.querySelector(".rc-main");
+                target?.scrollIntoView({ behavior: "smooth", block: "start" });
+                if (target) target.scrollTop = 0;
+            });
+        },
+
         /* ── Soumission ── */
+        showValidationErrors() {
+            this.errorModal.visible = true;
+            this.errorModal.title = "Informations à corriger";
+            this.errorModal.message =
+                "Veuillez corriger les erreurs suivantes avant de continuer :";
+            this.errorModal.errors = Object.values(this.errors);
+        },
+
         async submit() {
-            if (!this.validate()) return;
+            if (!this.validate()) {
+                this.showValidationErrors();
+                return;
+            }
 
             const route = "/register/contractor/store";
             const payload = {
@@ -1037,6 +1226,7 @@ export default {
                 city: this.form.city,
                 bio: this.form.bio,
                 specialty: this.form.specialty,
+                service_id: this.form.service_id,
                 specialties: this.form.specialties,
                 password: this.form.password,
                 password_confirmation: this.form.password_confirmation,
@@ -1335,7 +1525,10 @@ export default {
     margin-bottom: 14px;
     transition: background 0.2s, border-color 0.2s;
 }
-.rc-google-btn:hover { background: #f9fafb; border-color: #d1d5db; }
+.rc-google-btn:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+}
 .rc-or-divider {
     display: flex;
     align-items: center;
@@ -1344,11 +1537,15 @@ export default {
 }
 .rc-or-divider::before,
 .rc-or-divider::after {
-    content: '';
+    content: "";
     flex: 1;
     border-top: 1px solid #e5e7eb;
 }
-.rc-or-divider span { font-size: 0.8rem; color: #9ca3af; white-space: nowrap; }
+.rc-or-divider span {
+    font-size: 0.8rem;
+    color: #9ca3af;
+    white-space: nowrap;
+}
 
 /* PROGRESS */
 .rc-progress {
@@ -1563,12 +1760,19 @@ export default {
     font-size: 13px;
     color: var(--gr, #7c6a5a);
 }
-.rc-add-note a {
+.rc-add-note a,
+.rc-link-btn {
+    background: none;
+    border: 0;
+    padding: 0;
     color: var(--or, #f97316);
+    cursor: pointer;
+    font: inherit;
     font-weight: 600;
     text-decoration: none;
 }
-.rc-add-note a:hover {
+.rc-add-note a:hover,
+.rc-link-btn:hover {
     text-decoration: underline;
 }
 
@@ -1886,6 +2090,9 @@ export default {
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
     animation: rc-slide-up 0.25s ease;
 }
+.rc-modal-small {
+    max-width: 420px;
+}
 @keyframes rc-slide-up {
     from {
         opacity: 0;
@@ -1934,5 +2141,27 @@ export default {
 .rc-modal-errors li::before {
     content: "✕ ";
     font-weight: 700;
+}
+.rc-modal-actions {
+    display: flex;
+    gap: 10px;
+}
+.rc-modal-actions .rc-btn {
+    flex: 1;
+}
+.rc-success-msg {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border: 1px solid #bbf7d0;
+    border-radius: 10px;
+    background: #f0fdf4;
+    color: #15803d;
+    font-size: 13px;
+    line-height: 1.5;
+}
+@media (max-width: 480px) {
+    .rc-modal-actions {
+        flex-direction: column;
+    }
 }
 </style>

@@ -1041,7 +1041,6 @@ export default {
             return [
                 { key: "all", label: "Tous" },
                 { key: "active", label: "✅ Actifs" },
-                { key: "pending", label: "⏳ En attente" },
                 { key: "archived", label: "📦 Archivés" },
                 { key: "suggestion", label: "💡 Suggestions" },
             ];
@@ -1064,12 +1063,6 @@ export default {
                     label: "Services actifs",
                 },
                 {
-                    icon: "⏳",
-                    value: this.services.filter((s) => s.status === "pending")
-                        .length,
-                    label: "En attente",
-                },
-                {
                     icon: "💡",
                     value: this.services.filter((s) => s.is_suggestion).length,
                     label: "Suggestions",
@@ -1088,8 +1081,6 @@ export default {
 
             if (this.activeTab === "active")
                 list = list.filter((s) => s.status === "active");
-            else if (this.activeTab === "pending")
-                list = list.filter((s) => s.status === "pending");
             else if (this.activeTab === "archived")
                 list = list.filter((s) => s.status === "archived");
             else if (this.activeTab === "suggestion")
@@ -1156,6 +1147,9 @@ export default {
                         { emoji: "⚙️", label: "Mécanique générale" },
                         { emoji: "🏗️", label: "Maintenance" },
                         { emoji: "🛠️", label: "Réparation" },
+                        { emoji: "🧯", label: "Sécurité incendie" },
+                        { emoji: "🔧", label: "Dépannage technique" },
+                        { emoji: "🧰", label: "Outillage" },
                     ],
                 },
                 {
@@ -1173,6 +1167,9 @@ export default {
                         { emoji: "🛖", label: "Toiture / Charpente" },
                         { emoji: "🪨", label: "Carrelage / Sol" },
                         { emoji: "🧲", label: "Soudure" },
+                        { emoji: "🏚️", label: "Rénovation" },
+                        { emoji: "🧵", label: "Tapisserie" },
+                        { emoji: "🪛", label: "Montage / Fixation" },
                     ],
                 },
                 {
@@ -1186,6 +1183,8 @@ export default {
                         { emoji: "💡", label: "Décoration lumineuse" },
                         { emoji: "🏺", label: "Carrelage déco" },
                         { emoji: "🧶", label: "Tissu / Rideaux" },
+                        { emoji: "🧽", label: "Finition surfaces" },
+                        { emoji: "🪑", label: "Mobilier" },
                     ],
                 },
                 {
@@ -1198,6 +1197,8 @@ export default {
                         { emoji: "🚘", label: "Carrosserie" },
                         { emoji: "🧴", label: "Lavage auto" },
                         { emoji: "🏍️", label: "Moto" },
+                        { emoji: "⛽", label: "Carburant / Entretien" },
+                        { emoji: "🚌", label: "Bus / Transport collectif" },
                     ],
                 },
                 {
@@ -1213,6 +1214,9 @@ export default {
                         { emoji: "🌳", label: "Espaces verts" },
                         { emoji: "🏊", label: "Piscine" },
                         { emoji: "🪴", label: "Entretien plantes" },
+                        { emoji: "🧼", label: "Nettoyage vitres" },
+                        { emoji: "🦺", label: "Hygiène chantier" },
+                        { emoji: "🪰", label: "Désinsectisation" },
                     ],
                 },
                 {
@@ -1228,6 +1232,9 @@ export default {
                         { emoji: "🔐", label: "Sécurité" },
                         { emoji: "📷", label: "Vidéosurveillance" },
                         { emoji: "💼", label: "Conseil" },
+                        { emoji: "📝", label: "Devis / Audit" },
+                        { emoji: "🧾", label: "Gestion administrative" },
+                        { emoji: "🏢", label: "Services entreprise" },
                     ],
                 },
                 {
@@ -1240,6 +1247,9 @@ export default {
                         { emoji: "📷", label: "Photo / Vidéo" },
                         { emoji: "📺", label: "TV / Électronique" },
                         { emoji: "🔊", label: "Sono / Audio" },
+                        { emoji: "⌨️", label: "Clavier / Accessoires" },
+                        { emoji: "🧑‍💻", label: "Support logiciel" },
+                        { emoji: "🛰️", label: "Satellite / Signal" },
                     ],
                 },
             ];
@@ -1480,9 +1490,6 @@ export default {
             if (key === "all") return this.services.length;
             if (key === "active")
                 return this.services.filter((s) => s.status === "active")
-                    .length;
-            if (key === "pending")
-                return this.services.filter((s) => s.status === "pending")
                     .length;
             if (key === "archived")
                 return this.services.filter((s) => s.status === "archived")

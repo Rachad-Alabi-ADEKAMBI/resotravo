@@ -76,8 +76,8 @@ Route::get('/', function (Illuminate\Http\Request $request) {
     }
 
     $services = \App\Models\Service::where('status', 'active')
-        ->where('is_visible', true)
         ->orderBy('sort_order')
+        ->orderBy('name')
         ->get(['id', 'name', 'icon', 'description'])
         ->map(fn($s) => [
             'name' => $s->name,
@@ -148,6 +148,7 @@ Route::get('/policy', fn() => view('pages.front.policy'))->name('policy');
 
 // ── Services (public — page d'accueil) ───────────────────────────
 Route::get('/services/public', [ServiceController::class, 'publicIndex'])->name('services.public');
+Route::post('/services/suggestions', [ServiceController::class, 'storeSuggestion'])->name('services.suggestions');
 
 // ── Inscription (accès interdit si déjà connecté) ────────────────
 Route::middleware('guest')->group(function () {
@@ -736,11 +737,21 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard', function () {
             $user        = Auth::user();
             $docProgress = $user->documentProgress();
+            $services    = \App\Models\Service::visible()
+                ->get(['id', 'name', 'icon'])
+                ->map(fn($s) => [
+                    'value' => $s->name,
+                    'label' => $s->name,
+                    'icon'  => $s->icon ?? '',
+                ]);
+            $diagnosticFee = (int) \App\Models\Setting::get('diagnostic_fee', 5000);
             return view('pages.back.client.dashboard', [
                 'active'             => 'dashboard',
                 'user'               => $user,
                 'docProgressData'    => $docProgress,
                 'userStatus'         => $user->status,
+                'services'           => $services,
+                'diagnosticFee'      => $diagnosticFee,
                 'completedMissions'  => $user->client
                     ? \App\Models\Mission::where('client_id', $user->client->id)->where('status', 'closed')->count()
                     : 0,
@@ -748,6 +759,7 @@ Route::middleware('auth')->group(function () {
                     'missions_index'           => route('client.missions.index'),
                     'missions_page'            => route('client.missions.page'),
                     'missions_store'           => route('client.missions.store'),
+                    'services_public'          => route('services.public'),
                     'missions_status'          => '/client/missions/{id}/status',
                     'payment_initiate'         => '/client/missions/{id}/payment',
                     'payment_status'           => '/client/missions/{id}/payment/status',
@@ -865,9 +877,17 @@ Route::middleware('auth')->group(function () {
             $user        = Auth::user();
             $client      = \App\Models\Client::where('user_id', $user->id)->first();
             $docProgress = $user->documentProgress();
+            $services    = \App\Models\Service::visible()
+                ->get(['id', 'name', 'icon'])
+                ->map(fn($s) => [
+                    'value' => $s->name,
+                    'label' => $s->name,
+                    'icon'  => $s->icon ?? '',
+                ]);
             $routes = [
                 'missions_index'           => route('client.missions.index'),
                 'missions_store'           => route('client.missions.store'),
+                'services_public'          => route('services.public'),
                 'missions_status'          => '/client/missions/{id}/status',
                 'payment_initiate'         => '/client/missions/{id}/payment',
                 'payment_status'           => '/client/missions/{id}/payment/status',
@@ -888,7 +908,7 @@ Route::middleware('auth')->group(function () {
                 'suggestions'              => route('client.suggestions'),
             ];
             $diagnosticFee = (int) \App\Models\Setting::get('diagnostic_fee', 5000);
-            return view('pages.back.client.missions', compact('user', 'client', 'routes', 'docProgress', 'diagnosticFee'));
+            return view('pages.back.client.missions', compact('user', 'client', 'routes', 'docProgress', 'diagnosticFee', 'services'));
         })->name('missions.page');
 
         Route::get  ('/missions',                           [MissionController::class, 'index'])             ->name('missions.index');
@@ -1184,7 +1204,6 @@ Route::middleware('auth')->group(function () {
                 ->where('status', 'pending')
                 ->whereNull('contractor_id')
                 ->latest()
-                ->limit(10)
                 ->get()
                 ->map(fn($m) => [
                     'id'            => $m->id,

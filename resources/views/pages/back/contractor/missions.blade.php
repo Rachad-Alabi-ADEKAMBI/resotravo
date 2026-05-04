@@ -19,6 +19,7 @@
         'name' => $user->name,
         'role' => $user->role,
         'status' => $user->status,
+        'documents_verified' => $user->isCertified(),
         'photo_url' => $profilePhotoUrl,
         'accreditation' => $user->contractor?->accreditation ?? 'none',
         'completed_missions' => $user->contractor?->completed_missions ?? 0,

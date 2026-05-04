@@ -136,6 +136,13 @@
                             </div>
                             <div class="ctm-item-right">
                                 <span class="ctm-badge ctm-badge-locked">🔒 Documents à vérifier</span>
+                                <button
+                                    type="button"
+                                    class="ctm-btn ctm-btn-disabled"
+                                    disabled
+                                >
+                                    Postuler indisponible
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1211,12 +1218,13 @@ export default {
             return this.user.status ?? 'pending';
         },
         showAvailableMissions() {
-            if (this.userStatus === 'pending') return true;
+            if (this.userStatus !== 'approved') return true;
+            if (!this.user.documents_verified) return true;
             if (this.userStatus === 'approved' && (this.user.accreditation ?? 'none') === 'none') return true;
             return false;
         },
         availableMissionsMessage() {
-            if (this.userStatus === 'pending') {
+            if (this.userStatus !== 'approved' || !this.user.documents_verified) {
                 return 'Vous pouvez consulter les missions proposées par les clients, mais vous devez faire vérifier vos documents avant de pouvoir postuler.';
             }
             return 'Vous devez obtenir des accréditations pour postuler aux missions.';
@@ -3754,7 +3762,6 @@ ${quote.diagnosis ? `<div class="diag-box"><div class="diag-label">🔍 Diagnost
 /* Mission verrouillée */
 .ctm-item-locked {
     opacity: 0.65;
-    pointer-events: none;
     cursor: default;
     filter: blur(0.3px);
 }
@@ -3765,6 +3772,16 @@ ${quote.diagnosis ? `<div class="diag-box"><div class="diag-label">🔍 Diagnost
     padding: 3px 8px;
     border-radius: 20px;
     white-space: nowrap;
+}
+.ctm-btn-disabled {
+    background: #e5e7eb;
+    color: #6b7280;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+.ctm-btn-disabled:hover {
+    transform: none;
+    box-shadow: none;
 }
 
 /* ── Distance block ── */

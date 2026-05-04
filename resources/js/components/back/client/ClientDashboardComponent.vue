@@ -949,11 +949,57 @@
                     </button>
                     <button
                         class="cd-btn cd-btn-orange"
-                        @click="submitMission"
+                        @click="confirmSubmitMission"
                         :disabled="loading"
                     >
                         <div class="cd-spinner" v-if="loading"></div>
                         <span v-else>Publier la mission ?</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div
+            class="cd-modal-overlay"
+            v-if="showPublishConfirm"
+            @click.self="showPublishConfirm = false"
+        >
+            <div class="cd-modal" style="max-width: 500px; width: 95vw">
+                <div class="cd-modal-header">
+                    <h3>Information importante</h3>
+                    <button
+                        class="cd-modal-close"
+                        @click="showPublishConfirm = false"
+                    >
+                        x
+                    </button>
+                </div>
+                <div class="cd-modal-body" style="text-align: center">
+                    <div style="font-size: 2.4rem; margin-bottom: 14px">🧾</div>
+                    <p style="font-weight: 800; margin-bottom: 10px">
+                        Frais de diagnostic minimum
+                    </p>
+                    <p style="color: #4b5563; line-height: 1.6">
+                        Une fois le prestataire arrivé chez vous, vous devrez
+                        payer au minimum les frais de diagnostic de
+                        <strong>{{ diagnosticFee.toLocaleString("fr-FR") }} FCFA</strong>,
+                        même si vous ne souhaitez pas poursuivre la mission.
+                    </p>
+                </div>
+                <div class="cd-modal-footer">
+                    <button
+                        class="cd-btn cd-btn-ghost"
+                        @click="showPublishConfirm = false"
+                    >
+                        Annuler
+                    </button>
+                    <button
+                        class="cd-btn cd-btn-orange"
+                        @click="showPublishConfirm = false; submitMission()"
+                        :disabled="loading"
+                    >
+                        <div class="cd-spinner" v-if="loading"></div>
+                        <span v-else>J'ai compris, publier</span>
                     </button>
                 </div>
             </div>
@@ -1227,6 +1273,22 @@
 <script>
 import MissionChatModal from "../../MissionChatModal.vue";
 
+function normalizeServices(services) {
+    return (Array.isArray(services) ? services : [])
+        .filter((s) => s?.label || s?.name)
+        .map((s) => {
+            const name = s.label ?? s.name;
+            return {
+                value: s.value ?? name,
+                label: name,
+                icon: s.icon ?? "",
+            };
+        })
+        .sort((a, b) =>
+            a.label.localeCompare(b.label, "fr", { sensitivity: "base" })
+        );
+}
+
 export default {
     name: "ClientDashboardComponent",
     components: { MissionChatModal },
@@ -1259,6 +1321,7 @@ export default {
             default: () => ({
                 missions_index: "/client/missions",
                 missions_store: "/client/missions",
+                services_public: "/services/public",
                 missions_status: "/client/missions/{id}/status",
                 notifications: "/notifications",
                 notifications_read: "/notifications/{id}/read",
@@ -1270,6 +1333,10 @@ export default {
                 conversations_read: "/conversations/{id}/read",
             }),
         },
+        initialServices: {
+            type: Array,
+            default: () => [],
+        },
         docProgressData: {
             type: Object,
             default: () => ({ approved: 0, total: 2, percentage: 0 }),
@@ -1277,6 +1344,10 @@ export default {
         userStatus: {
             type: String,
             default: "pending",
+        },
+        diagnosticFee: {
+            type: Number,
+            default: 5000,
         },
     },
 
@@ -1286,6 +1357,7 @@ export default {
             tab: "all",
             activeMission: null,
             showNewMission: false,
+            showPublishConfirm: false,
             wipVisible: false,
             wipFeature: "",
             loading: false,
@@ -1363,7 +1435,9 @@ export default {
                 address: "",
             },
 
-            services: [
+            services: normalizeServices(this.initialServices).length
+                ? normalizeServices(this.initialServices)
+                : [
                 { value: "plomberie", label: "Plomberie", icon: "" },
                 { value: "electricite", label: "Électricité", icon: "" },
                 { value: "menuiserie", label: "Menuiserie", icon: "" },
@@ -1373,7 +1447,6 @@ export default {
                 { value: "nettoyage", label: "Nettoyage", icon: "" },
                 { value: "peinture", label: "Peinture", icon: "" },
                 { value: "maintenance", label: "Maintenance", icon: "" },
-                { value: "autre", label: "Autre", icon: "" },
             ],
 
             // Prestataires recommandés (statiques pour l'instant)
@@ -1549,6 +1622,55 @@ export default {
     },
 
     methods: {
+        async fetchServices() {
+            try {
+                const res = await fetch(
+                    this.routes.services_public ?? "/services/public",
+                    { headers: { Accept: "application/json" } }
+                );
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                const services = normalizeServices(data);
+                if (services.length) this.services = services;
+            } catch (e) {
+                console.error("[ClientDashboard] fetchServices error:", e);
+            }
+        },
+
+        validateNewMissionForm() {
+            if (this.newMissionForm.schedule_type === "later") {
+                if (!this.newMissionForm.reservation_day) {
+                    this.missionError = "Veuillez choisir une date.";
+                    return false;
+                }
+                if (!this.newMissionForm.reservation_time) {
+                    this.missionError = "Veuillez choisir une heure.";
+                    return false;
+                }
+            }
+            if (!this.newMissionForm.service) {
+                this.missionError =
+                    "Veuillez sélectionner un type de prestation.";
+                return false;
+            }
+            if (this.newMissionForm.description.trim().length < 20) {
+                this.missionError =
+                    "La description doit faire au moins 20 caractères.";
+                return false;
+            }
+            if (!this.newMissionForm.address.trim()) {
+                this.missionError = "L'adresse d'intervention est obligatoire.";
+                return false;
+            }
+            this.missionError = "";
+            return true;
+        },
+
+        confirmSubmitMission() {
+            if (!this.validateNewMissionForm()) return;
+            this.showPublishConfirm = true;
+        },
+
         // -- Chargement des missions -----------------------------
         async fetchMissions() {
             this.missionsLoading = true;
@@ -1731,6 +1853,56 @@ export default {
         },
 
         async submitMission() {
+            if (!this.validateNewMissionForm()) return;
+            this.loading = true;
+            try {
+                const csrf = document.querySelector(
+                    'meta[name="csrf-token"]'
+                )?.content;
+                const fd = new FormData();
+                Object.entries(this.newMissionForm).forEach(([k, v]) => {
+                    if (v === null || v === undefined) return;
+                    fd.append(k, v);
+                });
+                this.imageFiles.forEach((f) => fd.append("images[]", f));
+                const res = await fetch(this.routes.missions_store, {
+                    method: "POST",
+                    headers: {
+                        "X-CSRF-TOKEN": csrf,
+                        Accept: "application/json",
+                    },
+                    body: fd,
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    if (res.status === 422) {
+                        const firstError = Object.values(
+                            data.errors ?? {}
+                        )[0]?.[0];
+                        this.missionError =
+                            firstError ?? "Erreur de validation.";
+                    } else {
+                        this.missionError =
+                            data.message ?? "Une erreur est survenue.";
+                    }
+                    return;
+                }
+
+                this.missions.unshift(data.mission ?? data);
+                this.showNewMission = false;
+                this.showToast("Mission publiée avec succès.", "success");
+                this.fetchMissions();
+            } catch (e) {
+                this.missionError = "Erreur réseau.";
+                console.error("[ClientDashboard] submitMission error:", e);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async submitMissionOld() {
             if (this.newMissionForm.schedule_type === "later") {
                 if (!this.newMissionForm.reservation_day) {
                     this.missionError = "Veuillez choisir une date.";
@@ -2369,6 +2541,7 @@ export default {
         this.localDocProgress = { ...this.docProgressData };
         this.refreshDocProgress();
 
+        this.fetchServices();
         this.fetchMissions();
         this.fetchNotifications();
 

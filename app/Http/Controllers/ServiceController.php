@@ -18,7 +18,7 @@ class ServiceController extends Controller
 
     /**
      * GET /services/public
-     * Retourne les services actifs et visibles pour la page d'accueil.
+     * Retourne les services actifs pour la page d'accueil.
      */
     public function publicIndex(): JsonResponse
     {
@@ -31,6 +31,52 @@ class ServiceController extends Controller
     // ══════════════════════════════════════════════════════════════
     // ADMIN — Catalogue complet
     // ══════════════════════════════════════════════════════════════
+
+    /**
+     * POST /services/suggestions
+     * Enregistre une suggestion de service envoyee depuis l'inscription prestataire.
+     */
+    public function storeSuggestion(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+        ]);
+
+        $name = trim($data['name']);
+        $existing = Service::whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->first();
+
+        if ($existing) {
+            return response()->json([
+                'message' => 'Ce domaine existe deja.',
+                'service' => $this->formatForAdmin($existing),
+            ]);
+        }
+
+        $slug = Str::slug($name);
+
+        if (Service::where('slug', $slug)->exists()) {
+            $slug .= '-' . uniqid();
+        }
+
+        $service = Service::create([
+            'name'          => $name,
+            'slug'          => $slug,
+            'icon'          => '🔧',
+            'description'   => 'Suggestion proposee par un prestataire.',
+            'category'      => 'Suggestion prestataire',
+            'accreditation' => 'both',
+            'admin_only'    => false,
+            'is_suggestion' => true,
+            'is_visible'    => false,
+            'sort_order'    => 0,
+            'status'        => 'pending',
+        ]);
+
+        return response()->json([
+            'message' => 'Suggestion enregistree avec succes.',
+            'service' => $this->formatForAdmin($service),
+        ], 201);
+    }
 
     /**
      * GET /admin/services
@@ -117,6 +163,8 @@ class ServiceController extends Controller
      */
     public function update(Request $request, Service $service): JsonResponse
     {
+        $oldName = $service->name;
+
         $data = $request->validate([
             'name'          => ['required', 'string', 'max:100', Rule::unique('services', 'name')->ignore($service->id)],
             'icon'          => 'nullable|string|max:50',
@@ -142,7 +190,13 @@ class ServiceController extends Controller
 
         $service->update($data);
 
-        return response()->json($this->formatForAdmin($service->fresh()));
+        $service = $service->fresh();
+
+        if ($service->is_suggestion && $oldName !== $service->name) {
+            $this->syncSuggestionContractors($service, $oldName);
+        }
+
+        return response()->json($this->formatForAdmin($service));
     }
 
     /**
@@ -201,5 +255,31 @@ class ServiceController extends Controller
             'missions_count'     => $counts['missions_count']      ?? 0,
             'missions_completed' => $counts['missions_completed']  ?? 0,
         ];
+    }
+
+    private function syncSuggestionContractors(Service $service, string $oldName): void
+    {
+        $oldKey = mb_strtolower(trim($oldName));
+
+        Contractor::where('service_id', $service->id)
+            ->orWhereRaw('LOWER(specialty) = ?', [$oldKey])
+            ->get()
+            ->each(function (Contractor $contractor) use ($service, $oldKey) {
+                $updates = [
+                    'service_id' => $service->id,
+                    'specialty'  => $service->name,
+                ];
+
+                $specialties = collect($contractor->specialties ?? [])
+                    ->map(fn ($specialty) => mb_strtolower(trim($specialty)) === $oldKey ? $service->name : $specialty)
+                    ->values()
+                    ->all();
+
+                if ($specialties !== ($contractor->specialties ?? [])) {
+                    $updates['specialties'] = $specialties;
+                }
+
+                $contractor->update($updates);
+            });
     }
 }

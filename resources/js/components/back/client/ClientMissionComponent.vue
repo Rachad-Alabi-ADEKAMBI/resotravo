@@ -1206,7 +1206,7 @@
                     </button>
                     <button
                         class="clm-btn clm-btn-green"
-                        @click="showPublishConfirm = true"
+                        @click="confirmSubmitMission"
                         :disabled="submitting"
                     >
                         Publier la mission ?
@@ -1859,6 +1859,22 @@
 <script>
 import MissionChatModal from "../../MissionChatModal.vue";
 
+function normalizeServices(services) {
+    return (Array.isArray(services) ? services : [])
+        .filter((s) => s?.label || s?.name)
+        .map((s) => {
+            const name = s.label ?? s.name;
+            return {
+                value: s.value ?? name,
+                label: name,
+                icon: s.icon ?? "",
+            };
+        })
+        .sort((a, b) =>
+            a.label.localeCompare(b.label, "fr", { sensitivity: "base" })
+        );
+}
+
 export default {
     name: "ClientMissionComponent",
     components: { MissionChatModal },
@@ -1867,6 +1883,7 @@ export default {
         user: { type: Object, required: true },
         clientProfile: { type: Object, default: () => ({}) },
         routes: { type: Object, required: true },
+        initialServices: { type: Array, default: () => [] },
         diagnosticFee: { type: Number, default: 5000 },
     },
 
@@ -1990,7 +2007,9 @@ export default {
             currentPage: 1,
             perPage: 10,
 
-            services: [
+            services: normalizeServices(this.initialServices).length
+                ? normalizeServices(this.initialServices)
+                : [
                 { value: "plomberie", label: "Plomberie", icon: "" },
                 { value: "electricite", label: "Électricité", icon: "" },
                 { value: "menuiserie", label: "Menuiserie", icon: "" },
@@ -2000,7 +2019,6 @@ export default {
                 { value: "nettoyage", label: "Nettoyage", icon: "" },
                 { value: "peinture", label: "Peinture", icon: "" },
                 { value: "maintenance", label: "Maintenance", icon: "" },
-                { value: "autre", label: "Autre", icon: "" },
             ],
 
             tabs: [
@@ -2132,6 +2150,21 @@ export default {
     },
 
     methods: {
+        async fetchServices() {
+            try {
+                const res = await fetch(
+                    this.routes.services_public ?? "/services/public",
+                    { headers: { Accept: "application/json" } }
+                );
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                const services = normalizeServices(data);
+                if (services.length) this.services = services;
+            } catch (e) {
+                console.error("[ClientMission] fetchServices error:", e);
+            }
+        },
+
         // -- Missions ---------------------------------------------
         async fetchMissions() {
             this.loading = true;
@@ -3242,6 +3275,7 @@ ${
     },
 
     mounted() {
+        this.fetchServices();
         this.fetchMissions();
         this.fetchNotifications();
         this.notifInterval = setInterval(

@@ -34,7 +34,6 @@ class Service extends Model
     public function scopeVisible($query)
     {
         return $query->where('status', 'active')
-                     ->where('is_visible', true)
                      ->orderBy('sort_order')
                      ->orderBy('name');
     }

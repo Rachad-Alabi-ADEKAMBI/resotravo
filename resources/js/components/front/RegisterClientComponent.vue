@@ -34,7 +34,25 @@
             <div class="rc-card">
                 <!-- Bouton Google -->
                 <a :href="routes.google_auth" class="rc-google-btn">
-                    <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.14 0 5.95 1.08 8.17 2.85l6.1-6.1C34.46 3.39 29.5 1.5 24 1.5 14.81 1.5 6.97 6.96 3.13 14.72l7.11 5.52C12.04 14.1 17.56 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24c0-1.64-.15-3.22-.42-4.75H24v9h12.7c-.55 2.98-2.19 5.5-4.66 7.19l7.2 5.59C43.32 37.09 46.5 30.97 46.5 24z"/><path fill="#FBBC05" d="M10.24 28.24A14.44 14.44 0 0 1 9.5 24c0-1.47.25-2.89.7-4.23l-7.11-5.52A22.46 22.46 0 0 0 1.5 24c0 3.68.88 7.15 2.44 10.22l6.3-5.98z"/><path fill="#34A853" d="M24 46.5c5.5 0 10.13-1.82 13.51-4.94l-7.2-5.59c-1.84 1.24-4.2 1.97-6.31 1.97-6.44 0-11.96-4.6-13.76-10.74l-6.3 5.98C6.97 41.04 14.81 46.5 24 46.5z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 48 48">
+                        <path
+                            fill="#EA4335"
+                            d="M24 9.5c3.14 0 5.95 1.08 8.17 2.85l6.1-6.1C34.46 3.39 29.5 1.5 24 1.5 14.81 1.5 6.97 6.96 3.13 14.72l7.11 5.52C12.04 14.1 17.56 9.5 24 9.5z"
+                        />
+                        <path
+                            fill="#4285F4"
+                            d="M46.5 24c0-1.64-.15-3.22-.42-4.75H24v9h12.7c-.55 2.98-2.19 5.5-4.66 7.19l7.2 5.59C43.32 37.09 46.5 30.97 46.5 24z"
+                        />
+                        <path
+                            fill="#FBBC05"
+                            d="M10.24 28.24A14.44 14.44 0 0 1 9.5 24c0-1.47.25-2.89.7-4.23l-7.11-5.52A22.46 22.46 0 0 0 1.5 24c0 3.68.88 7.15 2.44 10.22l6.3-5.98z"
+                        />
+                        <path
+                            fill="#34A853"
+                            d="M24 46.5c5.5 0 10.13-1.82 13.51-4.94l-7.2-5.59c-1.84 1.24-4.2 1.97-6.31 1.97-6.44 0-11.96-4.6-13.76-10.74l-6.3 5.98C6.97 41.04 14.81 46.5 24 46.5z"
+                        />
+                        <path fill="none" d="M0 0h48v48H0z" />
+                    </svg>
                     S'inscrire avec Google
                 </a>
                 <div class="rc-or-divider"><span>ou avec un email</span></div>
@@ -173,7 +191,11 @@
                                     placeholder="96 XX XX XX"
                                     autocomplete="tel"
                                     maxlength="8"
-                                    @input="form.phone = form.phone.replace(/\D/g, '').slice(0, 8)"
+                                    @input="
+                                        form.phone = form.phone
+                                            .replace(/\D/g, '')
+                                            .slice(0, 8)
+                                    "
                                 />
                             </div>
                             <div class="rc-err" v-if="errors.phone">
@@ -513,7 +535,7 @@
                             <p>
                                 <strong>Plateforme</strong> : le site web et les
                                 services Mesotravo accessibles via
-                                mesotravo.bj.<br />
+                                mesotravo.com.<br />
                                 <strong>Client</strong> : toute personne
                                 physique ou morale inscrite en qualité de
                                 client.<br />
@@ -689,10 +711,10 @@
                         <div class="cgu-article">
                             <h4><span class="cgu-num">13</span> Contact</h4>
                             <p>
-                                🌐 <strong>mesotravo.bj</strong><br />
-                                ✉️ contact@mesotravo.bj<br />
-                                📞 +229 01 96 66 36 44<br />
-                                💬 WhatsApp : +229 01 96 66 36 44<br />
+                                🌐 <strong>mesotravo.com</strong><br />
+                                ✉️ contact@mesotravo.com<br />
+                                📞 +229 01 90 00 36 26<br />
+                                💬 WhatsApp : +229 01 90 00 36 26<br />
                                 📍 Cotonou, Bénin
                             </p>
                         </div>
@@ -900,7 +922,8 @@ export default {
                 if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.form.email))
                     this.errors.email = "Email invalide.";
                 if (this.form.phone.replace(/\D/g, "").length !== 8)
-                    this.errors.phone = "Le numéro doit contenir exactement 8 chiffres.";
+                    this.errors.phone =
+                        "Le numéro doit contenir exactement 8 chiffres.";
                 if (!this.form.address.trim())
                     this.errors.address = "Adresse requise.";
                 if (
@@ -936,17 +959,42 @@ export default {
 
         /* ── Navigation ── */
         next() {
-            if (!this.validate()) return;
-            if (this.step < this.totalSteps) this.step++;
+            if (!this.validate()) {
+                this.showValidationErrors();
+                return;
+            }
+            if (this.step < this.totalSteps) {
+                this.step++;
+                this.scrollToStepTop();
+            }
         },
 
         prev() {
             if (this.step > 1) this.step--;
         },
 
+        scrollToStepTop() {
+            this.$nextTick(() => {
+                const target = this.$el.querySelector(".rc-main");
+                target?.scrollIntoView({ behavior: "smooth", block: "start" });
+                if (target) target.scrollTop = 0;
+            });
+        },
+
+        showValidationErrors() {
+            this.errorModal.visible = true;
+            this.errorModal.title = "Informations à corriger";
+            this.errorModal.message =
+                "Veuillez corriger les erreurs suivantes avant de continuer :";
+            this.errorModal.errors = Object.values(this.errors);
+        },
+
         /* ── Soumission finale (étape 3) ── */
         async submit() {
-            if (!this.validate()) return;
+            if (!this.validate()) {
+                this.showValidationErrors();
+                return;
+            }
 
             const route = "/register/client/store";
             const payload = {
@@ -1790,19 +1838,39 @@ export default {
     font-weight: 700;
 }
 .rc-google-btn {
-    display: flex; align-items: center; justify-content: center; gap: 10px;
-    width: 100%; padding: 11px 16px;
-    border: 1.5px solid #e5e7eb; border-radius: 10px;
-    background: #fff; font-size: .9rem; font-weight: 600; color: #374151;
-    text-decoration: none; cursor: pointer; transition: background .2s, border-color .2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 11px 16px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fff;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #374151;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
     margin-bottom: 14px;
 }
-.rc-google-btn:hover { background: #f9fafb; border-color: #d1d5db; }
-.rc-or-divider {
-    display: flex; align-items: center; gap: 10px;
-    margin-bottom: 18px; color: #9ca3af; font-size: .8rem;
+.rc-google-btn:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
 }
-.rc-or-divider::before, .rc-or-divider::after {
-    content: ''; flex: 1; border-top: 1px solid #e5e7eb;
+.rc-or-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+    color: #9ca3af;
+    font-size: 0.8rem;
+}
+.rc-or-divider::before,
+.rc-or-divider::after {
+    content: "";
+    flex: 1;
+    border-top: 1px solid #e5e7eb;
 }
 </style>

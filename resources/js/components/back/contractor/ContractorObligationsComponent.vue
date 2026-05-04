@@ -67,9 +67,9 @@
                 <div>
                     <strong>Pourquoi renseigner votre IFU ?</strong>
                     <p>
-                        L'Identifiant Fiscal Unique (IFU) est un numero attribue par l'administration fiscale
-                        beninoise a toute personne physique ou morale exercant une activite economique.
-                        Il est obligatoire pour exercer legalement et permet a Mesotravo de se conformer
+                        L'Identifiant Fiscal Unique (IFU) est un numéro attribué par l'administration fiscale
+                        béninoise à toute personne physique ou morale exerçant une activité économique.
+                        Il est obligatoire pour exercer légalement et permet à Mesotravo de se conformer
                         aux exigences fiscales en vigueur.
                     </p>
                 </div>
@@ -82,13 +82,13 @@
                     <div>
                         <h2 class="cob-section-title">Identifiant Fiscal Unique (IFU)</h2>
                         <p class="cob-section-desc">
-                            Saisissez votre numero IFU tel qu'il figure sur votre attestation fiscale.
+                            Saisissez votre numéro IFU tel qu'il figure sur votre attestation fiscale.
                         </p>
                     </div>
                 </div>
 
                 <div class="cob-field">
-                    <label class="cob-label" for="ifu">Numero IFU</label>
+                    <label class="cob-label" for="ifu">Numéro IFU</label>
                     <div class="cob-input-wrap">
                         <input
                             id="ifu"
@@ -100,16 +100,16 @@
                         />
                     </div>
                     <p class="cob-hint">
-                        Generalement compose de 13 chiffres. Vous le trouverez sur votre attestation IFU delivree par la DGI.
+                        Généralement composé de 13 chiffres. Vous le trouverez sur votre attestation IFU délivrée par la DGI.
                     </p>
                 </div>
 
                 <!-- Status badge -->
                 <div class="cob-status" v-if="contractor.ifu">
-                    <span class="cob-status-badge cob-status-ok">IFU renseigne</span>
+                    <span class="cob-status-badge cob-status-ok">IFU renseigné</span>
                 </div>
                 <div class="cob-status" v-else>
-                    <span class="cob-status-badge cob-status-pending">IFU non renseigne</span>
+                    <span class="cob-status-badge cob-status-pending">IFU non renseigné</span>
                 </div>
 
                 <div class="cob-actions">
@@ -122,7 +122,7 @@
                         {{ saving ? "Enregistrement..." : "Enregistrer" }}
                     </button>
                     <transition name="cob-fade">
-                        <span class="cob-save-ok" v-if="saveSuccess">Enregistre avec succes</span>
+                        <span class="cob-save-ok" v-if="saveSuccess">Enregistré avec succès</span>
                     </transition>
                     <span class="cob-save-err" v-if="saveError">{{ saveError }}</span>
                 </div>

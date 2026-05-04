@@ -14,6 +14,7 @@ class AdminMailLog extends Model
         'recipient_mode',
         'roles',
         'user_ids',
+        'manual_recipients',
         'recipients_count',
         'sent_count',
         'failed',
@@ -25,6 +26,7 @@ class AdminMailLog extends Model
         return [
             'roles' => 'array',
             'user_ids' => 'array',
+            'manual_recipients' => 'array',
             'failed' => 'array',
             'attachments' => 'array',
         ];

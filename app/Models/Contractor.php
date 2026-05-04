@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Contractor extends Model
 {
     protected $fillable = [
-        'user_id', 'first_name', 'last_name', 'phone',
+        'user_id', 'service_id', 'first_name', 'last_name', 'phone',
         'address', 'city', 'profile_picture',
         'specialty', 'specialties', 'intervention_zone',
         'experience_years', 'bio', 'accreditation',
@@ -38,6 +38,11 @@ class Contractor extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function service(): BelongsTo
+    {
+        return $this->belongsTo(Service::class);
     }
 
     // Accessors

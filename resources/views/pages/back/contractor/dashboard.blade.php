@@ -24,7 +24,7 @@
             'bio'                => $contractor?->bio                ?? '',
             'profile_picture'    => $contractor?->profile_picture
                 ? \Illuminate\Support\Facades\Storage::disk('public')->url($contractor->profile_picture)
-                : route('profile.photo.user', ['userId' => $user->id]),
+                : null,
             'accreditation'      => $contractor?->accreditation      ?? 'none',
             'available'          => $contractor?->available          ?? true,
             'start_time'         => $contractor?->start_time         ?? '08:00',

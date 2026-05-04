@@ -104,6 +104,7 @@ class AdminMailController extends Controller
                 'subject'          => $log->subject,
                 'recipient_mode'   => $log->recipient_mode,
                 'roles'            => $log->roles ?? [],
+                'manual_recipients' => $log->manual_recipients ?? [],
                 'recipients_count' => $log->recipients_count,
                 'sent_count'       => $log->sent_count,
                 'failed_count'     => count($log->failed ?? []),
@@ -141,19 +142,30 @@ class AdminMailController extends Controller
         $data = $request->validate([
             'subject'        => 'required|string|max:180',
             'body'           => 'required|string|max:20000',
-            'recipient_mode' => 'required|in:all,roles,selected',
+            'recipient_mode' => 'required|in:all,roles,selected,manual',
             'roles'          => 'array',
             'roles.*'        => 'in:client,contractor,talent',
             'user_ids'       => 'array',
             'user_ids.*'     => 'integer|exists:users,id',
+            'manual_recipients'   => 'array',
+            'manual_recipients.*' => 'email|max:255',
             'attachments'    => 'array',
             'attachments.*'  => 'file|max:10240',
         ]);
 
-        $recipients = $this->recipientQuery($data)
-            ->whereNotNull('email')
-            ->where('email', '!=', '')
-            ->get(['id', 'name', 'email', 'role']);
+        $manualRecipients = $this->manualRecipients($data['manual_recipients'] ?? []);
+        $recipients = $data['recipient_mode'] === 'manual'
+            ? $manualRecipients
+            : $this->recipientQuery($data)
+                ->whereNotNull('email')
+                ->where('email', '!=', '')
+                ->get(['id', 'name', 'email', 'role'])
+                ->map(fn (User $user) => [
+                    'id'    => $user->id,
+                    'name'  => $user->name,
+                    'email' => $user->email,
+                    'role'  => $user->role,
+                ]);
 
         if ($recipients->isEmpty()) {
             return response()->json(['message' => 'Aucun destinataire trouve.'], 422);
@@ -172,14 +184,14 @@ class AdminMailController extends Controller
                     'body' => $body,
                 ])->render();
 
-                $this->sendWithPhpMailer($recipient, $subject, $html, $attachments);
+                $this->sendWithPhpMailer($recipient['email'], $recipient['name'], $subject, $html, $attachments);
 
                 $sent++;
             } catch (\Throwable $e) {
                 report($e);
                 $failed[] = [
-                    'id'    => $recipient->id,
-                    'email' => $recipient->email,
+                    'id'    => $recipient['id'],
+                    'email' => $recipient['email'],
                 ];
             }
         }
@@ -191,6 +203,7 @@ class AdminMailController extends Controller
             'recipient_mode'   => $data['recipient_mode'],
             'roles'            => $data['roles'] ?? [],
             'user_ids'         => $data['user_ids'] ?? [],
+            'manual_recipients' => $manualRecipients->pluck('email')->values()->all(),
             'recipients_count' => $recipients->count(),
             'sent_count'       => $sent,
             'failed'           => $failed,
@@ -218,12 +231,16 @@ class AdminMailController extends Controller
 
     private function validateTemplate(Request $request): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'name'       => 'required|string|max:120',
-            'subject'    => 'required|string|max:180',
+            'subject'    => 'nullable|string|max:180',
             'body'       => 'required|string|max:20000',
             'is_default' => 'boolean',
         ]);
+
+        $data['subject'] = $data['subject'] ?? '';
+
+        return $data;
     }
 
     private function recipientQuery(array $data)
@@ -242,13 +259,59 @@ class AdminMailController extends Controller
         return $query->orderBy('name');
     }
 
-    private function replacePlaceholders(string $text, User $user): string
+    private function manualRecipients(array $emails)
     {
+        return collect($emails)
+            ->map(fn ($email) => strtolower(trim((string) $email)))
+            ->filter()
+            ->unique()
+            ->values()
+            ->map(fn ($email) => [
+                'id'    => null,
+                'name'  => Str::before($email, '@'),
+                'email' => $email,
+                'role'  => 'manuel',
+            ]);
+    }
+
+    private function replacePlaceholders(string $text, array $recipient): string
+    {
+        $name = trim((string) ($recipient['name'] ?? ''));
+        $nameParts = preg_split('/\s+/', $name) ?: [];
+        $firstName = $nameParts[0] ?? '';
+        $lastName = count($nameParts) > 1 ? implode(' ', array_slice($nameParts, 1)) : '';
+        $currentDate = $this->frenchCurrentDate();
+
         return Str::of($text)
-            ->replace('{name}', $user->name ?? '')
-            ->replace('{email}', $user->email ?? '')
-            ->replace('{role}', $user->role ?? '')
+            ->replace('{name}', $name)
+            ->replace('{first_name}', $firstName)
+            ->replace('{last_name}', $lastName)
+            ->replace('{email}', $recipient['email'] ?? '')
+            ->replace('{role}', $recipient['role'] ?? '')
+            ->replace('{url}', $recipient['url'] ?? '')
+            ->replace('{current_date}', $currentDate)
             ->toString();
+    }
+
+    private function frenchCurrentDate(): string
+    {
+        $date = now();
+        $months = [
+            1 => 'Janvier',
+            2 => 'Fevrier',
+            3 => 'Mars',
+            4 => 'Avril',
+            5 => 'Mai',
+            6 => 'Juin',
+            7 => 'Juillet',
+            8 => 'Aout',
+            9 => 'Septembre',
+            10 => 'Octobre',
+            11 => 'Novembre',
+            12 => 'Decembre',
+        ];
+
+        return $date->format('d') . ' ' . $months[(int) $date->format('n')] . ' ' . $date->format('Y');
     }
 
     private function sanitizeHtml(string $html): string
@@ -350,7 +413,7 @@ class AdminMailController extends Controller
     /**
      * Envoi SMTP direct via PHPMailer.
      */
-    private function sendWithPhpMailer(User $recipient, string $subject, string $html, array $attachments): void
+    private function sendWithPhpMailer(string $recipientEmail, ?string $recipientName, string $subject, string $html, array $attachments): void
     {
         $mailer = new PHPMailer(true);
 
@@ -379,7 +442,7 @@ class AdminMailController extends Controller
             $fromName = (string) $this->smtpValue('FROM_NAME', config('mail.from.name'));
 
             $mailer->setFrom($fromAddress, $fromName);
-            $mailer->addAddress($recipient->email, $recipient->name);
+            $mailer->addAddress($recipientEmail, $recipientName ?? '');
             $mailer->Subject = $subject;
             $mailer->isHTML(true);
             $mailer->Body = $html;

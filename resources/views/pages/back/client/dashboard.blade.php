@@ -29,6 +29,8 @@
         ]) }}"
         :doc-progress-data="{{ json_encode($docProgressData) }}"
         :user-status="{{ json_encode($userStatus) }}"
+        :initial-services="{{ json_encode($services) }}"
+        :diagnostic-fee="{{ $diagnosticFee }}"
         :routes="{{ json_encode($routes) }}"
     ></client-dashboard-component>
 @endsection

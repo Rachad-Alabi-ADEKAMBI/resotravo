@@ -211,6 +211,7 @@ export default {
                 dashboard: "/dashboard",
                 registerClient: "/register/client",
                 registerContractor: "/register/contractor",
+                googleAuth: "/auth/google/redirect?role=client",
             }),
         },
     },
@@ -365,6 +366,8 @@ export default {
         /* ── Connexion Google ── */
         handleGoogle() {
             console.log("[LoginComponent] handleGoogle — déclenchement OAuth");
+            window.location.href = this.routes.googleAuth || "/auth/google/redirect?role=client";
+            return;
             // TODO: window.location.href = '/auth/google';
             alert(
                 "Connexion Google — intégration OAuth disponible en production."

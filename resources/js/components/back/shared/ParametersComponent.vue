@@ -492,13 +492,9 @@
                     <span class="pm-info-label">Statut</span>
                     <span
                         class="pm-badge-status"
-                        :class="
-                            user.status === 'active'
-                                ? 'pm-badge-status--active'
-                                : 'pm-badge-status--suspended'
-                        "
+                        :class="'pm-badge-status--' + statusClass"
                     >
-                        {{ user.status === "active" ? "Actif" : "Suspendu" }}
+                        {{ statusLabel }}
                     </span>
                 </div>
             </div>
@@ -582,6 +578,26 @@ export default {
                     talent: "Talent",
                 }[this.user.role] || this.user.role
             );
+        },
+
+        statusLabel() {
+            return (
+                {
+                    active: "Actif",
+                    approved: "Approuvé",
+                    pending: "En attente de validation",
+                    suspended: "Suspendu",
+                    rejected: "Refusé",
+                }[this.user.status] || this.user.status
+            );
+        },
+
+        statusClass() {
+            if (["active", "approved"].includes(this.user.status)) {
+                return "active";
+            }
+            if (this.user.status === "pending") return "pending";
+            return "suspended";
         },
 
         confirmMismatch() {
@@ -1416,6 +1432,10 @@ export default {
 .pm-badge-status--active {
     background: #f0fdf4;
     color: #15803d;
+}
+.pm-badge-status--pending {
+    background: #fffbeb;
+    color: #b45309;
 }
 .pm-badge-status--suspended {
     background: #fef2f2;

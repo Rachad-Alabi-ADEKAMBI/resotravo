@@ -35,6 +35,7 @@
         ]) }}"
         :doc-progress-data="{{ json_encode($docProgress) }}"
         :user-status="{{ json_encode($user->status) }}"
+        :initial-services="{{ json_encode($services) }}"
         :routes="{{ json_encode($routes) }}"
         :diagnostic-fee="{{ $diagnosticFee }}"
     ></client-mission-component>

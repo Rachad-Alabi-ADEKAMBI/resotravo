@@ -101,12 +101,13 @@
                 <div class="ctr-banner-icon">⏳</div>
                 <div>
                     <div class="ctr-banner-title">
-                        Dossier en cours de validation
+                        Merci de soumettre vos documents pour accepter les missions
                     </div>
                     <div class="ctr-banner-sub">
-                        Votre dossier a été soumis. L'équipe Mesotravo le
-                        vérifie sous 24-48h. Déposez tous vos documents pour
-                        accélérer la validation.
+                        Vous pouvez consulter votre espace, mais l'acceptation
+                        des missions sera disponible uniquement après la
+                        soumission et la validation de vos documents par
+                        l'équipe Mesotravo.
                     </div>
                 </div>
                 <button
@@ -115,28 +116,6 @@
                 >
                     Mes documents →
                 </button>
-            </div>
-
-            <!-- Bannière documents incomplets -->
-            <div
-                class="ctr-banner-warning"
-                v-if="
-                    userStatus === 'pending' &&
-                    docProgress.approved < docProgress.total
-                "
-            >
-                <div class="ctr-banner-icon">📂</div>
-                <div>
-                    <div class="ctr-banner-title">
-                        {{ docProgress.total - docProgress.approved }}
-                        document(s) manquant(s) ou refusé(s)
-                    </div>
-                    <div class="ctr-banner-sub">
-                        Le badge <strong>Profil Certifié</strong> sera accordé
-                        uniquement après validation de <strong>tous</strong> vos
-                        documents.
-                    </div>
-                </div>
             </div>
 
             <!-- Bannière profil certifié -->
@@ -1748,6 +1727,7 @@ export default {
 
         kpis() {
             const c = this.contractorProfile;
+            const missions = Array.isArray(this.missions) ? this.missions : [];
             const active = [
                 "assigned",
                 "accepted",
@@ -1761,13 +1741,13 @@ export default {
             ];
             const completed = ["completed", "closed"];
             // Calculer dynamiquement depuis la liste réelle des missions
-            const totalMissions = this.missions.filter(
+            const totalMissions = missions.filter(
                 (m) => m.status !== "cancelled"
             ).length;
-            const completedMissions = this.missions.filter((m) =>
+            const completedMissions = missions.filter((m) =>
                 completed.includes(m.status)
             ).length;
-            const activeMissions = this.missions.filter((m) =>
+            const activeMissions = missions.filter((m) =>
                 active.includes(m.status)
             ).length;
             return [
@@ -1792,8 +1772,7 @@ export default {
                 {
                     icon: "⭐",
                     label: "Note moyenne",
-                    value:
-                        c.average_rating > 0 ? c.average_rating + "/5" : "N/A",
+                    value: c.average_rating > 0 ? c.average_rating + "/5" : 0,
                     color: "",
                 },
             ];
@@ -1895,6 +1874,7 @@ export default {
         },
 
         async fetchAvailableMissions() {
+            this.missionsLoading = false;
             if (!this.routes.missions_available) return;
             this.availableLoading = true;
             try {

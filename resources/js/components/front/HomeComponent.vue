@@ -44,24 +44,6 @@
                         >👷 Devenir prestataire</a
                     >
                 </div>
-                <div class="hero-stats au4">
-                    <div class="hstat">
-                        <span class="num">500+</span
-                        ><span class="lbl">👷 Prestataires certifiés</span>
-                    </div>
-                    <div class="hstat">
-                        <span class="num">2 000+</span
-                        ><span class="lbl">✅ Interventions réalisées</span>
-                    </div>
-                    <div class="hstat">
-                        <span class="num">4.8★</span
-                        ><span class="lbl">😊 Note moyenne</span>
-                    </div>
-                    <div class="hstat">
-                        <span class="num">&lt;5 min</span
-                        ><span class="lbl">⚡ Attribution</span>
-                    </div>
-                </div>
             </div>
 
             <div class="hero-visual">
@@ -88,11 +70,10 @@
         <!-- ═══════════════════════════════════════════
          RECHERCHE RAPIDE
     ═══════════════════════════════════════════ -->
-        <div class="search-wrap">
+        <div v-if="false" class="search-wrap">
             <div class="search-box reveal">
                 <div class="search-head">
                     <div class="search-head-icon">🔍</div>
-                    <h3>Recherche rapide</h3>
                     <span>— Trouvez vite un prestataire</span>
                 </div>
                 <div class="search-row">
@@ -148,21 +129,14 @@
                     <span class="sbi-icon">✅</span>
                     <div>
                         <div class="sbi-num">2 000+</div>
-                        <div class="sbi-lbl">Missions réussies</div>
+                        <div class="sbi-lbl">Clients</div>
                     </div>
                 </div>
                 <div class="sbi reveal reveal-d3">
                     <span class="sbi-icon">🗺️</span>
                     <div>
-                        <div class="sbi-num">9 villes</div>
-                        <div class="sbi-lbl">Couverture</div>
-                    </div>
-                </div>
-                <div class="sbi reveal reveal-d4">
-                    <span class="sbi-icon">😊</span>
-                    <div>
-                        <div class="sbi-num">98%</div>
-                        <div class="sbi-lbl">Satisfaction</div>
+                        <div class="sbi-num">12 départements</div>
+                        <div class="sbi-lbl">Couverts</div>
                     </div>
                 </div>
             </div>
@@ -184,7 +158,7 @@
                     class="scard reveal"
                     :class="'reveal-d' + ((i % 6) + 1)"
                     href="#"
-                    v-for="(s, i) in services"
+                    v-for="(s, i) in displayedServices"
                     :key="s.name"
                     @click.prevent="selectService(s.name)"
                 >
@@ -193,6 +167,15 @@
                     <p>{{ s.desc }}</p>
                     <span class="scard-arr">→</span>
                 </a>
+            </div>
+            <div class="services-more" v-if="hasMoreServices">
+                <button
+                    type="button"
+                    class="btn btn-ghost services-more-btn"
+                    @click="showMoreServices"
+                >
+                    Voir plus
+                </button>
             </div>
         </section>
 
@@ -223,7 +206,7 @@
         <!-- ═══════════════════════════════════════════
          SPLIT 1 — Qualité garantie
     ═══════════════════════════════════════════ -->
-        <div class="split">
+        <div class="split payment-split">
             <img
                 class="split-img reveal-left"
                 :src="image2"
@@ -264,7 +247,10 @@
                         ><span>Accréditation renouvelée annuellement</span>
                     </li>
                 </ul>
-                <a class="btn btn-primary btn-lg" :href="routes.register"
+                <a v-if="false" class="btn btn-primary btn-lg" :href="routes.registerClient">
+                    <span class="btn-icon">🚀</span> Commencez maintenant
+                </a>
+                <a class="btn btn-primary btn-lg" :href="routes.registerClient"
                     >🔍 Faire une demande →</a
                 >
             </div>
@@ -326,15 +312,17 @@
                         ><span>Historique complet de vos transactions</span>
                     </li>
                 </ul>
-                <a class="btn btn-primary btn-lg" :href="routes.register"
+                <a class="btn btn-primary btn-lg" :href="paymentCtaUrl">
+                    <span class="btn-icon">🚀</span> Commencez maintenant
+                </a>
+                <a v-if="false" class="btn btn-primary btn-lg" :href="paymentCtaUrl"
                     >Commencer gratuitement →</a
                 >
             </div>
             <img
-                class="split-img reveal-right"
+                class="split-img payment-img reveal-right"
                 :src="image3"
                 alt="Paiement mobile sécurisé"
-                style="width: 95%; height: 95%"
                 loading="lazy"
             />
         </div>
@@ -473,6 +461,10 @@
 </template>
 
 <script>
+function shuffleServices(services) {
+    return [...services].sort(() => Math.random() - 0.5);
+}
+
 export default {
     name: "HomeComponent",
 
@@ -484,7 +476,12 @@ export default {
                 registerPrestataire: "/register/prestataire",
                 registerClient: "/register/client",
                 registerContractor: "/register/contractor",
+                dashboard: "/dashboard",
             }),
+        },
+        isAuthenticated: {
+            type: Boolean,
+            default: false,
         },
         // Services injectés depuis la BDD via Blade (table services)
         // Chaque objet : { name, icon, desc }
@@ -502,14 +499,14 @@ export default {
             image3: "/images/image3.png",
 
             /* ── UI ── */
-            searchService: "",
-            searchLocation: "",
             toastVisible: false,
             toastMsg: "",
             openFaq: null,
+            showAllServices: false,
+            visibleServicesCount: 8,
 
             /* ── Services (chargés depuis la BDD via prop) ── */
-            services: this.initialServices,
+            services: shuffleServices(this.initialServices),
 
             /* ── Tags rapides (5 premiers services de la BDD, sinon fallback) ── */
             quickTags: this.initialServices.length
@@ -670,6 +667,26 @@ export default {
         };
     },
 
+    computed: {
+        displayedServices() {
+            if (this.showAllServices) return this.services;
+            return this.services.slice(0, this.visibleServicesCount);
+        },
+
+        hasMoreServices() {
+            return (
+                !this.showAllServices &&
+                this.services.length > this.visibleServicesCount
+            );
+        },
+
+        paymentCtaUrl() {
+            return this.isAuthenticated
+                ? this.routes.dashboard
+                : this.routes.registerClient;
+        },
+    },
+
     mounted() {
         this.$nextTick(() => {
             this.reObserveReveal();
@@ -693,14 +710,15 @@ export default {
         },
 
         selectService(name) {
-            this.searchService = name;
-            document
-                .querySelector(".search-wrap")
-                ?.scrollIntoView({ behavior: "smooth" });
             this.showToast(`✅ Service sélectionné : ${name}`);
         },
 
         /* ── Toast ── */
+        showMoreServices() {
+            this.showAllServices = true;
+            this.$nextTick(() => this.reObserveReveal());
+        },
+
         showToast(msg) {
             this.toastMsg = msg;
             this.toastVisible = true;
@@ -828,6 +846,46 @@ export default {
     object-position: center 50% !important;
     transform: scale(0.95) !important;
     transform-origin: center center !important;
+}
+
+.services-more {
+    display: flex;
+    justify-content: center;
+    margin-top: 22px;
+}
+
+.services-more-btn {
+    background: #fff7ed;
+    border-color: #fed7aa;
+    color: #c2410c;
+    padding: 9px 18px;
+    font-size: 0.9rem;
+}
+
+.services-more-btn:hover {
+    background: #ffedd5;
+    color: #9a3412;
+}
+
+.payment-img {
+    align-self: stretch;
+    justify-self: stretch;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 430px;
+    max-height: none;
+    object-fit: cover;
+    object-position: center;
+}
+
+.payment-split {
+    align-items: stretch;
+    overflow: hidden;
+}
+
+.btn-icon {
+    display: inline-block;
+    margin-right: 6px;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1025,6 +1083,14 @@ export default {
         height: 220px !important;
         object-fit: cover !important;
         object-position: top !important;
+    }
+    .payment-img {
+        width: 100% !important;
+        height: 240px !important;
+        min-height: 240px !important;
+        max-height: 240px !important;
+        object-fit: cover !important;
+        object-position: center !important;
     }
     .split-content {
         padding: 28px 16px !important;

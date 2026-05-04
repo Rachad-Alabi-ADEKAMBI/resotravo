@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Client;
 use App\Models\Contractor;
+use App\Models\Service;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -81,6 +82,7 @@ class UserController extends Controller
             'email'             => ['required', 'email', 'unique:users,email'],
             'phone'             => ['required', 'string', 'unique:contractors,phone'],
             'specialty'         => ['required', 'string', 'max:100'],
+            'service_id'        => ['nullable', 'integer', 'exists:services,id'],
             'intervention_zone' => ['required', 'string', 'max:255'],
             'experience_years'  => ['required', 'integer', 'min:0', 'max:60'],
             'city'              => ['required', 'string', 'max:100'],
@@ -104,8 +106,12 @@ class UserController extends Controller
         ]);
 
         // 2. Créer le profil Contractor
+        $serviceId = $request->service_id
+            ?: Service::whereRaw('LOWER(name) = ?', [mb_strtolower(trim($request->specialty))])->value('id');
+
         Contractor::create([
             'user_id'           => $user->id,
+            'service_id'        => $serviceId,
             'first_name'        => $firstName,
             'last_name'         => $lastName,
             'phone'             => trim($request->phone),

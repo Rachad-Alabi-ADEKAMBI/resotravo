@@ -25,9 +25,7 @@ class GoogleAuthController extends Controller
 
         session(['google_intended_role' => $role]);
 
-        return Socialite::driver('google')
-            ->with(['state' => $role])
-            ->redirect();
+        return Socialite::driver('google')->stateless()->redirect();
     }
 
     /**
@@ -39,7 +37,7 @@ class GoogleAuthController extends Controller
     public function callback(Request $request)
     {
         try {
-            $googleUser = Socialite::driver('google')->user();
+            $googleUser = Socialite::driver('google')->stateless()->user();
         } catch (\Throwable $e) {
             return redirect()->route('login')->withErrors(['google' => 'Authentification Google échouée. Réessayez.']);
         }
@@ -49,7 +47,7 @@ class GoogleAuthController extends Controller
 
         if ($existing) {
             Auth::login($existing, true);
-            return redirect()->intended($this->dashboardRoute($existing->role));
+            return redirect($this->dashboardRoute($existing->role));
         }
 
         // Nouveau → stocker dans session + rediriger vers formulaire
@@ -162,7 +160,7 @@ class GoogleAuthController extends Controller
 
         Auth::login($user, true);
 
-        return redirect()->intended($this->dashboardRoute($role));
+        return redirect($this->dashboardRoute($role));
     }
 
     private function dashboardRoute(string $role): string

@@ -126,7 +126,7 @@
             -webkit-font-smoothing: antialiased;
             line-height: 1.65;
         }
-        ::-webkit-scrollbar       { width: 4px }
+        ::-webkit-scrollbar       { width: 8px }
         ::-webkit-scrollbar-track { background: var(--cr) }
         ::-webkit-scrollbar-thumb { background: var(--or); border-radius: 99px }
 

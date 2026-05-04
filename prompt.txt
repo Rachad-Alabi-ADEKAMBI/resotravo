@@ -1,1 +1,567 @@
-quand on ajoute une image ondevrait pouvoir modifier la taille dans le message, ajoute la possibilite de choisir au moi s15 polices differnetes, ajouter des couleurs, des boutons avec lien etc.. bref, mets plus d'options, et le choix des destinataires devrait être en haut du message, quand on est dans la section "Historique" ne montre pas les elements d'un nouveau message,et tu mets soit le bouton "Historique "soit le bouton "Nouveau message"
+# ██████████████████████████████████████████████████
+# PROMPT MVP — IMMOBILIER BÉNIN
+# Marketplace immobilière PHP + Vue.js 3 + MySQL
+# ██████████████████████████████████████████████████
+#
+# OBJECTIF : Créer un MVP complet, beau et fonctionnel
+# d'une marketplace immobilière pour le Bénin.
+# Priorité absolue : qualité visuelle, mobile-first,
+# code propre et maintenable.
+#
+# ██████████████████████████████████████████████████
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# [01 - STACK TECHNIQUE & ARCHITECTURE]
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Tu dois créer un MVP complet d'une marketplace immobilière
+nommée "IMMOBILIER BÉNIN" avec la stack suivante :
+
+stack
+  PHP en MVC avec VueJs greffé sur les pages en CDN
+- Images depuis Unsplash (via leurs URLs directes)
+
+STRUCTURE DU PROJET :
+/immobilier-benin
+  /backend
+    /api          → endpoints PHP (annonces, users, auth...)
+    /config       → connexion BDD, constantes
+    /models       → classes PHP (Annonce, User, Demande...)
+    /uploads      → dossier des images uploadées
+    index.php     → routeur principal
+  /frontend
+    /src
+      /views      → pages Vue.js
+      /components → composants réutilisables
+      /stores     → Pinia stores
+      /router     → Vue Router config
+    index.html
+    vite.config.js
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# [02 - DESIGN SYSTEM & CHARTE GRAPHIQUE]
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+IDENTITÉ VISUELLE : "Luxe Tropical" — élégant, moderne,
+ancré dans l'Afrique de l'Ouest.
+
+COULEURS (CSS variables à définir dans main.css) :
+--vert-fonce:   #1B6B3A    → couleur principale (actions, nav)
+--vert-clair:   #E8F5EC    → fonds clairs, hover states
+--or:           #F4A700    → accent, badges, CTA secondaires
+--or-clair:     #FFF8E1    → fonds dorés
+--noir-doux:    #1A1A2E    → texte principal
+--gris-texte:   #6B7280    → texte secondaire
+--gris-fond:    #F9FAFB    → fond des pages
+--blanc:        #FFFFFF    → cards, surfaces
+--rouge-erreur: #EF4444    → messages d'erreur
+--rouge-clair:  #FEF2F2    → fonds erreurs
+
+TYPOGRAPHIE :
+- Display / Titres : "Playfair Display" (Google Fonts)
+  → serif élégant pour les titres hero et H1
+- Corps / UI : "DM Sans" (Google Fonts)
+  → lisible, moderne, pour tout le reste
+- Code : monospace natif
+
+COMPOSANTS CLÉS À CRÉER :
+1. PropertyCard — carte d'annonce avec image, badge type,
+   prix, ville, chambre/surface, avatar agent
+2. HeroSearch — barre de recherche immersive sur fond
+   image avec overlay sombre et gradient
+3. FilterBar — filtres horizontaux sticky (type, ville,
+   prix, surface)
+4. Badge — pill colorée (À Vendre/Location/Terrain)
+5. AgentAvatar — photo ronde + nom + badge "Certifié"
+6. StatCard — chiffre mis en avant pour le dashboard
+
+RÈGLES DESIGN :
+- Mobile First OBLIGATOIRE (breakpoints: sm:640px, md:768px,
+  lg:1024px, xl:1280px)
+- Cards avec ombre douce : box-shadow 0 2px 12px rgba(0,0,0,.08)
+- Coins arrondis : 12px pour les cards, 8px pour boutons
+- Bouton primaire : fond vert #1B6B3A, texte blanc, padding
+  12px 24px, hover opacity 0.9
+- Bouton secondaire : bordure 1px vert, fond transparent,
+  hover fond vert-clair
+- Images : object-fit cover, toujours avec ratio 16:9 ou 4:3
+- Transitions : 0.2s ease-out sur tous les hover
+
+IMAGES (utiliser ces URLs Unsplash) :
+Hero accueil :
+  https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1600
+Maison moderne :
+  https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800
+Appartement :
+  https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800
+Terrain :
+  https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800
+Villa :
+  https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800
+Immeuble :
+  https://images.unsplash.com/photo-1486325212027-8081e485255e?w=800
+Intérieur salon :
+  https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800
+Piscine :
+  https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=800
+Avatar agent 1 :
+  https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100
+Avatar agent 2 :
+  https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100
+Avatar agent 3 :
+  https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100
+Cotonou vue :
+  https://images.unsplash.com/photo-1580746738099-b2d72e35a6c9?w=800
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# [03 - PAGES & FONCTIONNALITÉS PAR RÔLE]
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+━━━ PAGE 1 : ACCUEIL (/) ━━━
+Accessible à tous, non authentifié.
+
+Sections dans l'ordre :
+A) NAVBAR fixe :
+   - Logo "IMMOBILIER BÉNIN" (vert + or)
+   - Liens : Accueil | Annonces | Agents | Blog
+   - Boutons : "Se connecter" (outline) + "S'inscrire" (plein)
+   - Menu hamburger sur mobile
+
+B) HERO SECTION :
+   - Image de fond plein écran (maison moderne Cotonou)
+   - Overlay gradient sombre 60%
+   - Titre H1 : "Trouvez le bien idéal au Bénin"
+   - Sous-titre : "Des centaines d'annonces vérifiées..."
+   - Barre de recherche centrale avec :
+     > Onglets : Acheter | Louer
+     > Select : Type de bien
+     > Select : Ville
+     > Input : Budget max (FCFA)
+     > Bouton "Rechercher"
+
+C) STATS BAND (fond vert foncé) :
+   - 4 chiffres : "500+ Annonces" | "120 Agents" |
+     "1200 Clients" | "12 Departements"
+
+D) ANNONCES RÉCENTES :
+   - Titre : "Nouvelles annonces"
+   - Grille 3 colonnes (1 col mobile) de PropertyCard
+   - Afficher les 6 dernières annonces validées
+   - Bouton "Voir toutes les annonces"
+
+E) CATÉGORIES RAPIDES :
+   - 4 blocs cliquables avec icône + label :
+     Terrains | Maisons | Appartements | Locations
+   - Fond coloré, hover animé
+
+F) COMMENT ÇA MARCHE :
+   - 3 étapes : "Cherchez" → "Contactez" → "Visitez"
+   - Icônes + texte court
+
+G) CTA AGENT :
+   - Section fond or doux
+   - "Vous êtes agent immobilier ? Publiez vos biens"
+   - Bouton "Créer un compte agent"
+
+H) FOOTER :
+   - Logo + description courte
+   - Liens rapides par colonne
+   - Contact : email, téléphone, adresse Cotonou
+   - Réseaux sociaux (icônes)
+   - Copyright © 2025 Immobilier Bénin
+
+━━━ PAGE 2 : ANNONCES (/annonces) ━━━
+Accessible à tous.
+
+Layout : sidebar filtres (desktop) + liste résultats
+
+SIDEBAR FILTRES :
+- Type de bien (checkboxes) : Terrain, Maison,
+  Appartement, Villa, Local
+- Type de transaction : Vente / Location
+- Ville (select) : Cotonou, Porto-Novo, Abomey-Calavi,
+  Parakou, Bohicon...
+- Budget (range slider min/max en FCFA)
+- Surface (range slider en m²)
+- Chambres (select : 1, 2, 3, 4+)
+- Bouton "Réinitialiser les filtres"
+
+LISTE RÉSULTATS :
+- Compteur : "X annonces trouvées"
+- Tri : Plus récent | Prix ↑ | Prix ↓
+- Grille de PropertyCard (voir composant)
+- UNIQUEMENT les annonces au statut "validé"
+- Pagination (10 par page)
+- Si 0 résultat : illustration + message d'encouragement
+
+PROPERTYCARD doit afficher :
+- Image principale (ratio 4:3, object-fit cover)
+- Badge coloré : "À Vendre" (vert) | "À Louer" (or)
+  | "Terrain" (gris)
+- Prix en gros : "45 000 000 FCFA" ou "150 000 FCFA/mois"
+- Titre de l'annonce
+- Ville + Quartier (icône pin)
+- Surface m² | Nb chambres | Nb SdB
+- Avatar + prénom de l'agent
+- Clic → page détail
+
+━━━ PAGE 3 : DÉTAIL ANNONCE (/annonces/:id) ━━━
+Accessible à tous.
+
+LAYOUT :
+- Galerie photos (image principale grande + thumbnails)
+- Colonne gauche large (détails)
+- Colonne droite (formulaire de contact)
+
+COLONNE GAUCHE :
+- Titre + badges (type, transaction)
+- Prix mis en valeur
+- Localisation (ville, quartier)
+- Description longue
+- Caractéristiques en grille :
+  Surface | Chambres | SdB | Parking | Étage
+- Équipements (checkboxes visuelles) :
+  Eau courante ✓ | Électricité ✓ | Climatisation |
+  Groupe électrogène | Piscine | Jardin...
+- Date de publication
+- Carte Google Maps embed (iframe)
+
+COLONNE DROITE (sticky) — CONTACT :
+- Avatar agent + "Jean K." (prénom seulement)
+- Badge "Agent certifié" si applicable
+- Note moyenne (étoiles) + nb avis
+- Formulaire :
+  > Nom complet*
+  > Téléphone* (numéro béninois format)
+  > Email*
+  > Message (pré-rempli : "Bonjour, je suis intéressé...")
+  > Bouton "Envoyer ma demande"
+- ATTENTION : email et téléphone de l'agent JAMAIS
+  affichés publiquement. Le message est envoyé via
+  la plateforme (stocké en BDD) et l'agent reçoit
+  une notification dans son tableau de bord.
+
+━━━ PAGE 4 : INSCRIPTION (/inscription) ━━━
+3 types de compte : Client | Agent | (Admin par invitation)
+
+FORMULAIRE :
+- Choix du rôle (Radio cards stylisées) :
+  "Je cherche un bien" (Client) |
+  "Je suis agent immobilier" (Agent)
+- Prénom + Nom
+- Email
+- Téléphone (format +22901...) et forcer a mettre 8 chiffres
+- Mot de passe + Confirmation
+- Ville de résidence / Zone d'activité
+- Si Agent : N° de licence professionnelle (optionnel)
+- Checkbox RGPD / CGU
+- Bouton "Créer mon compte"
+- Lien "Déjà inscrit ? Se connecter"
+
+APRÈS INSCRIPTION :
+- Client → connecté directement, redirigé vers tableau de bord client
+- Agent → compte en attente de validation admin,
+  message d'information affiché
+
+━━━ PAGE 5 : CONNEXION (/connexion) ━━━
+- Email + Mot de passe
+- Checkbox "Se souvenir de moi"
+- Bouton "Se connecter"
+- Lien "Mot de passe oublié ?"
+- Lien "Créer un compte"
+- Redirection automatique selon le rôle après login
+
+━━━ PAGE 6 : TABLEAU DE BORD ADMIN (/admin) ━━━
+Accès réservé au rôle "admin".
+
+LAYOUT : sidebar fixe gauche + contenu principal
+
+SIDEBAR :
+- Logo + "Administration"
+- Liens : Dashboard | Annonces | Utilisateurs |
+  Demandes clients | Propositions agents | Paramètres
+
+SECTION DASHBOARD (vue d'ensemble) :
+- StatCards : Total annonces | Annonces en attente |
+  Utilisateurs totaux | Agents actifs |
+  Demandes clients | Propositions agents
+- Graphique simple : annonces par mois (table HTML)
+- Activité récente (liste des 10 dernières actions)
+
+SECTION ANNONCES :
+- Tableau : ID | Image | Titre | Agent | Ville |
+  Prix | Date | Statut | Actions
+- Filtres : Statut (En attente/Validé/Refusé/Archivé)
+- Actions par ligne :
+  "Valider" (vert) | "Refuser" (rouge) | "Voir" | "Supprimer"
+- Modal de refus avec champ "Motif" (envoyé à l'agent)
+- Statut coloré : en attente=or | validé=vert | refusé=rouge
+
+SECTION UTILISATEURS :
+- Tableau : ID | Nom | Email | Rôle | Ville | Date |
+  Statut | Actions
+- Filtres : Rôle (Client/Agent/Admin)
+- Actions : "Activer" | "Suspendre" | "Supprimer" | "Voir profil"
+- Validation spéciale agents (badge "À valider")
+
+SECTION DEMANDES CLIENTS :
+- Liste des demandes de recherche envoyées par les clients
+- Infos : Nom | Type bien | Ville | Budget | Date
+- Admin peut les consulter et les transmettre aux agents
+
+SECTION PROPOSITIONS AGENTS :
+- Tableau des propositions en attente de validation
+- Mêmes actions que les annonces (Valider/Refuser)
+
+━━━ PAGE 7 : ESPACE CLIENT (/client/dashboard) ━━━
+Accès réservé au rôle "client".
+
+SIDEBAR : Dashboard | Ma demande | Mes messages |
+          Mon profil | Déconnexion
+
+FAIRE UNE DEMANDE (formulaire principal) :
+Label de la page : "Décrire votre recherche"
+Champs :
+- Type de bien recherché (Radio + icônes) :
+  Terrain | Maison | Appartement | Villa | Local
+- Type de transaction : Acheter | Louer
+- Villes souhaitées (multi-select : Cotonou,
+  Porto-Novo, Abomey-Calavi, Parakou, Autre...)
+- Budget maximum (input + sélecteur FCFA/mois ou FCFA)
+- Surface souhaitée minimum (m²)
+- Nombre de chambres minimum (select)
+- Équipements importants (checkboxes) :
+  Eau | Électricité | Climatisation | Parking |
+  Clôture | Puits...
+- Commentaire libre / précisions (textarea)
+- Urgence : "Dans le mois" | "Dans 3 mois" | "Flexible"
+- Bouton "Envoyer ma demande aux agents"
+
+CONFIRMATION : message de succès + indication que les
+agents vont être notifiés.
+
+MES MESSAGES :
+- Liste des échanges suite à ses demandes de contact
+- Badge "Non lu" en or
+
+MON PROFIL :
+- Modifier nom, prénom, téléphone, ville, photo
+- Changer mot de passe
+
+━━━ PAGE 8 : ESPACE AGENT (/agent/dashboard) ━━━
+Accès réservé au rôle "agent" ET statut "validé".
+Si non validé → bannière d'attente.
+
+SIDEBAR : Dashboard | Mes propositions | Demandes clients |
+          Mes messages | Mon profil | Déconnexion
+
+DASHBOARD AGENT :
+- StatCards : Mes annonces actives | Vues ce mois |
+  Messages reçus | Demandes reçues
+- Graphique vues par annonce (table HTML simple)
+
+MES PROPOSITIONS (liste + formulaire) :
+A) Liste de ses annonces avec statut et actions
+   "Modifier" | "Archiver" | "Voir"
+
+B) FORMULAIRE NOUVELLE PROPOSITION :
+   Titre de l'annonce*
+   Type de bien* (select)
+   Type de transaction* (Vente / Location)
+   Prix* (FCFA) + toggle "Prix négociable"
+   Ville* (select)
+   Quartier / Zone
+   Surface totale (m²)*
+   Surface habitable (m²)
+   Nombre de chambres*
+   Nombre de salles de bain
+   Étage (si appartement)
+   Description détaillée* (textarea riche)
+   Photos* (input file multiple, max 8 photos, 5Mo chacune)
+   Équipements (checkboxes)
+   Disponible dès : (date picker)
+   Bouton "Soumettre pour validation"
+
+DEMANDES CLIENTS :
+- Tableau de toutes les demandes clients validées
+  (anonymisées : "Client de Cotonou cherche...")
+- Bouton "Répondre" → ouvre la messagerie
+- L'agent peut proposer une annonce en réponse
+
+MESSAGES :
+- Conversations reçues depuis les fiches annonces
+- Interface chat simple (liste à gauche, messages à droite)
+
+MON PROFIL AGENT :
+- Photo professionnelle
+- Biographie courte
+- Zone d'activité (villes couvertes)
+- Numéro de licence (si renseigné)
+- Changer mot de passe
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# [04 - BASE DE DONNÉES MySQL]
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Crée le fichier database.sql avec ces tables :
+
+TABLE users :
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  prenom VARCHAR(100) NOT NULL,
+  nom VARCHAR(100) NOT NULL,
+  email VARCHAR(150) UNIQUE NOT NULL,
+  telephone VARCHAR(20),
+  mot_de_passe VARCHAR(255) NOT NULL,
+  role ENUM('client','agent','admin') DEFAULT 'client',
+  statut ENUM('en_attente','actif','suspendu') DEFAULT 'actif',
+  ville VARCHAR(100),
+  photo VARCHAR(255),
+  bio TEXT,
+  licence_professionnelle VARCHAR(100),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+TABLE annonces :
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  agent_id INT NOT NULL,
+  titre VARCHAR(255) NOT NULL,
+  description TEXT,
+  type_bien ENUM('terrain','maison','appartement',
+                 'villa','local') NOT NULL,
+  type_transaction ENUM('vente','location') NOT NULL,
+  prix DECIMAL(15,2) NOT NULL,
+  prix_negociable TINYINT(1) DEFAULT 0,
+  ville VARCHAR(100) NOT NULL,
+  quartier VARCHAR(100),
+  surface_totale DECIMAL(10,2),
+  surface_habitable DECIMAL(10,2),
+  nb_chambres TINYINT,
+  nb_salles_bain TINYINT,
+  etage TINYINT,
+  statut ENUM('en_attente','validé','refusé','archivé')
+         DEFAULT 'en_attente',
+  motif_refus TEXT,
+  disponible_des DATE,
+  vues INT DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (agent_id) REFERENCES users(id)
+
+TABLE annonces_photos :
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  annonce_id INT NOT NULL,
+  chemin_fichier VARCHAR(255) NOT NULL,
+  est_principale TINYINT(1) DEFAULT 0,
+  FOREIGN KEY (annonce_id) REFERENCES annonces(id)
+
+TABLE annonces_equipements :
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  annonce_id INT NOT NULL,
+  nom_equipement VARCHAR(100) NOT NULL,
+  FOREIGN KEY (annonce_id) REFERENCES annonces(id)
+
+TABLE demandes_clients :
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  client_id INT NOT NULL,
+  type_bien VARCHAR(100),
+  type_transaction ENUM('achat','location'),
+  villes_souhaitees TEXT,
+  budget_max DECIMAL(15,2),
+  surface_min DECIMAL(10,2),
+  nb_chambres_min TINYINT,
+  equipements_souhaites TEXT,
+  commentaire TEXT,
+  urgence ENUM('1mois','3mois','flexible')
+          DEFAULT 'flexible',
+  statut ENUM('active','traitée','fermée')
+         DEFAULT 'active',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (client_id) REFERENCES users(id)
+
+TABLE messages :
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  expediteur_id INT NOT NULL,
+  destinataire_id INT NOT NULL,
+  annonce_id INT,
+  contenu TEXT NOT NULL,
+  lu TINYINT(1) DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (expediteur_id) REFERENCES users(id),
+  FOREIGN KEY (destinataire_id) REFERENCES users(id)
+
+TABLE contact_annonce :
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  annonce_id INT NOT NULL,
+  nom_contact VARCHAR(150),
+  email_contact VARCHAR(150),
+  telephone_contact VARCHAR(20),
+  message TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (annonce_id) REFERENCES annonces(id)
+
+Créer aussi un fichier seed.sql avec :
+- 1 compte admin (admin@immobilierbenin.bj / Admin@2025)
+- 3 comptes agents validés avec photos Unsplash
+- 2 comptes clients
+- 10 annonces variées avec statuts différents
+- Données réalistes pour le Bénin (prix en FCFA,
+  villes béninoises, quartiers de Cotonou)
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# [05 - RÈGLES DE LIVRAISON]
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SÉCURITÉ OBLIGATOIRE :
+- Hashage des mots de passe : password_hash() PHP
+- Protection CSRF sur tous les formulaires POST
+- Validation et sanitisation de TOUS les inputs
+- Pas d'informations sensibles dans les réponses API
+  (mot de passe, email/tel de l'agent côté public)
+- Vérification du rôle sur chaque endpoint API
+- Dossier uploads hors webroot ou .htaccess protégé
+
+FORMAT DES RÉPONSES API :
+{
+  "success": true|false,
+  "data": {...} | [...],
+  "message": "texte lisible",
+  "errors": {}
+}
+
+FICHIERS DE CONFIGURATION :
+- /backend/config/database.php (credentials BDD)
+- /backend/config/constants.php (APP_URL, JWT_SECRET...)
+- .env.example avec toutes les variables nécessaires
+- README.md avec instructions d'installation complètes
+
+PERFORMANCE :
+- Images compressées et redimensionnées à l'upload
+- Pagination sur toutes les listes (max 12 par page)
+- Index MySQL sur les colonnes filtrées
+- Lazy loading des images sur le frontend
+
+RESPONSIVE OBLIGATOIRE :
+- Tester sur : 375px (iPhone SE), 768px (tablette),
+  1280px (desktop)
+- Navbar collapse en hamburger < 768px
+- Cards en 1 colonne < 640px, 2 colonnes 640-1024px,
+  3 colonnes > 1024px
+- Sidebar admin collapse en mobile
+
+ACCESSIBILITÉ :
+- Labels sur tous les champs de formulaire
+- Alt text sur toutes les images
+- Contraste suffisant (WCAG AA minimum)
+- Focus visible sur les éléments interactifs
+
+LIVRABLES ATTENDUS :
+1. Code source complet organisé
+2. database.sql + seed.sql
+3. README.md d'installation (WAMP/XAMPP + npm)
+4. .env.example
+5. Le projet doit fonctionner en LOCAL avec
+   WAMP ou XAMPP + Node.js pour Vite
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# COMMENCE PAR :
+# 1. Créer la structure des dossiers
+# 2. Générer database.sql + seed.MySQLetc...
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
