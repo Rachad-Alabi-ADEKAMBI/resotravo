@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect'])->name('auth.google.redirect');
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('auth.google.callback');
 Route::middleware('guest')->group(function () {
+    Route::get('/auth/google/not-found', [GoogleAuthController::class, 'showNotFound'])->name('auth.google.not-found');
     Route::get('/auth/google/complete', [GoogleAuthController::class, 'showComplete'])->name('auth.google.complete');
     Route::post('/auth/google/complete', [GoogleAuthController::class, 'storeComplete'])->name('auth.google.complete.store');
 });

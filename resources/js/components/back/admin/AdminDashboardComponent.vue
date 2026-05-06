@@ -1057,8 +1057,8 @@ export default {
     },
 
     methods: {
-        async fetchAll() {
-            this.loading = true;
+        async fetchAll({ silent = false } = {}) {
+            if (!silent) this.loading = true;
             const h = { Accept: "application/json" };
             try {
                 const [
@@ -1198,13 +1198,28 @@ export default {
                     .slice(0, 4);
             } catch (e) {
                 console.error("Dashboard fetch error:", e);
-                this.showToast(
-                    "Erreur lors du chargement des données.",
-                    "error"
-                );
+                if (!silent) {
+                    this.showToast(
+                        "Erreur lors du chargement des données.",
+                        "error"
+                    );
+                }
             } finally {
-                this.loading = false;
+                if (!silent) this.loading = false;
             }
+        },
+
+        startMissionPolling() {
+            this.stopMissionPolling();
+            this.missionPollInterval = setInterval(() => {
+                this.fetchAll({ silent: true });
+            }, 5000);
+        },
+
+        stopMissionPolling() {
+            if (!this.missionPollInterval) return;
+            clearInterval(this.missionPollInterval);
+            this.missionPollInterval = null;
         },
 
         // ── Helpers statuts ──────────────────────────────────────────
@@ -1379,6 +1394,7 @@ export default {
     mounted() {
         this.fetchAll();
         this.fetchNotifications();
+        this.startMissionPolling();
         this.notifInterval = setInterval(
             () => this.fetchNotifications(),
             30000
@@ -1389,6 +1405,7 @@ export default {
         });
     },
     beforeUnmount() {
+        this.stopMissionPolling();
         clearInterval(this.notifInterval);
         document.removeEventListener("click", this.handleClickOutside);
     },

@@ -953,7 +953,7 @@
                         :disabled="loading"
                     >
                         <div class="cd-spinner" v-if="loading"></div>
-                        <span v-else>Publier la mission ?</span>
+                        <span v-else>Publier la mission</span>
                     </button>
                 </div>
             </div>
@@ -1032,7 +1032,7 @@
                     <p style="font-size:12.5px;color:var(--grm);margin-bottom:8px">
                         Cliquez sur la carte ou faites glisser le marqueur pour ajuster la position.
                     </p>
-                    <div id="cd-leaflet-map" style="height:440px;width:100%;border-radius:10px;overflow:hidden"></div>
+                    <div id="cd-mapbox-map" style="height:440px;width:100%;border-radius:10px;overflow:hidden"></div>
                     <div v-if="mapAddress" style="margin-top:10px;font-size:13px;color:var(--dk)">
                         <strong>{{ mapAddress }}</strong>
                     </div>
@@ -1401,8 +1401,8 @@ export default {
             mapSearch: "",
             mapLat: null,
             mapLng: null,
-            leafletMap: null,
-            leafletMarker: null,
+            mapboxMap: null,
+            mapboxMarker: null,
 
             // Notifications
             notifications: [],
@@ -1641,25 +1641,30 @@ export default {
             if (this.newMissionForm.schedule_type === "later") {
                 if (!this.newMissionForm.reservation_day) {
                     this.missionError = "Veuillez choisir une date.";
+                    this.showToast(this.missionError, "error");
                     return false;
                 }
                 if (!this.newMissionForm.reservation_time) {
                     this.missionError = "Veuillez choisir une heure.";
+                    this.showToast(this.missionError, "error");
                     return false;
                 }
             }
             if (!this.newMissionForm.service) {
                 this.missionError =
                     "Veuillez sélectionner un type de prestation.";
+                this.showToast(this.missionError, "error");
                 return false;
             }
             if (this.newMissionForm.description.trim().length < 20) {
                 this.missionError =
                     "La description doit faire au moins 20 caractères.";
+                this.showToast(this.missionError, "error");
                 return false;
             }
             if (!this.newMissionForm.address.trim()) {
                 this.missionError = "L'adresse d'intervention est obligatoire.";
+                this.showToast(this.missionError, "error");
                 return false;
             }
             this.missionError = "";
@@ -1672,9 +1677,19 @@ export default {
         },
 
         // -- Chargement des missions -----------------------------
-        async fetchMissions() {
-            this.missionsLoading = true;
-            this.missionsError = null;
+        syncActiveMission() {
+            if (!this.activeMission?.id) return;
+            const refreshed = this.missions.find(
+                (mission) => mission.id === this.activeMission.id
+            );
+            this.activeMission = refreshed
+                ? { ...this.activeMission, ...refreshed }
+                : null;
+        },
+
+        async fetchMissions({ silent = false } = {}) {
+            if (!silent) this.missionsLoading = true;
+            if (!silent) this.missionsError = null;
             try {
                 const res = await fetch(this.routes.missions_index, {
                     headers: { Accept: "application/json" },
@@ -1683,16 +1698,30 @@ export default {
                 const data = await res.json();
                 // Laravel paginate ? data.data, sinon tableau direct
                 this.missions = Array.isArray(data) ? data : data.data ?? [];
+                this.syncActiveMission();
             } catch (e) {
-                this.missionsError =
+                if (!silent) this.missionsError =
                     "Impossible de charger les missions. Vérifiez votre connexion.";
                 console.error("[ClientDashboard] fetchMissions error:", e);
             } finally {
-                this.missionsLoading = false;
+                if (!silent) this.missionsLoading = false;
             }
         },
 
         // -- Créer une mission -----------------------------------
+        startMissionPolling() {
+            this.stopMissionPolling();
+            this.missionPollInterval = setInterval(() => {
+                this.fetchMissions({ silent: true });
+            }, 5000);
+        },
+
+        stopMissionPolling() {
+            if (!this.missionPollInterval) return;
+            clearInterval(this.missionPollInterval);
+            this.missionPollInterval = null;
+        },
+
         openNewMission() {
             this.newMissionForm = {
                 schedule_type: "now",
@@ -1744,20 +1773,54 @@ export default {
             this.destroyMap();
         },
 
-        initLeafletMap() {
-            const L = window.L;
-            if (!L) return;
-            const el = document.getElementById("cd-leaflet-map");
+        initMapboxMap() {
+            const mapboxgl = window.mapboxgl;
+            const token = window.MESOTRAVO_MAPBOX_TOKEN;
+            if (!mapboxgl || !token) {
+                this.showToast("Cle Mapbox manquante.", "error");
+                return;
+            }
+            if (!mapboxgl.supported()) {
+                this.showToast("Carte non supportee sur cet appareil.", "error");
+                return;
+            }
+
+            const el = document.getElementById("cd-mapbox-map");
             if (!el) return;
-            if (this.leafletMap) { this.leafletMap.remove(); this.leafletMap = null; }
-            const defaultCenter = [6.3654, 2.4183]; // Cotonou
-            const map = L.map(el).setView(defaultCenter, 13);
-            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                attribution: '© <a href="https://www.openstreetmap.org">OpenStreetMap</a>',
-            }).addTo(map);
-            this.leafletMap = map;
+            if (this.mapboxMap) {
+                this.mapboxMap.remove();
+                this.mapboxMap = null;
+            }
+            mapboxgl.accessToken = token;
+            const isSmallScreen = window.matchMedia("(max-width: 768px)").matches;
+            const defaultCenter = [2.4183, 6.3654]; // Cotonou
+            const map = new mapboxgl.Map({
+                container: el,
+                style: "mapbox://styles/mapbox/streets-v12",
+                center: defaultCenter,
+                zoom: 13,
+                minZoom: 8,
+                maxZoom: 19,
+                maxBounds: [
+                    [-0.2, 5.0],
+                    [4.5, 12.8],
+                ],
+                attributionControl: false,
+                cooperativeGestures: !isSmallScreen,
+                dragRotate: false,
+                pitchWithRotate: false,
+                touchPitch: false,
+            });
+            map.addControl(
+                new mapboxgl.NavigationControl({ showCompass: false }),
+                "top-right"
+            );
+            map.addControl(new mapboxgl.AttributionControl({ compact: true }));
+            this.mapboxMap = map;
+            map.once("load", () => map.resize());
+            setTimeout(() => map.resize(), 150);
             map.on("click", (e) => {
-                this.placeMapMarker(e.latlng.lat, e.latlng.lng);
+                this.placeMapMarker(e.lngLat.lat, e.lngLat.lng);
             });
             if (navigator.geolocation) {
                 this.geoLoading = true;
@@ -1766,7 +1829,7 @@ export default {
                         this.geoLoading = false;
                         const lat = pos.coords.latitude;
                         const lng = pos.coords.longitude;
-                        map.setView([lat, lng], 16);
+                        map.flyTo({ center: [lng, lat], zoom: 16 });
                         this.placeMapMarker(lat, lng);
                     },
                     () => { this.geoLoading = false; },
@@ -1776,37 +1839,37 @@ export default {
         },
 
         destroyMap() {
-            if (this.leafletMap) { this.leafletMap.remove(); this.leafletMap = null; }
-            this.leafletMarker = null;
+            if (this.mapboxMap) {
+                this.mapboxMap.remove();
+                this.mapboxMap = null;
+            }
+            this.mapboxMarker = null;
         },
 
         async placeMapMarker(lat, lng) {
-            const L = window.L;
-            if (!L || !this.leafletMap) return;
+            const mapboxgl = window.mapboxgl;
+            const token = window.MESOTRAVO_MAPBOX_TOKEN;
+            if (!mapboxgl || !this.mapboxMap || !token) return;
+
             this.mapLat = lat;
             this.mapLng = lng;
-            if (this.leafletMarker) {
-                this.leafletMarker.setLatLng([lat, lng]);
+            if (this.mapboxMarker) {
+                this.mapboxMarker.setLngLat([lng, lat]);
             } else {
-                this.leafletMarker = L.marker([lat, lng], { draggable: true }).addTo(this.leafletMap);
-                this.leafletMarker.on("dragend", (e) => {
-                    const pos = e.target.getLatLng();
+                this.mapboxMarker = new mapboxgl.Marker({ draggable: true })
+                    .setLngLat([lng, lat])
+                    .addTo(this.mapboxMap);
+                this.mapboxMarker.on("dragend", () => {
+                    const pos = this.mapboxMarker.getLngLat();
                     this.placeMapMarker(pos.lat, pos.lng);
                 });
             }
             try {
                 const res = await fetch(
-                    `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=fr`
+                    `https://api.mapbox.com/search/geocode/v6/reverse?longitude=${lng}&latitude=${lat}&language=fr&access_token=${encodeURIComponent(token)}`
                 );
                 const data = await res.json();
-                const a = data.address ?? {};
-                const parts = [
-                    a.road ?? a.pedestrian ?? a.path ?? "",
-                    a.neighbourhood ?? a.suburb ?? a.quarter ?? a.hamlet ?? a.village ?? "",
-                    a.city ?? a.town ?? a.municipality ?? a.county ?? "",
-                    a.country ?? "",
-                ].filter(Boolean);
-                this.mapAddress = parts.length >= 2 ? parts.join(", ") : (data.display_name ?? `${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+                this.mapAddress = this.formatMapboxAddress(data.features?.[0], lat, lng);
             } catch {
                 this.mapAddress = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
             }
@@ -1834,22 +1897,39 @@ export default {
 
         async searchOnMap() {
             if (!this.mapSearch.trim()) return;
+            const token = window.MESOTRAVO_MAPBOX_TOKEN;
+            if (!token) {
+                this.showToast("Cle Mapbox manquante.", "error");
+                return;
+            }
+
             try {
                 const res = await fetch(
-                    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(this.mapSearch)}&format=json&limit=1&accept-language=fr`
+                    `https://api.mapbox.com/search/geocode/v6/forward?q=${encodeURIComponent(this.mapSearch)}&proximity=2.4183,6.3654&country=bj&language=fr&limit=1&access_token=${encodeURIComponent(token)}`
                 );
                 const data = await res.json();
-                if (!data.length) {
+                const feature = data.features?.[0];
+                if (!feature) {
                     this.showToast("Aucun résultat pour cette adresse.", "error");
                     return;
                 }
-                const lat = parseFloat(data[0].lat);
-                const lng = parseFloat(data[0].lon);
-                if (this.leafletMap) this.leafletMap.setView([lat, lng], 16);
+                const [lng, lat] = feature.geometry.coordinates;
+                if (this.mapboxMap) {
+                    this.mapboxMap.flyTo({ center: [lng, lat], zoom: 16 });
+                }
                 this.placeMapMarker(lat, lng);
             } catch {
                 this.showToast("Erreur lors de la recherche.", "error");
             }
+        },
+
+        formatMapboxAddress(feature, lat, lng) {
+            return (
+                feature?.properties?.full_address ||
+                feature?.properties?.place_formatted ||
+                feature?.properties?.name ||
+                `${lat.toFixed(5)}, ${lng.toFixed(5)}`
+            );
         },
 
         async submitMission() {
@@ -1874,7 +1954,10 @@ export default {
                     body: fd,
                 });
 
-                const data = await res.json();
+                const contentType = res.headers.get("content-type") || "";
+                const data = contentType.includes("application/json")
+                    ? await res.json()
+                    : { message: await res.text() };
 
                 if (!res.ok) {
                     if (res.status === 422) {
@@ -1887,15 +1970,18 @@ export default {
                         this.missionError =
                             data.message ?? "Une erreur est survenue.";
                     }
+                    this.showToast(this.missionError, "error");
                     return;
                 }
 
                 this.missions.unshift(data.mission ?? data);
                 this.showNewMission = false;
+                this.showPublishConfirm = false;
                 this.showToast("Mission publiée avec succès.", "success");
                 this.fetchMissions();
             } catch (e) {
-                this.missionError = "Erreur réseau.";
+                this.missionError = "Erreur réseau. Veuillez réessayer.";
+                this.showToast(this.missionError, "error");
                 console.error("[ClientDashboard] submitMission error:", e);
             } finally {
                 this.loading = false;
@@ -2503,7 +2589,7 @@ export default {
     watch: {
         showMapModal(val) {
             if (val) {
-                this.$nextTick(() => this.initLeafletMap());
+                this.$nextTick(() => this.initMapboxMap());
             } else {
                 this.destroyMap();
             }
@@ -2544,6 +2630,7 @@ export default {
         this.fetchServices();
         this.fetchMissions();
         this.fetchNotifications();
+        this.startMissionPolling();
 
         // Polling notifications toutes les 30s
         this.notifInterval = setInterval(
@@ -2564,6 +2651,7 @@ export default {
 
     beforeUnmount() {
         this.destroyMap();
+        this.stopMissionPolling();
         clearInterval(this.notifInterval);
         document.removeEventListener("click", this.handleClickOutside);
         window.removeEventListener(

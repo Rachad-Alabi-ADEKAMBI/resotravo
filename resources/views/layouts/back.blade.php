@@ -44,16 +44,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap"
           rel="stylesheet" />
 
-    @php $iconMode = \App\Models\Setting::get('site_icon_mode', 'current'); @endphp
+    @php
+        $iconMode = \App\Models\Setting::get('site_icon_mode', 'current');
+        $mapboxToken = env('MAPBOX_PUBLIC_TOKEN') ?: env('MAPBOX__PUBLIC_TOKEN', '');
+    @endphp
     @if ($iconMode === 'fontawesome')
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     @endif
     <script>
         window.MESOTRAVO_ICON_MODE = @json($iconMode);
+        window.MESOTRAVO_MAPBOX_TOKEN = @json($mapboxToken);
     </script>
 
-    {{-- Leaflet.js (carte OpenStreetMap) --}}
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    {{-- Mapbox GL JS --}}
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.11.0/mapbox-gl.css" rel="stylesheet" />
 
     {{-- Vite : charge resources/js/app.js et resources/css/app.css --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -543,7 +547,7 @@
 
 @yield('scripts')
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.11.0/mapbox-gl.js"></script>
 
 @include('partials.cookie-banner')
 

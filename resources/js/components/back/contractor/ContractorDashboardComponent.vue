@@ -1856,9 +1856,19 @@ export default {
 
     methods: {
         // ── Missions ──────────────────────────────────────────────
-        async fetchMissions() {
-            this.missionsLoading = true;
-            this.missionsError = null;
+        syncActiveMission() {
+            if (!this.activeMission?.id) return;
+            const refreshed = this.missions.find(
+                (mission) => mission.id === this.activeMission.id
+            );
+            this.activeMission = refreshed
+                ? { ...this.activeMission, ...refreshed }
+                : null;
+        },
+
+        async fetchMissions({ silent = false } = {}) {
+            if (!silent) this.missionsLoading = true;
+            if (!silent) this.missionsError = null;
             try {
                 const res = await fetch(this.routes.missions_index, {
                     headers: { Accept: "application/json" },
@@ -1866,17 +1876,18 @@ export default {
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
                 this.missions = Array.isArray(data) ? data : data.data ?? [];
+                this.syncActiveMission();
             } catch {
-                this.missionsError = "Impossible de charger les missions.";
+                if (!silent) this.missionsError = "Impossible de charger les missions.";
             } finally {
-                this.missionsLoading = false;
+                if (!silent) this.missionsLoading = false;
             }
         },
 
-        async fetchAvailableMissions() {
-            this.missionsLoading = false;
+        async fetchAvailableMissions({ silent = false } = {}) {
+            if (!silent) this.missionsLoading = false;
             if (!this.routes.missions_available) return;
-            this.availableLoading = true;
+            if (!silent) this.availableLoading = true;
             try {
                 const res = await fetch(this.routes.missions_available, {
                     headers: { Accept: "application/json" },
@@ -1886,8 +1897,25 @@ export default {
             } catch {
                 this.availableMissions = [];
             } finally {
-                this.availableLoading = false;
+                if (!silent) this.availableLoading = false;
             }
+        },
+
+        startMissionPolling() {
+            this.stopMissionPolling();
+            this.missionPollInterval = setInterval(() => {
+                if (this.showAvailableMissions) {
+                    this.fetchAvailableMissions({ silent: true });
+                    return;
+                }
+                this.fetchMissions({ silent: true });
+            }, 5000);
+        },
+
+        stopMissionPolling() {
+            if (!this.missionPollInterval) return;
+            clearInterval(this.missionPollInterval);
+            this.missionPollInterval = null;
         },
 
         async updateStatus(mission, status) {
@@ -3002,6 +3030,7 @@ export default {
         } else {
             this.fetchMissions();
         }
+        this.startMissionPolling();
         this.fetchNotifications();
         this.notifInterval = setInterval(
             () => this.fetchNotifications(),
@@ -3014,6 +3043,7 @@ export default {
     },
 
     beforeUnmount() {
+        this.stopMissionPolling();
         clearInterval(this.notifInterval);
         document.removeEventListener("click", this.handleClickOutside);
     },

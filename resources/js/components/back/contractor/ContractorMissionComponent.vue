@@ -1422,9 +1422,19 @@ export default {
 
     methods: {
         // ── Data ─────────────────────────────────────────────────
-        async fetchMissions() {
-            this.loading = true;
-            this.error = null;
+        syncActiveMission() {
+            if (!this.activeMission?.id) return;
+            const refreshed = this.missions.find(
+                (mission) => mission.id === this.activeMission.id
+            );
+            this.activeMission = refreshed
+                ? { ...this.activeMission, ...refreshed }
+                : null;
+        },
+
+        async fetchMissions({ silent = false } = {}) {
+            if (!silent) this.loading = true;
+            if (!silent) this.error = null;
             try {
                 const res = await fetch(this.routes.missions_index, {
                     headers: { Accept: "application/json" },
@@ -1432,11 +1442,12 @@ export default {
                 if (!res.ok) throw new Error();
                 const data = await res.json();
                 this.missions = Array.isArray(data) ? data : data.data ?? [];
+                this.syncActiveMission();
                 this.checkAccreditationPopup();
             } catch {
-                this.error = "Impossible de charger les missions.";
+                if (!silent) this.error = "Impossible de charger les missions.";
             } finally {
-                this.loading = false;
+                if (!silent) this.loading = false;
             }
         },
 
@@ -1466,9 +1477,9 @@ export default {
             };
         },
 
-        async fetchAvailableMissions() {
+        async fetchAvailableMissions({ silent = false } = {}) {
             if (!this.routes.missions_available) return;
-            this.availableLoading = true;
+            if (!silent) this.availableLoading = true;
             try {
                 const res = await fetch(this.routes.missions_available, {
                     headers: { Accept: "application/json" },
@@ -1478,8 +1489,25 @@ export default {
             } catch {
                 this.availableMissions = [];
             } finally {
-                this.availableLoading = false;
+                if (!silent) this.availableLoading = false;
             }
+        },
+
+        startMissionPolling() {
+            this.stopMissionPolling();
+            this.missionPollInterval = setInterval(() => {
+                if (this.showAvailableMissions) {
+                    this.fetchAvailableMissions({ silent: true });
+                    return;
+                }
+                this.fetchMissions({ silent: true });
+            }, 5000);
+        },
+
+        stopMissionPolling() {
+            if (!this.missionPollInterval) return;
+            clearInterval(this.missionPollInterval);
+            this.missionPollInterval = null;
         },
 
         // ── Mission actions ───────────────────────────────────────
@@ -2237,6 +2265,7 @@ ${quote.diagnosis ? `<div class="diag-box"><div class="diag-label">🔍 Diagnost
         } else {
             this.fetchMissions();
         }
+        this.startMissionPolling();
         this.fetchNotifications();
         this.notifInterval = setInterval(
             () => this.fetchNotifications(),
@@ -2249,6 +2278,7 @@ ${quote.diagnosis ? `<div class="diag-box"><div class="diag-label">🔍 Diagnost
         window.addEventListener("rt-unread-update", this.onGlobalUnreadUpdate);
     },
     beforeUnmount() {
+        this.stopMissionPolling();
         clearInterval(this.notifInterval);
         document.removeEventListener("click", this.handleClickOutside);
         window.removeEventListener(

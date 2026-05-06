@@ -1262,9 +1262,24 @@ export default {
 
     methods: {
         // ── Fetch ─────────────────────────────────────────────────
-        async fetchMissions() {
-            this.missionsLoading = true;
-            this.missionsError = null;
+        syncActiveMission() {
+            if (!this.activeMission?.id) return;
+            const refreshed = this.missions.find(
+                (mission) => mission.id === this.activeMission.id
+            );
+            this.activeMission = refreshed
+                ? {
+                      ...this.activeMission,
+                      ...refreshed,
+                      proposals:
+                          refreshed.proposals ?? this.activeMission.proposals ?? [],
+                  }
+                : null;
+        },
+
+        async fetchMissions({ silent = false } = {}) {
+            if (!silent) this.missionsLoading = true;
+            if (!silent) this.missionsError = null;
             try {
                 const res = await fetch(this.routes.missions_index, {
                     headers: { Accept: "application/json" },
@@ -1272,11 +1287,28 @@ export default {
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
                 this.missions = Array.isArray(data) ? data : data.data ?? [];
+                this.syncActiveMission();
+                if (this.activeMission && this.availableLoaded) {
+                    this.fetchAvailableContractors();
+                }
             } catch {
-                this.missionsError = "Impossible de charger les missions.";
+                if (!silent) this.missionsError = "Impossible de charger les missions.";
             } finally {
-                this.missionsLoading = false;
+                if (!silent) this.missionsLoading = false;
             }
+        },
+
+        startMissionPolling() {
+            this.stopMissionPolling();
+            this.missionPollInterval = setInterval(() => {
+                this.fetchMissions({ silent: true });
+            }, 5000);
+        },
+
+        stopMissionPolling() {
+            if (!this.missionPollInterval) return;
+            clearInterval(this.missionPollInterval);
+            this.missionPollInterval = null;
         },
 
         async fetchAvailableContractors() {
@@ -1782,6 +1814,7 @@ export default {
     mounted() {
         this.fetchMissions();
         this.fetchNotifications();
+        this.startMissionPolling();
         this.notifInterval = setInterval(
             () => this.fetchNotifications(),
             30000
@@ -1793,6 +1826,7 @@ export default {
     },
 
     beforeUnmount() {
+        this.stopMissionPolling();
         clearInterval(this.notifInterval);
         document.removeEventListener("click", this.handleClickOutside);
     },

@@ -1209,7 +1209,7 @@
                         @click="confirmSubmitMission"
                         :disabled="submitting"
                     >
-                        Publier la mission ?
+                        Publier la mission
                     </button>
                 </div>
             </div>
@@ -1246,7 +1246,7 @@
             </div>
         </div>
 
-        <!-- -------------- MODAL CARTE LEAFLET -------------- -->
+        <!-- -------------- MODAL CARTE MAPBOX -------------- -->
         <div
             class="clm-modal-overlay"
             v-if="showMapModal"
@@ -1287,7 +1287,7 @@
                         ajuster la position.
                     </p>
                     <div
-                        id="clm-leaflet-map"
+                        id="clm-mapbox-map"
                         style="
                             height: 440px;
                             width: 100%;
@@ -1923,8 +1923,8 @@ export default {
             mapSearch: "",
             mapLat: null,
             mapLng: null,
-            leafletMap: null,
-            leafletMarker: null,
+            mapboxMap: null,
+            mapboxMarker: null,
             form: {
                 schedule_type: "now",
                 reservation_day: "",
@@ -2166,9 +2166,19 @@ export default {
         },
 
         // -- Missions ---------------------------------------------
-        async fetchMissions() {
-            this.loading = true;
-            this.error = null;
+        syncActiveMission() {
+            if (!this.activeMission?.id) return;
+            const refreshed = this.missions.find(
+                (mission) => mission.id === this.activeMission.id
+            );
+            this.activeMission = refreshed
+                ? { ...this.activeMission, ...refreshed }
+                : null;
+        },
+
+        async fetchMissions({ silent = false } = {}) {
+            if (!silent) this.loading = true;
+            if (!silent) this.error = null;
             try {
                 const res = await fetch(this.routes.missions_index, {
                     headers: { Accept: "application/json" },
@@ -2176,11 +2186,25 @@ export default {
                 if (!res.ok) throw new Error();
                 const data = await res.json();
                 this.missions = Array.isArray(data) ? data : data.data ?? [];
+                this.syncActiveMission();
             } catch {
-                this.error = "Impossible de charger les missions.";
+                if (!silent) this.error = "Impossible de charger les missions.";
             } finally {
-                this.loading = false;
+                if (!silent) this.loading = false;
             }
+        },
+
+        startMissionPolling() {
+            this.stopMissionPolling();
+            this.missionPollInterval = setInterval(() => {
+                this.fetchMissions({ silent: true });
+            }, 5000);
+        },
+
+        stopMissionPolling() {
+            if (!this.missionPollInterval) return;
+            clearInterval(this.missionPollInterval);
+            this.missionPollInterval = null;
         },
 
         openMission(m) {
@@ -2739,24 +2763,56 @@ ${
             this.destroyMap();
         },
 
-        initLeafletMap() {
-            const L = window.L;
-            if (!L) return;
-            const el = document.getElementById("clm-leaflet-map");
-            if (!el) return;
-            if (this.leafletMap) {
-                this.leafletMap.remove();
-                this.leafletMap = null;
+        initMapboxMap() {
+            const mapboxgl = window.mapboxgl;
+            const token = window.MESOTRAVO_MAPBOX_TOKEN;
+            if (!mapboxgl || !token) {
+                this.showToast("Cle Mapbox manquante.", "error");
+                return;
             }
-            const defaultCenter = [6.3654, 2.4183]; // Cotonou
-            const map = L.map(el).setView(defaultCenter, 13);
-            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                attribution:
-                    '<a href="https://www.openstreetmap.org">OpenStreetMap</a>',
-            }).addTo(map);
-            this.leafletMap = map;
+            if (!mapboxgl.supported()) {
+                this.showToast("Carte non supportee sur cet appareil.", "error");
+                return;
+            }
+
+            const el = document.getElementById("clm-mapbox-map");
+            if (!el) return;
+            if (this.mapboxMap) {
+                this.mapboxMap.remove();
+                this.mapboxMap = null;
+            }
+
+            mapboxgl.accessToken = token;
+            const isSmallScreen = window.matchMedia("(max-width: 768px)").matches;
+            const defaultCenter = [2.4183, 6.3654]; // Cotonou
+            const map = new mapboxgl.Map({
+                container: el,
+                style: "mapbox://styles/mapbox/streets-v12",
+                center: defaultCenter,
+                zoom: 13,
+                minZoom: 8,
+                maxZoom: 19,
+                maxBounds: [
+                    [-0.2, 5.0],
+                    [4.5, 12.8],
+                ],
+                attributionControl: false,
+                cooperativeGestures: !isSmallScreen,
+                dragRotate: false,
+                pitchWithRotate: false,
+                touchPitch: false,
+            });
+
+            map.addControl(
+                new mapboxgl.NavigationControl({ showCompass: false }),
+                "top-right"
+            );
+            map.addControl(new mapboxgl.AttributionControl({ compact: true }));
+            this.mapboxMap = map;
+            map.once("load", () => map.resize());
+            setTimeout(() => map.resize(), 150);
             map.on("click", (e) => {
-                this.placeMapMarker(e.latlng.lat, e.latlng.lng);
+                this.placeMapMarker(e.lngLat.lat, e.lngLat.lng);
             });
             if (navigator.geolocation) {
                 this.geoLoading = true;
@@ -2765,7 +2821,7 @@ ${
                         this.geoLoading = false;
                         const lat = pos.coords.latitude;
                         const lng = pos.coords.longitude;
-                        map.setView([lat, lng], 16);
+                        map.flyTo({ center: [lng, lat], zoom: 16 });
                         this.placeMapMarker(lat, lng);
                     },
                     () => {
@@ -2777,51 +2833,42 @@ ${
         },
 
         destroyMap() {
-            if (this.leafletMap) {
-                this.leafletMap.remove();
-                this.leafletMap = null;
+            if (this.mapboxMap) {
+                this.mapboxMap.remove();
+                this.mapboxMap = null;
             }
-            this.leafletMarker = null;
+            this.mapboxMarker = null;
         },
 
         async placeMapMarker(lat, lng) {
-            const L = window.L;
-            if (!L || !this.leafletMap) return;
+            const mapboxgl = window.mapboxgl;
+            const token = window.MESOTRAVO_MAPBOX_TOKEN;
+            if (!mapboxgl || !this.mapboxMap || !token) return;
+
             this.mapLat = lat;
             this.mapLng = lng;
-            if (this.leafletMarker) {
-                this.leafletMarker.setLatLng([lat, lng]);
+            if (this.mapboxMarker) {
+                this.mapboxMarker.setLngLat([lng, lat]);
             } else {
-                this.leafletMarker = L.marker([lat, lng], {
-                    draggable: true,
-                }).addTo(this.leafletMap);
-                this.leafletMarker.on("dragend", (e) => {
-                    const pos = e.target.getLatLng();
+                this.mapboxMarker = new mapboxgl.Marker({ draggable: true })
+                    .setLngLat([lng, lat])
+                    .addTo(this.mapboxMap);
+                this.mapboxMarker.on("dragend", () => {
+                    const pos = this.mapboxMarker.getLngLat();
                     this.placeMapMarker(pos.lat, pos.lng);
                 });
             }
+
             try {
                 const res = await fetch(
-                    `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=fr`
+                    `https://api.mapbox.com/search/geocode/v6/reverse?longitude=${lng}&latitude=${lat}&language=fr&access_token=${encodeURIComponent(token)}`
                 );
                 const data = await res.json();
-                const a = data.address ?? {};
-                const parts = [
-                    a.road ?? a.pedestrian ?? a.path ?? "",
-                    a.neighbourhood ??
-                        a.suburb ??
-                        a.quarter ??
-                        a.hamlet ??
-                        a.village ??
-                        "",
-                    a.city ?? a.town ?? a.municipality ?? a.county ?? "",
-                    a.country ?? "",
-                ].filter(Boolean);
-                this.mapAddress =
-                    parts.length >= 2
-                        ? parts.join(", ")
-                        : data.display_name ??
-                          `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+                this.mapAddress = this.formatMapboxAddress(
+                    data.features?.[0],
+                    lat,
+                    lng
+                );
             } catch {
                 this.mapAddress = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
             }
@@ -2851,27 +2898,44 @@ ${
 
         async searchOnMap() {
             if (!this.mapSearch.trim()) return;
+            const token = window.MESOTRAVO_MAPBOX_TOKEN;
+            if (!token) {
+                this.showToast("Cle Mapbox manquante.", "error");
+                return;
+            }
+
             try {
                 const res = await fetch(
-                    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+                    `https://api.mapbox.com/search/geocode/v6/forward?q=${encodeURIComponent(
                         this.mapSearch
-                    )}&format=json&limit=1&accept-language=fr`
+                    )}&proximity=2.4183,6.3654&country=bj&language=fr&limit=1&access_token=${encodeURIComponent(token)}`
                 );
                 const data = await res.json();
-                if (!data.length) {
+                const feature = data.features?.[0];
+                if (!feature) {
                     this.showToast(
                         "Aucun résultat pour cette adresse.",
                         "error"
                     );
                     return;
                 }
-                const lat = parseFloat(data[0].lat);
-                const lng = parseFloat(data[0].lon);
-                if (this.leafletMap) this.leafletMap.setView([lat, lng], 16);
+                const [lng, lat] = feature.geometry.coordinates;
+                if (this.mapboxMap) {
+                    this.mapboxMap.flyTo({ center: [lng, lat], zoom: 16 });
+                }
                 this.placeMapMarker(lat, lng);
             } catch {
                 this.showToast("Erreur lors de la recherche.", "error");
             }
+        },
+
+        formatMapboxAddress(feature, lat, lng) {
+            return (
+                feature?.properties?.full_address ||
+                feature?.properties?.place_formatted ||
+                feature?.properties?.name ||
+                `${lat.toFixed(5)}, ${lng.toFixed(5)}`
+            );
         },
 
         onImagesSelect(e) {
@@ -3264,7 +3328,7 @@ ${
     watch: {
         showMapModal(val) {
             if (val) {
-                this.$nextTick(() => this.initLeafletMap());
+                this.$nextTick(() => this.initMapboxMap());
             } else {
                 this.destroyMap();
             }
@@ -3278,6 +3342,7 @@ ${
         this.fetchServices();
         this.fetchMissions();
         this.fetchNotifications();
+        this.startMissionPolling();
         this.notifInterval = setInterval(
             () => this.fetchNotifications(),
             30000
@@ -3290,6 +3355,7 @@ ${
     },
     beforeUnmount() {
         this.destroyMap();
+        this.stopMissionPolling();
         clearInterval(this.notifInterval);
         document.removeEventListener("click", this.handleClickOutside);
         window.removeEventListener(

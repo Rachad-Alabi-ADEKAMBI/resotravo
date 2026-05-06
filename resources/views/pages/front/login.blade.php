@@ -10,7 +10,7 @@
     dashboard:          '{{ route('dashboard') }}',
     registerClient:     '{{ route('register.client') }}',
     registerContractor: '{{ route('register.contractor') }}',
-    googleAuth:         '{{ route('auth.google.redirect') }}?role=client'
+    googleAuth:         '{{ route('auth.google.redirect') }}?role=client&intent=login'
 }"></login-component>
 
 
