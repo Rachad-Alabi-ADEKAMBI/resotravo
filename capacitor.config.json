@@ -1,7 +1,7 @@
 {
   "appId": "com.mesotravo.app",
   "appName": "Mesotravo",
-  "webDir": "public",
+  "webDir": "www",
   "server": {
     "url": "https://mesotravo.xo.je",
     "cleartext": false

@@ -3,6 +3,9 @@
 @section('title', 'Mon espace prestataire')
 
 @section('content')
+    @php
+        $documentsVerified = $user->isCertified();
+    @endphp
 
     <contractor-dashboard-component
         :user="{{ json_encode([
@@ -11,6 +14,8 @@
             'email'  => $user->email,
             'role'   => $user->role,
             'status' => $user->status,
+            'documents_verified' => $documentsVerified,
+            'documents_need_verification' => !$documentsVerified,
         ]) }}"
         :contractor-profile="{{ json_encode([
             'first_name'         => $contractor?->first_name         ?? '',
@@ -43,6 +48,7 @@
             'missions_available' => route('contractor.missions.available'),
             'missions_show'      => url('/contractor/missions/{id}'),
             'missions_status'    => url('/contractor/missions/{id}/status'),
+            'missions_proposal_expire' => url('/contractor/missions/{id}/proposal-expire'),
             'notifications'      => route('notifications.index'),
             'notifications_read' => url('/notifications/{id}/read'),
             'notifications_all'  => route('notifications.read-all'),

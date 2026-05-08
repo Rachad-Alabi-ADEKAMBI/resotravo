@@ -67,11 +67,56 @@
             <!-- Erreur -->
             <div class="acfg-alert-error" v-else-if="loadError">
                 {{ loadError }}
-                <button class="acfg-btn acfg-btn-ghost" @click="fetchSettings">Reessayer</button>
+                <button class="acfg-btn acfg-btn-ghost" @click="fetchSettings">Réessayer</button>
             </div>
 
             <!-- Formulaire -->
             <div v-else class="acfg-form-zone">
+                <!-- â”€â”€ Attribution des missions â”€â”€ -->
+                <div class="acfg-section">
+                    <div class="acfg-section-header">
+                        <div class="acfg-section-icon">&#9881;</div>
+                        <div>
+                            <h2 class="acfg-section-title">Attribution des missions</h2>
+                            <p class="acfg-section-desc">
+                                Activez ou désactivez l'attribution automatique des nouvelles missions aux prestataires.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="acfg-fields">
+                        <div class="acfg-toggle-row">
+                            <div>
+                                <label class="acfg-label" for="auto_assign_missions">
+                                    Attribution automatique
+                                </label>
+                                <p class="acfg-hint">
+                                    Si elle est désactivée, les nouvelles missions resteront en attente pour une attribution manuelle.
+                                </p>
+                            </div>
+                            <label class="acfg-switch">
+                                <input
+                                    id="auto_assign_missions"
+                                    type="checkbox"
+                                    v-model="form.auto_assign_missions"
+                                />
+                                <span class="acfg-switch-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="acfg-actions">
+                        <button class="acfg-btn acfg-btn-green" :disabled="saving" @click="saveSettings">
+                            <span v-if="saving" class="acfg-btn-spinner"></span>
+                            {{ saving ? "Enregistrement..." : "Enregistrer" }}
+                        </button>
+                        <transition name="acfg-fade">
+                            <span class="acfg-save-ok" v-if="saveSuccess">Enregistré avec succès</span>
+                        </transition>
+                        <span class="acfg-save-err" v-if="saveError">{{ saveError }}</span>
+                    </div>
+                </div>
+
                 <!-- â”€â”€ Frais de diagnostic â”€â”€ -->
                 <div class="acfg-section">
                     <div class="acfg-section-header">
@@ -79,7 +124,7 @@
                         <div>
                             <h2 class="acfg-section-title">Frais de diagnostic</h2>
                             <p class="acfg-section-desc">
-                                Montant fixe du diagnostic applique automatiquement a tous les devis prestataires.
+                                Montant fixe du diagnostic appliqué automatiquement à tous les devis prestataires.
                             </p>
                         </div>
                     </div>
@@ -89,7 +134,7 @@
                                 Montant du diagnostic
                             </label>
                             <p class="acfg-hint">
-                                Ce montant sera automatiquement pre-rempli dans le devis du prestataire et soumis au client.
+                                Ce montant sera automatiquement pré-rempli dans le devis du prestataire et soumis au client.
                             </p>
                             <div class="acfg-input-group">
                                 <input
@@ -110,7 +155,7 @@
                             {{ saving ? "Enregistrement..." : "Enregistrer" }}
                         </button>
                         <transition name="acfg-fade">
-                            <span class="acfg-save-ok" v-if="saveSuccess">Enregistre avec succes</span>
+                            <span class="acfg-save-ok" v-if="saveSuccess">Enregistré avec succès</span>
                         </transition>
                         <span class="acfg-save-err" v-if="saveError">{{ saveError }}</span>
                     </div>
@@ -123,7 +168,7 @@
                         <div>
                             <h2 class="acfg-section-title">Taux de commission</h2>
                             <p class="acfg-section-desc">
-                                Definissez le pourcentage preleve par Mesotravo sur chaque type de prestation.
+                                Définissez le pourcentage prélevé par Mesotravo sur chaque type de prestation.
                             </p>
                         </div>
                     </div>
@@ -134,7 +179,7 @@
                                 Commission sur le diagnostic
                             </label>
                             <p class="acfg-hint">
-                                Pourcentage preleve sur le montant du diagnostic.
+                                Pourcentage prélevé sur le montant du diagnostic.
                             </p>
                             <div class="acfg-input-group">
                                 <input
@@ -155,7 +200,7 @@
                                 Commission sur la main d'oeuvre
                             </label>
                             <p class="acfg-hint">
-                                Pourcentage preleve sur le montant de la main d'oeuvre.
+                                Pourcentage prélevé sur le montant de la main d'oeuvre.
                             </p>
                             <div class="acfg-input-group">
                                 <input
@@ -183,7 +228,7 @@
                         </button>
                         <transition name="acfg-fade">
                             <span class="acfg-save-ok" v-if="saveSuccess">
-                                Enregistre avec succes
+                                Enregistré avec succès
                             </span>
                         </transition>
                         <span class="acfg-save-err" v-if="saveError">{{ saveError }}</span>
@@ -213,6 +258,7 @@ export default {
             saveError: null,
 
             form: {
+                auto_assign_missions: true,
                 diagnostic_fee: 5000,
                 commission_diagnostic: 10,
                 commission_main_oeuvre: 10,
@@ -267,6 +313,7 @@ export default {
                 const res = await fetch(this.routes.settings_index);
                 if (!res.ok) throw new Error("Erreur serveur");
                 const data = await res.json();
+                this.form.auto_assign_missions = Boolean(data.auto_assign_missions);
                 this.form.diagnostic_fee        = parseFloat(data.diagnostic_fee)        || 5000;
                 this.form.commission_diagnostic = parseFloat(data.commission_diagnostic) || 10;
                 this.form.commission_main_oeuvre= parseFloat(data.commission_main_oeuvre)|| 10;
@@ -293,6 +340,7 @@ export default {
                         Accept: "application/json",
                     },
                     body: JSON.stringify({
+                        auto_assign_missions: this.form.auto_assign_missions,
                         diagnostic_fee:        this.form.diagnostic_fee,
                         commission_diagnostic: this.form.commission_diagnostic,
                         commission_main_oeuvre:this.form.commission_main_oeuvre,
@@ -668,6 +716,50 @@ export default {
     font-size: 15px;
     border-left: 1.5px solid #ddd;
 }
+.acfg-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+}
+.acfg-switch {
+    position: relative;
+    display: inline-flex;
+    width: 52px;
+    height: 30px;
+    flex-shrink: 0;
+}
+.acfg-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.acfg-switch-slider {
+    position: absolute;
+    inset: 0;
+    cursor: pointer;
+    background: #d4d4dd;
+    border-radius: 999px;
+    transition: background 0.2s;
+}
+.acfg-switch-slider::before {
+    content: "";
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    left: 3px;
+    top: 3px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(26, 26, 46, 0.22);
+    transition: transform 0.2s;
+}
+.acfg-switch input:checked + .acfg-switch-slider {
+    background: #16a34a;
+}
+.acfg-switch input:checked + .acfg-switch-slider::before {
+    transform: translateX(22px);
+}
 
 /* â”€â”€ ACTIONS â”€â”€ */
 .acfg-actions {
@@ -772,6 +864,9 @@ export default {
     }
     .acfg-section {
         padding: 20px;
+    }
+    .acfg-toggle-row {
+        align-items: flex-start;
     }
 }
 </style>

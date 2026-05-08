@@ -503,7 +503,9 @@
                                 Les présentes Conditions Générales d'Utilisation
                                 (CGU) régissent l'utilisation de la plateforme
                                 <strong>Mesotravo</strong>, accessible à
-                                l'adresse <strong>mesotravo.bj</strong>.
+                                l'adresse <strong>mesotravo.com</strong>.
+                                Le numéro IFU de Mesotravo est
+                                <strong>3202625062491</strong>.
                             </p>
                             <p>
                                 En créant un compte ou en utilisant nos
@@ -545,8 +547,8 @@
                                 <strong>Mission</strong> : toute intervention
                                 commandée par un Client via la plateforme.<br />
                                 <strong>Commission</strong> : rémunération de
-                                Mesotravo fixée à 10% du montant de chaque
-                                mission réalisée.
+                                Mesotravo prélevée sur les prestations réalisées
+                                selon les conditions applicables.
                             </p>
                         </div>
 
@@ -586,12 +588,14 @@
                             </p>
                             <p>
                                 <strong>Accréditation DOMICILE</strong> :
-                                accordée automatiquement après validation du
-                                dossier.
+                                obtenue par défaut après l'inscription. Toutefois,
+                                le prestataire doit soumettre son dossier et le
+                                faire valider par Mesotravo avant de commencer à
+                                recevoir des missions.
                                 <strong>Accréditation ENTREPRISE</strong> :
-                                délivrée exclusivement par décision de
-                                l'administrateur après vérification
-                                complémentaire.
+                                le prestataire peut en faire la demande après
+                                avoir terminé 5 missions sur la plateforme. Elle
+                                reste soumise à validation par l'administration.
                             </p>
                         </div>
 
@@ -617,9 +621,9 @@
                             </h4>
                             <p>
                                 Le paiement s'effectue exclusivement via MTN
-                                MoMo. Mesotravo prélève une commission de 10%
-                                sur chaque prestation réalisée. Le prestataire
-                                perçoit 90% du montant du devis approuvé. Tout
+                                MoMo. Mesotravo prélève une commission sur les
+                                prestations réalisées selon les conditions
+                                applicables. Tout
                                 paiement hors-plateforme dégage Mesotravo de
                                 toute responsabilité.
                             </p>
@@ -715,6 +719,7 @@
                                 ✉️ contact@mesotravo.com<br />
                                 📞 +229 01 90 00 36 26<br />
                                 💬 WhatsApp : +229 01 90 00 36 26<br />
+                                🧾 IFU : 3202625062491<br />
                                 📍 Cotonou, Bénin
                             </p>
                         </div>
@@ -1536,10 +1541,12 @@ export default {
 
 /* MODAL CGU */
 .rc-modal-cgu {
-    max-width: 860px;
+    width: min(1120px, calc(100vw - 40px));
+    max-width: 1120px !important;
     padding: 0;
     display: flex;
     flex-direction: column;
+    height: min(860px, calc(100vh - 40px));
     max-height: 94vh;
     overflow: hidden;
 }
@@ -1566,7 +1573,7 @@ export default {
 .rc-modal-cgu-body {
     flex: 1;
     overflow-y: auto;
-    padding: 20px 28px;
+    padding: 24px 36px;
     scroll-behavior: smooth;
 }
 .rc-modal-cgu-body::-webkit-scrollbar {
@@ -1592,10 +1599,28 @@ export default {
     border-radius: 0 99px 99px 0;
 }
 .rc-modal-cgu-footer {
-    padding: 16px 28px 24px;
+    padding: 18px 36px 26px;
     display: flex;
     gap: 12px;
     border-top: 1.5px solid var(--grl, #e8ddd4);
+}
+@media (max-width: 640px) {
+    .rc-modal-cgu {
+        width: calc(100vw - 20px);
+        height: calc(100vh - 20px);
+        max-height: calc(100vh - 20px);
+        border-radius: 16px;
+    }
+    .rc-modal-cgu-header {
+        padding: 18px 16px 12px;
+    }
+    .rc-modal-cgu-body {
+        padding: 18px 16px;
+    }
+    .rc-modal-cgu-footer {
+        padding: 14px 16px 18px;
+        flex-direction: column;
+    }
 }
 
 /* Contenu CGU dans le modal */
@@ -1666,6 +1691,7 @@ export default {
     font-size: 12px;
     color: #ef4444;
     margin-top: 2px;
+    overflow-wrap: anywhere;
 }
 
 /* BOUTONS */
@@ -1817,6 +1843,7 @@ export default {
     color: var(--gr, #7c6a5a);
     line-height: 1.6;
     margin-bottom: 10px;
+    overflow-wrap: anywhere;
 }
 
 .rc-modal-errors {
@@ -1832,6 +1859,7 @@ export default {
     border: 1px solid #fecaca;
     border-radius: 8px;
     padding: 8px 12px;
+    overflow-wrap: anywhere;
 }
 .rc-modal-errors li::before {
     content: "✕ ";

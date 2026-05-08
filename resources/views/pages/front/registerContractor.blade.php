@@ -7,6 +7,7 @@
         cgu:            '{{ route('cgu') }}',
         policy:         '{{ route('policy') }}',
         google_auth:    '{{ route('auth.google.redirect') }}?role=contractor',
+        services_public: '{{ route('services.public') }}',
         service_suggestions: '{{ route('services.suggestions') }}'
     }"></register-contractor-component>
 @endsection

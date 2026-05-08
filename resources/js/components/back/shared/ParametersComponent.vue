@@ -1141,6 +1141,11 @@ export default {
     border: 1.5px solid #fecaca;
     color: #dc2626;
 }
+.pm-alert,
+.pm-field-error {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
 
 /* ── Champ ── */
 .pm-field {

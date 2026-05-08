@@ -93,7 +93,7 @@
             <div class="ctm-pending-banner" v-if="showAvailableMissions">
                 <div class="ctm-pending-banner-icon">🔒</div>
                 <div>
-                    <div class="ctm-pending-banner-title" v-if="userStatus === 'pending'">Dossier en cours de vérification</div>
+                    <div class="ctm-pending-banner-title" v-if="needsDocumentVerification">Dossier en cours de vérification</div>
                     <div class="ctm-pending-banner-title" v-else>Accréditation requise</div>
                     <div class="ctm-pending-banner-sub">{{ availableMissionsMessage }}</div>
                 </div>
@@ -129,13 +129,18 @@
                                 </div>
                                 <div class="ctm-item-addr">📍 {{ m.address }}</div>
                                 <div class="ctm-item-meta">{{ formatDate(m.created_at) }}</div>
+                                <div class="ctm-item-desc" v-if="m.description">
+                                    {{ m.description }}
+                                </div>
                                 <div class="ctm-item-imgs" v-if="m.images && m.images.length">
                                     <img v-for="(url, i) in m.images.slice(0, 4)" :key="i" :src="url" class="ctm-item-img-thumb" />
                                     <span class="ctm-item-imgs-more" v-if="m.images.length > 4">+{{ m.images.length - 4 }}</span>
                                 </div>
                             </div>
                             <div class="ctm-item-right">
-                                <span class="ctm-badge ctm-badge-locked">🔒 Documents à vérifier</span>
+                                <span class="ctm-badge ctm-badge-locked">
+                                    🔒 {{ lockedMissionLabel }}
+                                </span>
                                 <button
                                     type="button"
                                     class="ctm-btn ctm-btn-disabled"
@@ -231,10 +236,25 @@
                                 >
                             </div>
                             <div class="ctm-item-meta">
-                                👤 {{ m.client?.name ?? "—" }} ·
+                                👤 — ·
                                 {{ formatDate(m.created_at) }}
                             </div>
                             <div class="ctm-item-addr">📍 {{ m.address }}</div>
+                            <div class="ctm-item-desc" v-if="m.description">
+                                {{ m.description }}
+                            </div>
+                            <div class="ctm-item-accepted" v-if="m.accepted_at">
+                                Acceptée le {{ formatDateTime(m.accepted_at) }}
+                            </div>
+                            <div class="ctm-proposal-timer ctm-proposal-timer--compact" v-if="showProposalTimer(m)">
+                                <div class="ctm-proposal-timer-top">
+                                    <span>Temps restant</span>
+                                    <strong>{{ formatProposalTimer(m) }}</strong>
+                                </div>
+                                <div class="ctm-proposal-track">
+                                    <div class="ctm-proposal-fill" :style="{ width: proposalTimerPercent(m) + '%' }"></div>
+                                </div>
+                            </div>
                             <div class="ctm-item-imgs" v-if="m.images && m.images.length">
                                 <img v-for="(url, i) in m.images.slice(0, 4)" :key="i" :src="url" class="ctm-item-img-thumb" @click.stop="window.open(url, '_blank')" />
                                 <span class="ctm-item-imgs-more" v-if="m.images.length > 4">+{{ m.images.length - 4 }}</span>
@@ -258,6 +278,9 @@
                             </div>
                             <div class="ctm-item-date">
                                 {{ formatDate(m.created_at) }}
+                            </div>
+                            <div class="ctm-item-date" v-if="m.accepted_at">
+                                {{ formatDateTime(m.accepted_at) }}
                             </div>
                         </div>
                     </div>
@@ -352,6 +375,15 @@
                                 </div>
                                 <div
                                     class="ctm-row"
+                                    v-if="activeMission.accepted_at"
+                                >
+                                    <span>Acceptée le</span>
+                                    <strong>{{
+                                        formatDateTime(activeMission.accepted_at)
+                                    }}</strong>
+                                </div>
+                                <div
+                                    class="ctm-row"
                                     v-if="activeMission.total_amount"
                                 >
                                     <span>Votre part (90%)</span>
@@ -360,6 +392,24 @@
                                             activeMission.total_amount * 0.9
                                         )
                                     }}</strong>
+                                </div>
+                            </div>
+
+                            <div
+                                class="ctm-section ctm-mission-photos"
+                                v-if="activeMissionImages.length"
+                            >
+                                <div class="ctm-section-title">📷 Photos de la mission</div>
+                                <div class="ctm-photo-grid">
+                                    <button
+                                        type="button"
+                                        class="ctm-photo-btn"
+                                        v-for="(url, index) in activeMissionImages"
+                                        :key="index"
+                                        @click="window.open(url, '_blank')"
+                                    >
+                                        <img :src="url" :alt="`Photo mission ${index + 1}`" />
+                                    </button>
                                 </div>
                             </div>
 
@@ -395,18 +445,7 @@
                             >
                                 <div class="ctm-section-title">👤 Client</div>
                                 <div class="ctm-row">
-                                    <span>Nom</span>
-                                    <strong>
-                                        {{ activeMission.client.name }}
-                                        <span
-                                            v-if="
-                                                activeMission.client.is_verified
-                                            "
-                                            class="ctm-verified-badge"
-                                            title="Identité vérifiée"
-                                            >✅ Identité vérifiée</span
-                                        >
-                                    </strong>
+                                    <span>Nom —</span>
                                 </div>
                                 <div class="ctm-row">
                                     <span>Contact</span
@@ -485,8 +524,26 @@
                                 <div class="ctm-action-new-title">
                                     Nouvelle mission proposée
                                 </div>
-                                <div class="ctm-action-new-sub">
-                                    Vous avez 5 minutes pour répondre.
+                                <div
+                                    class="ctm-proposal-timer ctm-proposal-timer--panel"
+                                    v-if="showProposalTimer(activeMission)"
+                                >
+                                    <div class="ctm-proposal-timer-top">
+                                        <span>Temps restant pour accepter</span>
+                                        <strong>{{ formatProposalTimer(activeMission) }}</strong>
+                                    </div>
+                                    <div class="ctm-proposal-track">
+                                        <div
+                                            class="ctm-proposal-fill"
+                                            :style="{ width: proposalTimerPercent(activeMission) + '%' }"
+                                        ></div>
+                                    </div>
+                                    <div class="ctm-proposal-deadline">
+                                        Proposition reçue à {{ formatTime(activeMission.proposal?.proposed_at) }}
+                                    </div>
+                                </div>
+                                <div class="ctm-action-new-sub" v-else>
+                                    Cette proposition n'a plus de délai actif.
                                 </div>
                                 <div class="ctm-action-row">
                                     <button
@@ -504,7 +561,7 @@
                                                 'accepted'
                                             )
                                         "
-                                        :disabled="actionLoading"
+                                        :disabled="actionLoading || isProposalExpired(activeMission)"
                                     >
                                         <div
                                             class="ctm-spinner"
@@ -755,20 +812,10 @@
                             <button
                                 class="ctm-btn ctm-btn-chat ctm-btn-full"
                                 @click="openChat(activeMission.id)"
-                                v-if="
-                                    [
-                                        'accepted',
-                                        'contact_made',
-                                        'on_the_way',
-                                        'tracking',
-                                        'in_progress',
-                                        'quote_submitted',
-                                        'order_placed',
-                                        'awaiting_confirm',
-                                    ].includes(activeMission.status)
-                                "
+                                :disabled="!canMessageMission(activeMission)"
+                                :class="{ 'ctm-btn-disabled': !canMessageMission(activeMission) }"
                             >
-                                💬 Contacter le client
+                                💬 Messages
                                 <span
                                     class="ctm-chat-badge"
                                     v-if="unreadByMission[activeMission.id]"
@@ -1217,17 +1264,26 @@ export default {
         userStatus() {
             return this.user.status ?? 'pending';
         },
+        needsDocumentVerification() {
+            return Boolean(this.user.documents_need_verification)
+                || this.userStatus !== 'approved'
+                || !this.user.documents_verified;
+        },
         showAvailableMissions() {
-            if (this.userStatus !== 'approved') return true;
-            if (!this.user.documents_verified) return true;
+            if (this.needsDocumentVerification) return true;
             if (this.userStatus === 'approved' && (this.user.accreditation ?? 'none') === 'none') return true;
             return false;
         },
         availableMissionsMessage() {
-            if (this.userStatus !== 'approved' || !this.user.documents_verified) {
+            if (this.needsDocumentVerification) {
                 return 'Vous pouvez consulter les missions proposées par les clients, mais vous devez faire vérifier vos documents avant de pouvoir postuler.';
             }
             return 'Vous devez obtenir des accréditations pour postuler aux missions.';
+        },
+        lockedMissionLabel() {
+            return this.needsDocumentVerification
+                ? 'Documents à vérifier'
+                : 'Accréditation requise';
         },
     },
 
@@ -1242,6 +1298,9 @@ export default {
             search: "",
             activeMission: null,
             actionLoading: false,
+            timerNow: Date.now(),
+            proposalTimerInterval: null,
+            expiringProposalIds: [],
 
             chatMissionId: null,
             chatUnread: 0,
@@ -1360,7 +1419,7 @@ export default {
             ];
         },
         filteredMissions() {
-            let list = [...this.missions];
+            let list = this.visibleMissionsForContractor(this.missions);
             if (this.activeTab === "active")
                 list = list.filter((m) =>
                     this.activeStatuses.includes(m.status)
@@ -1383,6 +1442,9 @@ export default {
                 );
             }
             return list;
+        },
+        activeMissionImages() {
+            return this.normalizeMissionImages(this.activeMission);
         },
 
         // ── Quote computed ──────────────────────────────────────
@@ -1421,13 +1483,164 @@ export default {
     },
 
     methods: {
+        normalizeMissionImages(mission) {
+            const rawImages = mission?.images;
+            if (!rawImages) return [];
+
+            let images = rawImages;
+            if (typeof rawImages === "string") {
+                try {
+                    images = JSON.parse(rawImages);
+                } catch {
+                    images = rawImages.split(",").map((image) => image.trim());
+                }
+            }
+
+            if (!Array.isArray(images)) {
+                images = Object.values(images);
+            }
+
+            return images
+                .map((image) => {
+                    const value =
+                        typeof image === "string"
+                            ? image
+                            : image?.url ?? image?.path ?? image?.src ?? "";
+                    return String(value).trim();
+                })
+                .filter(Boolean)
+                .map((url) => {
+                    if (/^(https?:)?\/\//i.test(url) || url.startsWith("data:")) {
+                        return url;
+                    }
+                    if (url.startsWith("/storage/") || url.startsWith("storage/")) {
+                        return url.startsWith("/") ? url : `/${url}`;
+                    }
+                    if (url.startsWith("/")) return url;
+                    return `/storage/${url}`;
+                });
+        },
+
+        proposalSecondsRemaining(mission) {
+            const expiresAt = mission?.proposal?.expires_at;
+            if (!expiresAt || mission?.proposal?.status !== "pending") return 0;
+            return Math.max(0, Math.ceil((new Date(expiresAt).getTime() - this.timerNow) / 1000));
+        },
+
+        showProposalTimer(mission) {
+            return mission?.status === "assigned"
+                && mission?.proposal?.status === "pending"
+                && Boolean(mission?.proposal?.expires_at);
+        },
+
+        isProposalExpired(mission) {
+            return this.showProposalTimer(mission) && this.proposalSecondsRemaining(mission) <= 0;
+        },
+
+        isMissionVisibleForContractor(mission) {
+            if (mission?.status !== "assigned") return true;
+            return this.showProposalTimer(mission) && this.proposalSecondsRemaining(mission) > 0;
+        },
+
+        visibleMissionsForContractor(missions) {
+            return (Array.isArray(missions) ? missions : []).filter((mission) =>
+                this.isMissionVisibleForContractor(mission)
+            );
+        },
+
+        canMessageMission(mission) {
+            return [
+                "accepted",
+                "contact_made",
+                "on_the_way",
+                "tracking",
+                "in_progress",
+                "quote_submitted",
+                "order_placed",
+                "awaiting_confirm",
+                "completed",
+                "closed",
+            ].includes(mission?.status);
+        },
+
+        proposalTimerPercent(mission) {
+            if (!this.showProposalTimer(mission)) return 0;
+            return Math.max(0, Math.min(100, (this.proposalSecondsRemaining(mission) / 300) * 100));
+        },
+
+        formatProposalTimer(mission) {
+            const seconds = this.proposalSecondsRemaining(mission);
+            const minutes = Math.floor(seconds / 60);
+            const rest = seconds % 60;
+            return `${String(minutes).padStart(2, "0")}:${String(rest).padStart(2, "0")}`;
+        },
+
+        formatTime(iso) {
+            if (!iso) return "—";
+            return new Date(iso).toLocaleTimeString("fr-FR", {
+                hour: "2-digit",
+                minute: "2-digit",
+            });
+        },
+
+        startProposalTimer() {
+            this.stopProposalTimer();
+            this.proposalTimerInterval = setInterval(() => {
+                this.timerNow = Date.now();
+                this.expireElapsedProposals();
+            }, 1000);
+        },
+
+        stopProposalTimer() {
+            if (!this.proposalTimerInterval) return;
+            clearInterval(this.proposalTimerInterval);
+            this.proposalTimerInterval = null;
+        },
+
+        expireElapsedProposals() {
+            if (!this.routes.missions_proposal_expire) return;
+            this.missions
+                .filter((mission) => this.isProposalExpired(mission))
+                .forEach((mission) => this.expireProposal(mission));
+        },
+
+        async expireProposal(mission) {
+            const proposalId = mission?.proposal?.id;
+            if (!proposalId || this.expiringProposalIds.includes(proposalId)) return;
+
+            this.expiringProposalIds.push(proposalId);
+            try {
+                const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+                const url = this.routes.missions_proposal_expire.replace("{id}", mission.id);
+                const res = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "X-CSRF-TOKEN": csrf,
+                        Accept: "application/json",
+                    },
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok) {
+                    this.removeMissionFromList(mission.id);
+                    if (this.activeMission?.id === mission.id) {
+                        this.activeMission = null;
+                    }
+                    this.showToast("Délai expiré. L'équipe Mesotravo a été notifiée.", "warning");
+                } else if (data.mission) {
+                    this.updateMissionInList(data.mission);
+                }
+            } finally {
+                this.expiringProposalIds = this.expiringProposalIds.filter((id) => id !== proposalId);
+            }
+        },
+
         // ── Data ─────────────────────────────────────────────────
         syncActiveMission() {
             if (!this.activeMission?.id) return;
             const refreshed = this.missions.find(
                 (mission) => mission.id === this.activeMission.id
             );
-            this.activeMission = refreshed
+            this.activeMission = refreshed && this.isMissionVisibleForContractor(refreshed)
                 ? { ...this.activeMission, ...refreshed }
                 : null;
         },
@@ -1801,7 +2014,7 @@ export default {
 <div class="header">
   <div>
     <div class="brand">Meso<em>Travo</em></div>
-    <div class="sub-brand">Plateforme de mise en relation</div>
+    <div class="sub-brand">Plateforme de mise en relation · IFU : 3202625062491</div>
   </div>
   <div class="meta">
     <strong>Devis n°${quote.id}${quote.version > 1 ? ' — Révision v' + quote.version : ''}</strong>
@@ -1829,7 +2042,7 @@ ${quote.diagnosis ? `<div class="diag-box"><div class="diag-label">🔍 Diagnost
 </table>
 
 <div class="note">⚠️ Ce devis est soumis à approbation via la plateforme Mesotravo. Aucun paiement hors-plateforme n'est autorisé ni conseillé.</div>
-<div class="footer">Mesotravo.com · Plateforme de mise en relation artisans &amp; particuliers</div>
+<div class="footer">Mesotravo.com · Plateforme de mise en relation artisans &amp; particuliers<br>IFU : 3202625062491</div>
 </body></html>`;
 
             const win = window.open('', '_blank', 'width=860,height=720');
@@ -1920,10 +2133,14 @@ ${quote.diagnosis ? `<div class="diag-box"><div class="diag-label">🔍 Diagnost
         async confirmRefuse() {
             const reason =
                 this.refuseModal.reason === "other"
-                    ? this.refuseModal.customReason
+                    ? this.refuseModal.customReason.trim()
                     : this.refuseOptions.find(
                           (o) => o.value === this.refuseModal.reason
                       )?.label ?? "";
+            if (!reason) {
+                this.showToast("Veuillez préciser le motif du refus.", "error");
+                return;
+            }
             this.refuseModal.loading = true;
             try {
                 const csrf = document.querySelector(
@@ -2052,21 +2269,26 @@ ${quote.diagnosis ? `<div class="diag-box"><div class="diag-label">🔍 Diagnost
                     ...updated,
                 });
         },
+
+        removeMissionFromList(missionId) {
+            this.missions = this.missions.filter((mission) => mission.id !== missionId);
+        },
         countByTab(key) {
-            if (key === "all") return this.missions.length;
+            const missions = this.visibleMissionsForContractor(this.missions);
+            if (key === "all") return missions.length;
             if (key === "active")
-                return this.missions.filter((m) =>
+                return missions.filter((m) =>
                     this.activeStatuses.includes(m.status)
                 ).length;
             if (key === "assigned")
-                return this.missions.filter((m) => m.status === "assigned")
+                return missions.filter((m) => m.status === "assigned")
                     .length;
             if (key === "closed")
-                return this.missions.filter((m) =>
+                return missions.filter((m) =>
                     ["completed", "closed"].includes(m.status)
                 ).length;
             if (key === "cancelled")
-                return this.missions.filter((m) => m.status === "cancelled")
+                return missions.filter((m) => m.status === "cancelled")
                     .length;
             return 0;
         },
@@ -2266,6 +2488,7 @@ ${quote.diagnosis ? `<div class="diag-box"><div class="diag-label">🔍 Diagnost
             this.fetchMissions();
         }
         this.startMissionPolling();
+        this.startProposalTimer();
         this.fetchNotifications();
         this.notifInterval = setInterval(
             () => this.fetchNotifications(),
@@ -2279,6 +2502,7 @@ ${quote.diagnosis ? `<div class="diag-box"><div class="diag-label">🔍 Diagnost
     },
     beforeUnmount() {
         this.stopMissionPolling();
+        this.stopProposalTimer();
         clearInterval(this.notifInterval);
         document.removeEventListener("click", this.handleClickOutside);
         window.removeEventListener(
@@ -2709,6 +2933,70 @@ ${quote.diagnosis ? `<div class="diag-box"><div class="diag-label">🔍 Diagnost
     color: var(--gr);
     margin-top: 2px;
 }
+.ctm-item-desc {
+    font-size: 12.5px;
+    color: var(--dk);
+    line-height: 1.45;
+    margin-top: 5px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+}
+.ctm-item-accepted {
+    font-size: 12px;
+    color: #16a34a;
+    font-weight: 700;
+    margin-top: 5px;
+}
+.ctm-proposal-timer {
+    background: #fff7ed;
+    border: 1.5px solid #fed7aa;
+    border-radius: 10px;
+    padding: 10px;
+    box-shadow: 0 6px 16px rgba(249, 115, 22, 0.12);
+}
+.ctm-proposal-timer--compact {
+    margin-top: 8px;
+    max-width: 280px;
+}
+.ctm-proposal-timer--panel {
+    margin: 12px 0 14px;
+}
+.ctm-proposal-timer-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    color: #7c2d12;
+    font-size: 12px;
+    font-weight: 700;
+}
+.ctm-proposal-timer-top strong {
+    color: var(--or2);
+    font-size: 20px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+}
+.ctm-proposal-track {
+    height: 8px;
+    background: #ffedd5;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 8px;
+}
+.ctm-proposal-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--or), var(--or2));
+    border-radius: inherit;
+    transition: width 0.35s ease;
+}
+.ctm-proposal-deadline {
+    color: var(--gr);
+    font-size: 12px;
+    margin-top: 8px;
+}
 .ctm-item-imgs {
     display: flex;
     flex-wrap: wrap;
@@ -2824,10 +3112,12 @@ ${quote.diagnosis ? `<div class="diag-box"><div class="diag-label">🔍 Diagnost
     max-width: 520px;
     height: 100vh;
     overflow-y: auto;
+    overflow-x: hidden;
     display: flex;
     flex-direction: column;
     box-shadow: -8px 0 40px rgba(0, 0, 0, 0.15);
     animation: ctm-slide-in 0.25s ease;
+    overscroll-behavior: contain;
 }
 @keyframes ctm-slide-in {
     from {
@@ -2841,9 +3131,27 @@ ${quote.diagnosis ? `<div class="diag-box"><div class="diag-label">🔍 Diagnost
 }
 @media (max-width: 600px) {
     .ctm-panel {
-        height: 90vh;
-        max-width: 100%;
+        width: 100%;
+        max-width: 100vw;
+        height: min(92vh, 100dvh);
         border-radius: 18px 18px 0 0;
+    }
+    .ctm-panel-header {
+        padding: 16px 18px 14px;
+    }
+    .ctm-workflow {
+        padding: 12px 14px 14px;
+    }
+    .ctm-panel-body {
+        padding: 14px;
+    }
+    .ctm-row {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+    .ctm-action-row .ctm-btn {
+        min-width: 0;
+        width: 100%;
     }
 }
 .ctm-panel-header {
@@ -2854,8 +3162,9 @@ ${quote.diagnosis ? `<div class="diag-box"><div class="diag-label">🔍 Diagnost
     border-bottom: 2px solid var(--grl);
     position: sticky;
     top: 0;
-    background: var(--wh);
-    z-index: 1;
+    background: #fff;
+    z-index: 30;
+    box-shadow: 0 8px 18px rgba(28, 20, 18, 0.06);
 }
 .ctm-panel-header h2 {
     font-size: 18px;
@@ -2885,6 +3194,10 @@ ${quote.diagnosis ? `<div class="diag-box"><div class="diag-label">🔍 Diagnost
     padding: 14px 20px 16px;
     border-bottom: 2px solid var(--grl);
     background: #faf7f5;
+    position: relative;
+    z-index: 0;
+    min-width: 0;
+    overflow: hidden;
 }
 .ctm-workflow-track {
     height: 5px;
@@ -2969,31 +3282,36 @@ ${quote.diagnosis ? `<div class="diag-box"><div class="diag-label">🔍 Diagnost
 }
 
 .ctm-panel-body {
-    padding: 20px 24px;
+    padding: 18px;
     flex: 1;
+    min-width: 0;
+    overflow-x: hidden;
 }
 .ctm-panel-cols {
     display: flex;
     flex-direction: column;
     gap: 20px;
+    min-width: 0;
 }
 /* Panel toujours en colonne — trop étroit pour 2 colonnes */
 .ctm-panel-cols {
     flex-direction: column;
 }
 .ctm-section {
-    background: var(--grl);
-    border-radius: 12px;
-    padding: 14px 16px;
-    margin-bottom: 14px;
+    background: #fff;
+    border: 1.5px solid #eadfd6;
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(28, 20, 18, 0.04);
 }
 .ctm-section-title {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 800;
-    color: var(--gr);
+    color: var(--dk);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 10px;
+    letter-spacing: 0;
+    margin-bottom: 14px;
 }
 .ctm-verified-badge {
     display: inline-block;
@@ -3008,25 +3326,34 @@ ${quote.diagnosis ? `<div class="diag-box"><div class="diag-label">🔍 Diagnost
     vertical-align: middle;
 }
 .ctm-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 7px 0;
-    border-bottom: 1px solid #d5c9c0;
-    font-size: 13px;
-    gap: 12px;
+    display: grid;
+    grid-template-columns: minmax(88px, 0.34fr) minmax(0, 1fr);
+    align-items: start;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0e7df;
+    font-size: 13.5px;
+    gap: 10px;
+    min-width: 0;
 }
 .ctm-row:last-child {
     border-bottom: none;
 }
 .ctm-row span {
     color: var(--gr);
-    flex-shrink: 0;
+    line-height: 1.45;
 }
 .ctm-row strong {
     font-weight: 700;
     color: var(--dk);
-    text-align: right;
+    text-align: left;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+    min-width: 0;
+}
+.ctm-client-private {
+    color: var(--gr) !important;
+    font-weight: 800;
+    letter-spacing: 0;
 }
 .ctm-val-green {
     color: #16a34a;
@@ -3035,6 +3362,38 @@ ${quote.diagnosis ? `<div class="diag-box"><div class="diag-label">🔍 Diagnost
     font-size: 12px;
     color: var(--gr);
     font-style: italic;
+}
+
+.ctm-photo-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+.ctm-photo-btn {
+    border: 1.5px solid #eadfd6;
+    border-radius: 12px;
+    padding: 0;
+    background: #fff;
+    overflow: hidden;
+    cursor: pointer;
+    aspect-ratio: 4 / 3;
+    transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+}
+.ctm-photo-btn:hover {
+    transform: translateY(-1px);
+    border-color: var(--or);
+    box-shadow: 0 8px 20px rgba(249, 115, 22, 0.18);
+}
+.ctm-photo-btn img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+@media (min-width: 520px) {
+    .ctm-photo-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
 }
 
 /* Quote summary in panel */
@@ -3067,11 +3426,12 @@ ${quote.diagnosis ? `<div class="diag-box"><div class="diag-label">🔍 Diagnost
 }
 
 .ctm-action-block {
-    background: var(--grl);
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 12px;
-    border: 1.5px solid var(--grl);
+    background: #fff;
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 16px;
+    border: 1.5px solid #eadfd6;
+    box-shadow: 0 2px 8px rgba(28, 20, 18, 0.04);
 }
 .ctm-action-block p {
     font-size: 13.5px;
@@ -3081,31 +3441,35 @@ ${quote.diagnosis ? `<div class="diag-box"><div class="diag-label">🔍 Diagnost
 }
 .ctm-action-row {
     display: flex;
-    gap: 8px;
+    gap: 12px;
+    flex-wrap: wrap;
+    min-width: 0;
 }
 .ctm-action-row .ctm-btn {
     flex: 1;
     justify-content: center;
+    min-width: 138px;
 }
 .ctm-action-new {
-    border-color: var(--am);
-    background: #fffbeb;
-    text-align: center;
+    border-color: #fed7aa;
+    background: #fff7ed;
+    text-align: left;
 }
 .ctm-action-new-icon {
-    font-size: 32px;
-    margin-bottom: 8px;
+    font-size: 30px;
+    margin-bottom: 10px;
 }
 .ctm-action-new-title {
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 800;
     color: var(--dk);
-    margin-bottom: 4px;
+    margin-bottom: 6px;
 }
 .ctm-action-new-sub {
-    font-size: 12.5px;
+    font-size: 13.5px;
     color: var(--gr);
-    margin-bottom: 14px;
+    margin-bottom: 16px;
+    line-height: 1.5;
 }
 
 /* Action block devis */
@@ -3175,9 +3539,9 @@ ${quote.diagnosis ? `<div class="diag-box"><div class="diag-label">🔍 Diagnost
 }
 
 .ctm-btn {
-    padding: 9px 18px;
+    padding: 11px 18px;
     border-radius: 10px;
-    font-weight: 700;
+    font-weight: 800;
     font-size: 13.5px;
     cursor: pointer;
     border: none;
@@ -3187,6 +3551,8 @@ ${quote.diagnosis ? `<div class="diag-box"><div class="diag-label">🔍 Diagnost
     align-items: center;
     gap: 6px;
     justify-content: center;
+    min-height: 42px;
+    line-height: 1.2;
 }
 .ctm-btn-orange {
     background: linear-gradient(135deg, var(--or), var(--or2));
@@ -3209,23 +3575,19 @@ ${quote.diagnosis ? `<div class="diag-box"><div class="diag-label">🔍 Diagnost
     opacity: 0.5;
     cursor: not-allowed;
 }
-.ctm-btn-green {
-    background: #22c55e;
-    color: #fff;
-}
-.ctm-btn-green:hover:not(:disabled) {
-    background: #16a34a;
-}
 .ctm-btn-red {
-    background: #ef4444;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
     color: #fff;
+    box-shadow: 0 3px 10px rgba(239, 68, 68, 0.25);
 }
 .ctm-btn-red:hover:not(:disabled) {
-    background: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 5px 16px rgba(239, 68, 68, 0.35);
 }
 .ctm-btn-ghost {
-    background: var(--grl);
+    background: #f8f4f0;
     color: var(--dk);
+    border: 1.5px solid #eadfd6;
 }
 .ctm-btn-ghost:hover {
     background: #d5c9c0;
@@ -3731,6 +4093,8 @@ ${quote.diagnosis ? `<div class="diag-box"><div class="diag-label">🔍 Diagnost
     flex-direction: column;
     gap: 8px;
     z-index: 999;
+    width: min(420px, calc(100vw - 32px));
+    max-width: calc(100vw - 32px);
 }
 .ctm-toast {
     background: var(--dk);
@@ -3740,7 +4104,12 @@ ${quote.diagnosis ? `<div class="diag-box"><div class="diag-label">🔍 Diagnost
     font-size: 13px;
     font-weight: 600;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-    min-width: 200px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    line-height: 1.4;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 .ctm-toast.success {
     background: #16a34a;

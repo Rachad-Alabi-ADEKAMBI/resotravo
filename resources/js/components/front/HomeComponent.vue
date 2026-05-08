@@ -1231,6 +1231,8 @@ export default {
         bottom: 16px !important;
         font-size: 0.85rem !important;
         text-align: center !important;
+        white-space: normal !important;
+        overflow-wrap: anywhere !important;
     }
 
     /* ── BOUTONS globaux ── */

@@ -111,8 +111,7 @@
                         <div class="cac-card-title">Accréditation Domicile</div>
                         <div class="cac-card-desc">
                             Autorise les interventions chez les particuliers.
-                            Accordée automatiquement après validation de votre
-                            dossier.
+                            Cette accréditation est obtenue après inscription.
                         </div>
                     </div>
                     <div class="cac-card-status">
@@ -236,14 +235,24 @@
                         <div class="cac-request-desc">
                             {{ businessRequestMessage }}
                         </div>
+                        <div
+                            class="cac-request-status"
+                            v-if="latestRequest"
+                            :class="'status-' + latestRequest.status"
+                        >
+                            {{ requestStatusLabel }}
+                            <span v-if="latestRequest.admin_reason">
+                                Motif : {{ latestRequest.admin_reason }}
+                            </span>
+                        </div>
                         <button
                             class="cac-btn cac-btn-orange"
                             @click="openRequestModal"
-                            :disabled="requestSent || !canRequestBusiness"
+                            :disabled="hasPendingRequest || !canRequestBusiness"
                         >
                             {{
-                                requestSent
-                                    ? "✓ Demande envoyée"
+                                hasPendingRequest
+                                    ? "✓ Demande en attente"
                                     : "📩 Faire une demande"
                             }}
                         </button>
@@ -369,7 +378,7 @@ export default {
             // Accréditation locale (mise à jour optimiste)
             accreditation: this.contractor.accreditation ?? "none",
             contractorStatus: this.contractor.status ?? "pending",
-            requestSent: false,
+            latestRequest: this.contractor.latest_accreditation_request ?? null,
 
             // Notifications
             notifications: [],
@@ -417,6 +426,18 @@ export default {
         canRequestBusiness() {
             return this.contractorStatus === "approved" && this.remainingBusinessMissions === 0;
         },
+        hasPendingRequest() {
+            return this.latestRequest?.status === "pending";
+        },
+        requestStatusLabel() {
+            return (
+                {
+                    pending: "Demande en attente de traitement.",
+                    approved: "Demande acceptée.",
+                    rejected: "Demande refusée.",
+                }[this.latestRequest?.status] ?? ""
+            );
+        },
         homeAccreditationMessage() {
             if (this.hasBusiness) {
                 return "Vous pouvez recevoir les missions à faire à domicile et dans les entreprises.";
@@ -430,6 +451,9 @@ export default {
         },
         businessRequestMessage() {
             if (this.canRequestBusiness) {
+                if (this.hasPendingRequest) {
+                    return "Votre demande d'accréditation Entreprise est en attente de traitement par l'équipe Mesotravo.";
+                }
                 return "Vous avez terminé 5 missions. Vous pouvez faire une demande à l'équipe Mesotravo pour obtenir l'accréditation Entreprise.";
             }
 
@@ -520,16 +544,20 @@ export default {
                         message: this.requestModal.message,
                     }),
                 });
-                if (!res.ok) throw new Error();
-                this.requestSent = true;
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message ?? "");
+                this.latestRequest = data.request ?? {
+                    status: "pending",
+                    message: this.requestModal.message,
+                };
                 this.requestModal.visible = false;
                 this.showToast(
                     "✅ Demande envoyée ! L'équipe Mesotravo va examiner votre dossier.",
                     "success"
                 );
-            } catch {
+            } catch (e) {
                 this.showToast(
-                    "Erreur lors de l'envoi de la demande.",
+                    e.message || "Erreur lors de l'envoi de la demande.",
                     "error"
                 );
             } finally {
@@ -1083,6 +1111,34 @@ export default {
     line-height: 1.6;
     margin-bottom: 14px;
 }
+.cac-request-status {
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.45;
+    margin-bottom: 12px;
+}
+.cac-request-status span {
+    display: block;
+    font-weight: 600;
+    margin-top: 4px;
+}
+.cac-request-status.status-pending {
+    background: #fff7ed;
+    color: #9a3412;
+    border: 1px solid #fed7aa;
+}
+.cac-request-status.status-approved {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+}
+.cac-request-status.status-rejected {
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+}
 
 /* ── ALERTE INFO ── */
 .cac-alert-info {
@@ -1311,6 +1367,8 @@ export default {
     flex-direction: column;
     gap: 8px;
     z-index: 999;
+    width: min(420px, calc(100vw - 32px));
+    max-width: calc(100vw - 32px);
 }
 .cac-toast {
     background: var(--dk);
@@ -1320,7 +1378,12 @@ export default {
     font-size: 13px;
     font-weight: 600;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-    min-width: 220px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    line-height: 1.4;
+    white-space: normal;
+    overflow-wrap: anywhere;
     animation: cac-slide-up 0.3s ease;
 }
 .cac-toast.success {

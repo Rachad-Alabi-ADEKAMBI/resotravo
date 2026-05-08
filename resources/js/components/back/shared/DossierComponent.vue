@@ -920,6 +920,8 @@ export default {
     flex-direction: column;
     gap: 8px;
     z-index: 9999;
+    width: min(420px, calc(100vw - 48px));
+    max-width: calc(100vw - 48px);
 }
 .ctr-toast {
     background: var(--ctr-dk);
@@ -930,7 +932,12 @@ export default {
     font-weight: 600;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
     animation: fadeUp 0.25s ease;
-    max-width: 340px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    line-height: 1.4;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 .ctr-toast.success {
     background: #16a34a;

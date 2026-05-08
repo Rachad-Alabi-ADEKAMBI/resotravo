@@ -2034,7 +2034,11 @@ export default {
     transition: all 0.3s;
     pointer-events: none;
     z-index: 999;
-    white-space: nowrap;
+    width: min(420px, calc(100vw - 32px));
+    box-sizing: border-box;
+    line-height: 1.4;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 .ac-toast.visible {
     opacity: 1;

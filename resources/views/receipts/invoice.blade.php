@@ -117,7 +117,7 @@
             <div class="doc-brand">
                 <img src="{{ $logoSrc }}" alt="Mesotravo">
             </div>
-            <div class="doc-subtitle">Facture payée</div>
+            <div class="doc-subtitle">Facture payée · IFU : 3202625062491</div>
         </div>
         <div class="doc-badge">
             <div class="doc-badge-num">N° {{ str_pad($mission->id, 6, '0', STR_PAD_LEFT) }}</div>
@@ -237,7 +237,7 @@
     <div class="doc-footer">
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
             <img src="{{ $logoSrc }}" alt="Mesotravo" style="height:28px;width:auto;opacity:.7">
-            <span>Plateforme de mise en relation artisans &amp; particuliers</span>
+            <span>Plateforme de mise en relation artisans &amp; particuliers<br>IFU : 3202625062491</span>
         </div>
         <div style="text-align:right">
             <a href="https://mesotravo.com">mesotravo.com</a>

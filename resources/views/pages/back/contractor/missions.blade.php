@@ -3,6 +3,7 @@
 @section('title', 'Mes missions')
 @php
     $active = 'missions';
+    $documentsVerified = $user->isCertified();
     $hasProfilePhoto = \App\Models\Document::where('user_id', $user->id)
         ->where('type', 'photo')
         ->where('status', 'approved')
@@ -19,7 +20,8 @@
         'name' => $user->name,
         'role' => $user->role,
         'status' => $user->status,
-        'documents_verified' => $user->isCertified(),
+        'documents_verified' => $documentsVerified,
+        'documents_need_verification' => !$documentsVerified,
         'photo_url' => $profilePhotoUrl,
         'accreditation' => $user->contractor?->accreditation ?? 'none',
         'completed_missions' => $user->contractor?->completed_missions ?? 0,
@@ -31,6 +33,7 @@
         'missions_index'         => route('contractor.missions.index'),
         'missions_available'     => route('contractor.missions.available'),
         'missions_status'        => url('/contractor/missions/{id}/status'),
+        'missions_proposal_expire' => url('/contractor/missions/{id}/proposal-expire'),
         'missions_quote_store'   => url('/contractor/missions/{id}/quote'),
         'notifications'          => route('notifications.index'),
         'notifications_read'     => url('/notifications/{id}/read'),

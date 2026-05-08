@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -77,6 +78,20 @@ class User extends Authenticatable
     public function isClient(): bool     { return $this->role === 'client';     }
     public function isContractor(): bool { return $this->role === 'contractor'; }
     public function isTalent(): bool     { return $this->role === 'talent';     }
+
+    public function scopeCertifiedForRole(Builder $query, string $role): Builder
+    {
+        $query->where('role', $role)->where('status', 'approved');
+
+        foreach (Document::requiredFor($role) as $type) {
+            $query->whereHas('documents', fn(Builder $q) => $q
+                ->where('type', $type)
+                ->where('status', 'approved')
+            );
+        }
+
+        return $query;
+    }
 
     // ── Certification ─────────────────────────────────────────────────────
 

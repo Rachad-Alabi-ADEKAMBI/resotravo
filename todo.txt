@@ -1,0 +1,3 @@
+quand l'admin envoie propose la mission à un seul prestataire, le message de succès
+ne doit pas être "📤 Proposition envoyée à 1 prestataire. Le premier à accepter sera assigné." mais "📤 Proposition envoyée à tel prestaatire  (nom et prenom), si celui ci n'accepte pas la maismission dans un délai de 5 min, vous serez notifié afin de proposer 
+la mission à un autre prestataire"

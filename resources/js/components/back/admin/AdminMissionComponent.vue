@@ -417,6 +417,33 @@
                                     }}</strong>
                                 </div>
                                 <div
+                                    class="amis-mission-photos"
+                                    v-if="
+                                        activeMission.images &&
+                                        activeMission.images.length
+                                    "
+                                >
+                                    <div class="amis-mission-photos-title">
+                                        Photos de la mission
+                                    </div>
+                                    <div class="amis-mission-photos-grid">
+                                        <a
+                                            v-for="(image, index) in activeMission.images"
+                                            :key="image"
+                                            :href="image"
+                                            target="_blank"
+                                            rel="noopener"
+                                            class="amis-mission-photo-link"
+                                        >
+                                            <img
+                                                :src="image"
+                                                :alt="`Photo mission ${index + 1}`"
+                                                class="amis-mission-photo"
+                                            />
+                                        </a>
+                                    </div>
+                                </div>
+                                <div
                                     class="amis-detail-row"
                                     v-if="activeMission.desired_date"
                                 >
@@ -495,7 +522,7 @@
                                 >
                                     <span>Téléphone</span
                                     ><strong>{{
-                                        activeMission.client.phone
+                                        formatPhone(activeMission.client.phone)
                                     }}</strong>
                                 </div>
                                 <div
@@ -543,7 +570,7 @@
                                 >
                                     <span>Téléphone</span>
                                     <strong>{{
-                                        activeMission.contractor.phone
+                                        formatPhone(activeMission.contractor.phone)
                                     }}</strong>
                                 </div>
                                 <div class="amis-detail-row">
@@ -626,6 +653,18 @@
                                             <div class="amis-prop-meta">
                                                 {{ p.contractor?.specialty }}
                                             </div>
+                                            <div class="amis-prop-times">
+                                                <span>Proposée : {{ formatDateTime(p.proposed_at) }}</span>
+                                                <span v-if="p.responded_at">
+                                                    {{ proposalResponseTimeLabel(p) }} : {{ formatDateTime(p.responded_at) }}
+                                                </span>
+                                                <span v-else-if="p.expires_at">
+                                                    Expire : {{ formatDateTime(p.expires_at) }}
+                                                </span>
+                                                <span class="amis-prop-reason" v-if="p.reject_reason">
+                                                    Motif : {{ p.reject_reason }}
+                                                </span>
+                                            </div>
                                         </div>
                                         <span
                                             class="amis-badge"
@@ -635,6 +674,41 @@
                                         >
                                             {{ proposalStatusLabel(p.status) }}
                                         </span>
+                                    </div>
+                                </div>
+
+                                <div
+                                    class="amis-proposals-history amis-proposals-history-logs"
+                                    v-if="
+                                        activeMission.proposal_history &&
+                                        activeMission.proposal_history.length > 0
+                                    "
+                                >
+                                    <div class="amis-proposals-history-title">
+                                        🕘 Historique détaillé
+                                    </div>
+                                    <div
+                                        class="amis-prop-log"
+                                        v-for="log in activeMission.proposal_history"
+                                        :key="log.id"
+                                    >
+                                        <div class="amis-prop-log-head">
+                                            <strong>{{ proposalEventLabel(log.event) }}</strong>
+                                            <span>{{ formatDateTime(log.created_at) }}</span>
+                                        </div>
+                                        <div class="amis-prop-log-name">
+                                            {{ log.contractor?.first_name || log.contractor?.user_name || "Prestataire" }}
+                                            {{ log.contractor?.last_name || "" }}
+                                            <span v-if="log.contractor?.specialty">· {{ log.contractor.specialty }}</span>
+                                        </div>
+                                        <div class="amis-prop-log-grid">
+                                            <span>Proposée : {{ formatDateTime(log.proposed_at) }}</span>
+                                            <span v-if="log.responded_at">Réponse : {{ formatDateTime(log.responded_at) }}</span>
+                                            <span v-if="log.expires_at">Limite : {{ formatDateTime(log.expires_at) }}</span>
+                                        </div>
+                                        <div class="amis-prop-log-reason" v-if="log.reason">
+                                            {{ log.reason }}
+                                        </div>
                                     </div>
                                 </div>
 
@@ -742,7 +816,15 @@
                                             <input
                                                 type="checkbox"
                                                 :value="c.id"
-                                                v-model="selectedContractors"
+                                                :checked="
+                                                    selectedContractors.includes(
+                                                        c.id
+                                                    )
+                                                "
+                                                @change="
+                                                    !isAlreadyProposed(c.id) &&
+                                                        toggleContractor(c.id)
+                                                "
                                                 :disabled="
                                                     isAlreadyProposed(c.id)
                                                 "
@@ -1267,14 +1349,18 @@ export default {
             const refreshed = this.missions.find(
                 (mission) => mission.id === this.activeMission.id
             );
-            this.activeMission = refreshed
-                ? {
-                      ...this.activeMission,
-                      ...refreshed,
-                      proposals:
-                          refreshed.proposals ?? this.activeMission.proposals ?? [],
-                  }
-                : null;
+            if (!refreshed) return;
+
+            this.activeMission = {
+                ...this.activeMission,
+                ...refreshed,
+                proposals:
+                    refreshed.proposals ?? this.activeMission.proposals ?? [],
+                proposal_history:
+                    refreshed.proposal_history ??
+                    this.activeMission.proposal_history ??
+                    [],
+            };
         },
 
         async fetchMissions({ silent = false } = {}) {
@@ -1288,9 +1374,6 @@ export default {
                 const data = await res.json();
                 this.missions = Array.isArray(data) ? data : data.data ?? [];
                 this.syncActiveMission();
-                if (this.activeMission && this.availableLoaded) {
-                    this.fetchAvailableContractors();
-                }
             } catch {
                 if (!silent) this.missionsError = "Impossible de charger les missions.";
             } finally {
@@ -1345,7 +1428,11 @@ export default {
 
         // ── Mission ───────────────────────────────────────────────
         openMission(m) {
-            this.activeMission = { ...m, proposals: m.proposals ?? [] };
+            this.activeMission = {
+                ...m,
+                proposals: m.proposals ?? [],
+                proposal_history: m.proposal_history ?? [],
+            };
             this.availableContractors = [];
             this.availableLoaded = false;
             this.selectedContractors = [];
@@ -1434,10 +1521,14 @@ export default {
                 this.activeMission = {
                     ...this.activeMission,
                     status: data.mission?.status ?? this.activeMission.status,
-                    proposals: [
+                    proposals: data.mission?.proposals ?? [
                         ...(this.activeMission.proposals ?? []),
                         ...newProposals,
                     ],
+                    proposal_history:
+                        data.mission?.proposal_history ??
+                        this.activeMission.proposal_history ??
+                        [],
                 };
 
                 // Mettre à jour dans la liste globale
@@ -1450,14 +1541,19 @@ export default {
                         ...data.mission,
                     });
 
-                this.selectedContractors = [];
                 const count = newProposals.length;
-                this.showToast(
-                    `📤 Proposition envoyée à ${count} prestataire${
-                        count > 1 ? "s" : ""
-                    }. Le premier à accepter sera assigné.`,
-                    "success"
+                const contractorName = this.contractorFullName(
+                    newProposals[0]?.contractor
                 );
+                const successMessage =
+                    count === 1
+                        ? `📤 Proposition envoyée à ${contractorName}, si celui-ci n'accepte pas la mission dans un délai de 5 min, vous serez notifié afin de proposer la mission à un autre prestataire.`
+                        : `📤 Proposition envoyée à ${count} prestataire${
+                              count > 1 ? "s" : ""
+                          }. Le premier à accepter sera assigné.`;
+
+                this.selectedContractors = [];
+                this.showToast(successMessage, "success");
 
                 // Recharger la liste des disponibles pour mettre à jour les statuts
                 await this.fetchAvailableContractors();
@@ -1636,6 +1732,29 @@ export default {
             );
         },
 
+        proposalEventLabel(event) {
+            return (
+                {
+                    proposed: "Proposition envoyée",
+                    accepted: "Mission acceptée",
+                    rejected: "Mission refusée",
+                    expired: "Délai expiré",
+                    superseded: "Remplacée",
+                }[event] ?? event
+            );
+        },
+
+        proposalResponseTimeLabel(proposal) {
+            return (
+                {
+                    accepted: "Acceptée le",
+                    rejected: "Refusée le",
+                    expired: "Expirée le",
+                    superseded: "Remplacée le",
+                }[proposal?.status] ?? "Réponse le"
+            );
+        },
+
         proposalBadgeClass(s) {
             return (
                 {
@@ -1653,6 +1772,13 @@ export default {
                 (
                     (c?.first_name?.[0] ?? "") + (c?.last_name?.[0] ?? "")
                 ).toUpperCase() || "PR"
+            );
+        },
+
+        contractorFullName(c) {
+            return (
+                [c?.first_name, c?.last_name].filter(Boolean).join(" ") ||
+                "ce prestataire"
             );
         },
 
@@ -1720,12 +1846,44 @@ export default {
             });
         },
 
+        formatDateTime(iso) {
+            if (!iso) return "—";
+            const date = new Date(iso);
+            return (
+                date.toLocaleDateString("fr-FR", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                }) +
+                " à " +
+                date.toLocaleTimeString("fr-FR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                })
+            );
+        },
+
         formatPrice(amount) {
             if (!amount && amount !== 0) return "—";
             return (
                 new Intl.NumberFormat("fr-FR").format(Math.round(amount)) +
                 " FCFA"
             );
+        },
+
+        formatPhone(phone) {
+            const value = String(phone ?? "").trim();
+            if (!value) return "—";
+            const digits = value.replace(/\D/g, "");
+            if (!digits) return value;
+            if (digits.startsWith("00229")) {
+                return "+229 " + digits.slice(5).match(/.{1,2}/g).join(" ");
+            }
+            if (digits.startsWith("229") && digits.length > 8) {
+                return "+229 " + digits.slice(3).match(/.{1,2}/g).join(" ");
+            }
+            const prefix = value.startsWith("+") ? "+" : "";
+            return prefix + digits.match(/.{1,2}/g).join(" ");
         },
 
         showToast(message, type = "") {
@@ -2703,6 +2861,39 @@ export default {
     word-break: break-word;
     overflow-wrap: anywhere;
 }
+.amis-mission-photos {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--grl);
+}
+.amis-mission-photos-title {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--gr);
+    margin-bottom: 10px;
+}
+.amis-mission-photos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+    gap: 10px;
+}
+.amis-mission-photo-link {
+    display: block;
+    aspect-ratio: 1;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1.5px solid var(--grl);
+    background: #f8f4f0;
+}
+.amis-mission-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.18s ease;
+}
+.amis-mission-photo-link:hover .amis-mission-photo {
+    transform: scale(1.04);
+}
 .amis-val-green {
     color: var(--green);
 }
@@ -2809,6 +3000,70 @@ export default {
 .amis-prop-meta {
     font-size: 11.5px;
     color: var(--gr);
+}
+.amis-prop-times {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 4px;
+    font-size: 10.5px;
+    color: var(--gr);
+}
+.amis-prop-reason {
+    color: #7c2d12;
+    background: #ffedd5;
+    border-radius: 6px;
+    padding: 3px 6px;
+    width: fit-content;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
+.amis-proposals-history-logs {
+    background: #fff7ed;
+}
+.amis-prop-log {
+    border: 1px solid #fed7aa;
+    border-radius: 10px;
+    background: #fff;
+    padding: 10px;
+    margin-top: 8px;
+}
+.amis-prop-log-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--gr);
+}
+.amis-prop-log-head strong {
+    color: var(--dk);
+    font-size: 12px;
+}
+.amis-prop-log-name {
+    margin-top: 5px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--dk);
+}
+.amis-prop-log-name span {
+    color: var(--gr);
+    font-weight: 500;
+}
+.amis-prop-log-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 3px;
+    margin-top: 7px;
+    font-size: 11px;
+    color: var(--gr);
+}
+.amis-prop-log-reason {
+    margin-top: 7px;
+    font-size: 11.5px;
+    color: #7c2d12;
+    background: #ffedd5;
+    border-radius: 8px;
+    padding: 6px 8px;
 }
 
 /* ── SEARCH CONTRACTORS ── */
@@ -3195,6 +3450,7 @@ export default {
     flex-direction: column;
     gap: 8px;
     z-index: 999;
+    width: min(420px, calc(100vw - 32px));
     max-width: calc(100vw - 32px);
 }
 .amis-toast {
@@ -3205,7 +3461,12 @@ export default {
     font-size: 13px;
     font-weight: 600;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-    min-width: 200px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    line-height: 1.4;
+    white-space: normal;
+    overflow-wrap: anywhere;
     animation: amis-slide-up 0.3s ease;
 }
 .amis-toast.success {
@@ -3239,6 +3500,8 @@ export default {
     .amis-toast {
         min-width: unset;
         width: 100%;
+        white-space: normal;
+        overflow-wrap: anywhere;
     }
     /* Pagination compacte */
     .ac-page-info {

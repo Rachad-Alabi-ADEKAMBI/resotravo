@@ -1343,7 +1343,7 @@ export default {
 .amail-send-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
 .amail-send-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .amail-btn-ghost, .amail-btn-light { color: #ea580c; background: #fff7ed; }
-.amail-success, .amail-error { margin: 14px 0 0; font-size: 14px; font-weight: 700; }
+.amail-success, .amail-error { margin: 14px 0 0; font-size: 14px; font-weight: 700; line-height: 1.4; overflow-wrap: anywhere; }
 .amail-success { color: #15803d; }
 .amail-error { color: #b91c1c; }
 @media (max-width: 900px) {

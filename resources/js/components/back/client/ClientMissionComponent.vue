@@ -458,7 +458,16 @@
                                 >
                                     <span>Acceptée le</span>
                                     <strong>{{
-                                        formatDate(activeMission.accepted_at)
+                                        formatDateTime(activeMission.accepted_at)
+                                    }}</strong>
+                                </div>
+                                <div
+                                    class="clm-row"
+                                    v-if="activeMission.on_the_way_at"
+                                >
+                                    <span>Départ pris le</span>
+                                    <strong>{{
+                                        formatDateTime(activeMission.on_the_way_at)
                                     }}</strong>
                                 </div>
                             </div>
@@ -1106,6 +1115,18 @@
                         <label>Adresse <span class="clm-req">*</span></label>
                         <div class="clm-addr-modes">
                             <label
+                                v-if="defaultAddress"
+                                class="clm-addr-mode-label"
+                                :class="{ active: address_mode === 'default' }"
+                            >
+                                <input
+                                    type="radio"
+                                    v-model="address_mode"
+                                    value="default"
+                                />
+                                Adresse par défaut
+                            </label>
+                            <label
                                 class="clm-addr-mode-label"
                                 :class="{ active: address_mode === 'manual' }"
                             >
@@ -1128,6 +1149,23 @@
                                 Géolocalisation
                             </label>
                         </div>
+                    </div>
+
+                    <div
+                        class="clm-default-address"
+                        v-if="address_mode === 'default' && defaultAddress"
+                    >
+                        <div>
+                            <span>Adresse utilisée</span>
+                            <strong>{{ defaultAddress }}</strong>
+                        </div>
+                        <button
+                            class="clm-link-btn"
+                            type="button"
+                            @click="address_mode = 'geo'"
+                        >
+                            Choisir une autre adresse sur la carte
+                        </button>
                     </div>
 
                     <!-- Saisie manuelle -->
@@ -1160,6 +1198,16 @@
                             </button>
                         </div>
                     </div>
+                    <label
+                        class="clm-save-default"
+                        v-if="address_mode !== 'default'"
+                    >
+                        <input
+                            type="checkbox"
+                            v-model="form.save_as_default_address"
+                        />
+                        Définir cette adresse comme adresse par défaut
+                    </label>
                     <!-- Images optionnelles -->
                     <div class="clm-field">
                         <label>Photos (optionnel, max 5 à 10 Mo)</label>
@@ -1202,14 +1250,16 @@
                         class="clm-btn clm-btn-ghost"
                         @click="showNewMission = false"
                     >
-                        Annuler
+                        <span class="clm-btn-icon">×</span>
+                        <span>Annuler</span>
                     </button>
                     <button
-                        class="clm-btn clm-btn-green"
+                        class="clm-btn clm-btn-green clm-btn-publish"
                         @click="confirmSubmitMission"
                         :disabled="submitting"
                     >
-                        Publier la mission
+                        <span class="clm-btn-icon">✓</span>
+                        <span>Publier la mission</span>
                     </button>
                 </div>
             </div>
@@ -1321,14 +1371,16 @@
                         class="clm-btn clm-btn-ghost"
                         @click="closeMapModal"
                     >
-                        Annuler
+                        <span class="clm-btn-icon">×</span>
+                        <span>Annuler</span>
                     </button>
                     <button
                         class="clm-btn clm-btn-green"
                         @click="validatePosition"
                         :disabled="!mapLat"
                     >
-                        Valider cette position
+                        <span class="clm-btn-icon">✓</span>
+                        <span>Valider cette position</span>
                     </button>
                 </div>
             </div>
@@ -1935,6 +1987,7 @@ export default {
                 address: "",
                 latitude: null,
                 longitude: null,
+                save_as_default_address: false,
             },
 
             showPublishConfirm: false,
@@ -2086,6 +2139,9 @@ export default {
         },
         todayDate() {
             return new Date().toISOString().split("T")[0];
+        },
+        defaultAddress() {
+            return (this.clientProfile?.address ?? "").trim();
         },
         activeStatuses() {
             return [
@@ -2645,7 +2701,7 @@ export default {
 <div class="header">
   <div>
     <div class="brand">Meso<em>Travo</em></div>
-    <div class="sub-brand">Plateforme de mise en relation</div>
+    <div class="sub-brand">Plateforme de mise en relation · IFU : 3202625062491</div>
   </div>
   <div class="meta">
     <strong>Devis n°${quote.id}${
@@ -2683,7 +2739,7 @@ ${
 </table>
 
 <div class="note">Ce devis est soumis à approbation via la plateforme Mesotravo. Aucun paiement hors-plateforme n'est autorisé ni conseillé.</div>
-<div class="footer">Mesotravo.com - Plateforme de mise en relation artisans &amp; particuliers</div>
+<div class="footer">Mesotravo.com - Plateforme de mise en relation artisans &amp; particuliers<br>IFU : 3202625062491</div>
 </body></html>`;
 
             const win = window.open("", "_blank", "width=860,height=720");
@@ -2736,13 +2792,14 @@ ${
                 location_type: "residential",
                 service: "",
                 description: "",
-                address: this.clientProfile?.address ?? "",
+                address: this.defaultAddress,
                 latitude: null,
                 longitude: null,
+                save_as_default_address: false,
             };
             this.formError = "";
             this.geoOk = false;
-            this.address_mode = "manual";
+            this.address_mode = this.defaultAddress ? "default" : "manual";
             this.mapAddress = "";
             this.mapLat = null;
             this.mapLng = null;
@@ -2751,10 +2808,10 @@ ${
             this.showNewMission = true;
         },
         openMapModal() {
-            this.mapAddress = "";
-            this.mapSearch = "";
-            this.mapLat = null;
-            this.mapLng = null;
+            this.mapAddress = this.geoOk ? this.form.address : "";
+            this.mapSearch = this.form.address || this.defaultAddress || "";
+            this.mapLat = this.geoOk ? this.form.latitude : null;
+            this.mapLng = this.geoOk ? this.form.longitude : null;
             this.showMapModal = true;
         },
 
@@ -2809,7 +2866,17 @@ ${
             );
             map.addControl(new mapboxgl.AttributionControl({ compact: true }));
             this.mapboxMap = map;
-            map.once("load", () => map.resize());
+            map.once("load", () => {
+                map.resize();
+                if (this.mapLat && this.mapLng) {
+                    map.flyTo({ center: [this.mapLng, this.mapLat], zoom: 16 });
+                    this.placeMapMarker(this.mapLat, this.mapLng);
+                    return;
+                }
+                if (this.mapSearch.trim()) {
+                    this.searchOnMap();
+                }
+            });
             setTimeout(() => map.resize(), 150);
             map.on("click", (e) => {
                 this.placeMapMarker(e.lngLat.lat, e.lngLat.lng);
@@ -2888,7 +2955,7 @@ ${
         resetGeo() {
             this.form.latitude = null;
             this.form.longitude = null;
-            this.form.address = "";
+            this.form.address = this.defaultAddress;
             this.geoOk = false;
             this.mapAddress = "";
             this.mapLat = null;
@@ -2990,6 +3057,8 @@ ${
                     if (v === null || v === undefined) return;
                     if (Array.isArray(v)) {
                         v.forEach((item) => fd.append(k + "[]", item));
+                    } else if (typeof v === "boolean") {
+                        fd.append(k, v ? "1" : "0");
                     } else {
                         fd.append(k, v);
                     }
@@ -3011,6 +3080,9 @@ ${
                     return;
                 }
                 this.missions.unshift(data.mission);
+                if (this.form.save_as_default_address) {
+                    this.clientProfile.address = this.form.address;
+                }
                 this.showNewMission = false;
                 this.showToast(
                     "Mission publiée ! Un prestataire sera attribué rapidement.",
@@ -3334,6 +3406,17 @@ ${
             }
         },
         address_mode(val) {
+            if (val === "default") {
+                this.form.address = this.defaultAddress;
+                this.form.latitude = null;
+                this.form.longitude = null;
+                this.form.save_as_default_address = false;
+                this.geoOk = false;
+                return;
+            }
+            if (val === "manual" && !this.form.address.trim()) {
+                this.form.address = this.defaultAddress;
+            }
             if (val === "geo") this.openMapModal();
         },
     },
@@ -4517,6 +4600,30 @@ ${
     opacity: 0.5;
     cursor: not-allowed;
 }
+.clm-btn-publish {
+    background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+    color: #fff !important;
+    border-color: #16a34a !important;
+}
+.clm-btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 900;
+    line-height: 1;
+}
+.clm-btn-ghost .clm-btn-icon {
+    background: #f3f4f6;
+    color: #4b5563;
+}
+.clm-btn-publish .clm-btn-icon {
+    background: rgba(255, 255, 255, 0.22);
+    color: #fff;
+}
 
 /* -- Avis -- */
 .clm-action-review {
@@ -4883,6 +4990,54 @@ ${
     color: var(--or);
     background: var(--or3);
 }
+.clm-default-address {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1.5px solid var(--grl);
+    border-radius: 12px;
+    background: #fffaf5;
+    margin: -2px 0 12px;
+}
+.clm-default-address span {
+    display: block;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--grm);
+    margin-bottom: 3px;
+}
+.clm-default-address strong {
+    display: block;
+    font-size: 13px;
+    color: var(--dk);
+    line-height: 1.45;
+}
+.clm-link-btn {
+    border: none;
+    background: transparent;
+    color: var(--or);
+    font-size: 12.5px;
+    font-weight: 800;
+    cursor: pointer;
+    text-align: right;
+    flex-shrink: 0;
+}
+.clm-save-default {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: -2px 0 14px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--gr);
+}
+.clm-save-default input {
+    accent-color: var(--or);
+}
 .clm-btn-geo {
     display: flex;
     align-items: center;
@@ -5139,6 +5294,8 @@ ${
     flex-direction: column;
     gap: 8px;
     z-index: 999;
+    width: min(420px, calc(100vw - 32px));
+    max-width: calc(100vw - 32px);
 }
 .clm-toast {
     background: var(--dk);
@@ -5148,7 +5305,12 @@ ${
     font-size: 13px;
     font-weight: 600;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-    min-width: 200px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    line-height: 1.4;
+    white-space: normal;
+    overflow-wrap: anywhere;
     animation: clm-modal-in 0.3s ease;
 }
 .clm-toast.success {

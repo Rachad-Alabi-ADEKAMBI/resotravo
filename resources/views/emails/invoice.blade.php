@@ -8,7 +8,7 @@
 
     <div style="background:linear-gradient(135deg,#F97316,#EA580C);padding:28px 36px">
         <img src="{{ $logoUrl }}" alt="Mesotravo" style="height:40px;width:auto;filter:brightness(0) invert(1)">
-        <p style="margin:8px 0 0;color:rgba(255,255,255,.85);font-size:13px">Facture — Devis approuvé</p>
+        <p style="margin:8px 0 0;color:rgba(255,255,255,.85);font-size:13px">Facture — Devis approuvé · IFU : 3202625062491</p>
     </div>
 
     <div style="padding:32px 36px">
@@ -49,7 +49,7 @@
     </div>
 
     <div style="background:#f8f4f0;border-top:1px solid #E8DDD4;padding:16px 36px;font-size:12px;color:#8A7D78;display:flex;justify-content:space-between">
-        <span>© {{ date('Y') }} Mesotravo — mesotravo.com</span>
+        <span>© {{ date('Y') }} Mesotravo — mesotravo.com<br>IFU : 3202625062491</span>
         <span>contact@mesotravo.com</span>
     </div>
 </div>

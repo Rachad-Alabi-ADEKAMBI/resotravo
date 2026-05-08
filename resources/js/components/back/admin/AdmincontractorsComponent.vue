@@ -1401,8 +1401,14 @@ export default {
                     }),
                 });
                 if (!res.ok) throw new Error();
+                const contractorName = [
+                    this.missionModal.contractor?.first_name,
+                    this.missionModal.contractor?.last_name,
+                ]
+                    .filter(Boolean)
+                    .join(" ") || "ce prestataire";
                 this.showToast(
-                    "📤 Proposition envoyée avec succès !",
+                    `📤 Proposition envoyée à ${contractorName}, si celui-ci n'accepte pas la mission dans un délai de 5 min, vous serez notifié afin de proposer la mission à un autre prestataire.`,
                     "success"
                 );
                 this.missionModal.visible = false;
@@ -2699,6 +2705,8 @@ export default {
     flex-direction: column;
     gap: 8px;
     z-index: 9999;
+    width: min(420px, calc(100vw - 48px));
+    max-width: calc(100vw - 48px);
 }
 .amis-toast {
     background: var(--dk);
@@ -2709,7 +2717,12 @@ export default {
     font-weight: 600;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
     animation: fadeUp 0.25s ease;
-    max-width: 320px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    line-height: 1.4;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 .amis-toast.success {
     background: #16a34a;

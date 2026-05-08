@@ -71,7 +71,7 @@
     <header class="verify-header">
         <img src="{{ $logoSrc }}" alt="Mesotravo">
         <h1>Facture Mesotravo vérifiée</h1>
-        <p>Ce lien signé confirme que cette facture a bien été émise par Mesotravo.</p>
+        <p>Ce lien signé confirme que cette facture a bien été émise par Mesotravo. IFU : 3202625062491.</p>
     </header>
 
     <section class="verify-body">
@@ -85,6 +85,10 @@
             <div class="item">
                 <label>Date de vérification</label>
                 <strong>{{ now()->format('d/m/Y H:i') }}</strong>
+            </div>
+            <div class="item">
+                <label>IFU Mesotravo</label>
+                <strong>3202625062491</strong>
             </div>
             <div class="item">
                 <label>Client</label>

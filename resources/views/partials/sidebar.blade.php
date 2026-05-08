@@ -6,7 +6,9 @@
     $initials = strtoupper(substr($user->name ?? 'U', 0, 1) . substr(explode(' ', $user->name ?? 'U ')[1] ?? '', 0, 1));
 
     if ($role === 'admin') {
-        $pendingDocs = \App\Models\User::whereIn('role', ['contractor', 'client'])->where('status','pending')->count();
+        $pendingDocs = \App\Models\Document::where('status', 'pending')
+            ->whereHas('user', fn($q) => $q->whereIn('role', ['contractor', 'client']))
+            ->count();
     }
 
     if ($role === 'contractor') {

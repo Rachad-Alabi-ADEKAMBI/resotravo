@@ -259,7 +259,7 @@ class ContractorController extends Controller
         };
 
         $contractors = Contractor::with('user')
-            ->whereHas('user', fn($q) => $q->where('status', 'approved'))
+            ->whereHas('user', fn($q) => $q->certifiedForRole('contractor'))
             ->where('available', true)
             ->whereIn('accreditation', $accredFilter)
             ->orderByDesc('average_rating')

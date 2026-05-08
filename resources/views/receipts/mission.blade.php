@@ -233,7 +233,7 @@
             <div class="receipt-brand">
                 <img src="{{ asset('images/logo_mesotravo.png') }}" alt="Mesotravo">
             </div>
-            <div class="receipt-title">Reçu de paiement officiel</div>
+            <div class="receipt-title">Reçu de paiement officiel · IFU : 3202625062491</div>
         </div>
         <div class="receipt-badge">
             <div class="receipt-badge-num">N° {{ str_pad($mission->id, 6, '0', STR_PAD_LEFT) }}</div>
@@ -384,6 +384,7 @@
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
             <img src="{{ asset('images/logo_mesotravo.png') }}" alt="Mesotravo" style="height:28px;width:auto;opacity:.7">
             <span>Plateforme de mise en relation artisans &amp; particuliers<br>
+            IFU : 3202625062491<br>
             Ce reçu fait foi de paiement. Conservez-le pour vos dossiers.</span>
         </div>
         <div style="text-align:right">

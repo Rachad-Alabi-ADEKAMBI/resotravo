@@ -121,13 +121,59 @@
                 </select>
             </div>
 
+            <!-- DEMANDES D'ACCREDITATION -->
+            <div class="aac-requests-section" v-if="activeTab === 'requests'">
+                <div class="aac-section-head">
+                    <div>
+                        <h3>Demandes d'accréditation</h3>
+                        <p>Demandes Entreprise envoyées par les prestataires éligibles.</p>
+                    </div>
+                    <button class="aac-btn aac-btn-ghost aac-btn-sm" @click="fetchRequests">
+                        Actualiser
+                    </button>
+                </div>
+
+                <div class="aac-loading" v-if="requestsLoading">
+                    <div class="aac-skeleton-row" v-for="n in 3" :key="'rq' + n"></div>
+                </div>
+                <div class="aac-alert-error" v-else-if="requestsError">
+                    ⚠️ {{ requestsError }}
+                </div>
+                <div class="aac-empty" v-else-if="filteredRequests.length === 0">
+                    <div class="aac-empty-icon">✅</div>
+                    <div class="aac-empty-title">Aucune demande d'accréditation</div>
+                </div>
+                <div class="aac-request-list" v-else>
+                    <div
+                        class="aac-request-card"
+                        v-for="request in filteredRequests"
+                        :key="request.id"
+                    >
+                        <div class="aac-request-main">
+                            <span class="aac-request-status" :class="'status-' + request.status">
+                                {{ requestStatusLabel(request.status) }}
+                            </span>
+                            <h4>{{ request.contractor?.name ?? 'Prestataire' }}</h4>
+                            <p>{{ request.contractor?.specialty ?? 'Spécialité non renseignée' }} · {{ request.contractor?.city ?? 'Ville non renseignée' }}</p>
+                            <div class="aac-request-stats">
+                                <span>{{ request.contractor?.completed_missions ?? 0 }} missions terminées</span>
+                                <span>{{ accredLabel(request.contractor?.accreditation) }}</span>
+                            </div>
+                        </div>
+                        <button class="aac-btn aac-btn-orange" @click="openRequestModal(request)">
+                            Voir et gérer
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- LOADER -->
-            <div class="aac-loading" v-if="loading">
+            <div class="aac-loading" v-if="activeTab !== 'requests' && loading">
                 <div class="aac-skeleton-row" v-for="n in 5" :key="n"></div>
             </div>
 
             <!-- ERREUR -->
-            <div class="aac-alert-error" v-else-if="error">
+            <div class="aac-alert-error" v-else-if="activeTab !== 'requests' && error">
                 ⚠️ {{ error }}
                 <button
                     class="aac-btn aac-btn-ghost aac-btn-sm"
@@ -138,7 +184,7 @@
             </div>
 
             <!-- VIDE -->
-            <div class="aac-empty" v-else-if="filteredContractors.length === 0">
+            <div class="aac-empty" v-else-if="activeTab !== 'requests' && filteredContractors.length === 0">
                 <div class="aac-empty-icon">✅</div>
                 <div class="aac-empty-title">
                     {{
@@ -150,7 +196,7 @@
             </div>
 
             <!-- LISTE -->
-            <div class="aac-list" v-else>
+            <div class="aac-list" v-else-if="activeTab !== 'requests'">
                 <div
                     class="aac-item"
                     v-for="c in filteredContractors"
@@ -208,6 +254,114 @@
                             {{ opt.icon }} {{ opt.short }}
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL DEMANDE D'ACCREDITATION -->
+        <div
+            class="aac-modal-overlay"
+            v-if="requestModal.visible"
+            @click.self="closeRequestModal"
+        >
+            <div class="aac-modal aac-request-modal">
+                <div class="aac-modal-header">
+                    <div>
+                        <h3>Demande d'accréditation Entreprise</h3>
+                        <div class="aac-modal-sub">
+                            {{ requestModal.request?.contractor?.name }}
+                        </div>
+                    </div>
+                    <button class="aac-modal-close" @click="closeRequestModal">&#215;</button>
+                </div>
+                <div class="aac-modal-body">
+                    <div class="aac-profile-grid">
+                        <div class="aac-profile-card">
+                            <h4>Profil complet</h4>
+                            <div class="aac-detail-row"><span>Email</span><strong>{{ requestModal.request?.contractor?.email ?? '—' }}</strong></div>
+                            <div class="aac-detail-row"><span>Téléphone</span><strong>{{ formatPhone(requestModal.request?.contractor?.phone) }}</strong></div>
+                            <div class="aac-detail-row"><span>Spécialité</span><strong>{{ requestModal.request?.contractor?.specialty ?? '—' }}</strong></div>
+                            <div class="aac-detail-row"><span>Ville</span><strong>{{ requestModal.request?.contractor?.city ?? '—' }}</strong></div>
+                            <div class="aac-detail-row"><span>Zone</span><strong>{{ requestModal.request?.contractor?.intervention_zone ?? '—' }}</strong></div>
+                            <div class="aac-detail-row"><span>Expérience</span><strong>{{ requestModal.request?.contractor?.experience_years ?? 0 }} an(s)</strong></div>
+                            <div class="aac-detail-row"><span>Missions terminées</span><strong>{{ requestModal.request?.contractor?.completed_missions ?? 0 }}</strong></div>
+                            <div class="aac-detail-row"><span>Accréditation</span><strong>{{ accredLabel(requestModal.request?.contractor?.accreditation) }}</strong></div>
+                            <p class="aac-bio" v-if="requestModal.request?.contractor?.bio">{{ requestModal.request.contractor.bio }}</p>
+                        </div>
+
+                        <div class="aac-profile-card">
+                            <h4>Dossier</h4>
+                            <div class="aac-doc-list" v-if="requestModal.request?.contractor?.documents?.length">
+                                <div
+                                    class="aac-doc-row"
+                                    v-for="doc in requestModal.request.contractor.documents"
+                                    :key="doc.id"
+                                >
+                                    <span>{{ doc.type }}</span>
+                                    <strong :class="'doc-' + doc.status">{{ doc.status }}</strong>
+                                </div>
+                            </div>
+                            <div class="aac-muted" v-else>Aucun document trouvé.</div>
+                        </div>
+                    </div>
+
+                    <div class="aac-profile-card">
+                        <h4>Message du prestataire</h4>
+                        <p class="aac-request-message">{{ requestModal.request?.message || 'Aucun message.' }}</p>
+                    </div>
+
+                    <div class="aac-profile-card">
+                        <h4>Historique des missions</h4>
+                        <div class="aac-history-list" v-if="requestModal.request?.contractor?.missions?.length">
+                            <div
+                                class="aac-history-row"
+                                v-for="mission in requestModal.request.contractor.missions"
+                                :key="mission.id"
+                            >
+                                <div>
+                                    <strong>#{{ mission.id }} · {{ mission.service }}</strong>
+                                    <span>{{ mission.created_at }} · {{ mission.client_name }}</span>
+                                </div>
+                                <span class="aac-history-status">{{ mission.status_label }}</span>
+                            </div>
+                        </div>
+                        <div class="aac-muted" v-else>Aucune mission trouvée.</div>
+                    </div>
+
+                    <div class="aac-field" v-if="requestModal.request?.status === 'pending'">
+                        <label class="aac-label">Motif de refus</label>
+                        <textarea
+                            class="aac-textarea"
+                            v-model="requestModal.reason"
+                            rows="3"
+                            placeholder="Obligatoire en cas de refus."
+                        ></textarea>
+                    </div>
+
+                    <div
+                        class="aac-reviewed-box"
+                        v-if="requestModal.request?.status !== 'pending'"
+                    >
+                        Traité par {{ requestModal.request?.reviewer_name ?? 'un admin' }}.
+                        <span v-if="requestModal.request?.admin_reason">Motif : {{ requestModal.request.admin_reason }}</span>
+                    </div>
+                </div>
+                <div class="aac-modal-footer" v-if="requestModal.request?.status === 'pending'">
+                    <button
+                        class="aac-btn aac-btn-red"
+                        @click="reviewRequest('rejected')"
+                        :disabled="requestModal.loading"
+                    >
+                        Refuser
+                    </button>
+                    <button
+                        class="aac-btn aac-btn-green"
+                        @click="reviewRequest('approved')"
+                        :disabled="requestModal.loading"
+                    >
+                        <div class="aac-spinner" v-if="requestModal.loading"></div>
+                        <span v-else>Accepter</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -362,9 +516,12 @@ export default {
     data() {
         return {
             contractors: [],
+            requests: [],
             loading: false,
+            requestsLoading: false,
             error: null,
-            activeTab: "none",
+            requestsError: null,
+            activeTab: "requests",
             search: "",
             filterSpec: "",
 
@@ -379,6 +536,12 @@ export default {
                 visible: false,
                 contractor: null,
                 newValue: "none",
+                loading: false,
+            },
+            requestModal: {
+                visible: false,
+                request: null,
+                reason: "",
                 loading: false,
             },
 
@@ -439,6 +602,12 @@ export default {
         tabs() {
             return [
                 {
+                    key: "requests",
+                    icon: "📥",
+                    label: "Demandes",
+                    count: this.pendingRequestsCount,
+                },
+                {
                     key: "none",
                     icon: "⚠️",
                     label: "Sans accréditation",
@@ -455,6 +624,11 @@ export default {
 
         noneCount() {
             return this.contractors.filter((c) => c.accreditation === "none")
+                .length;
+        },
+
+        pendingRequestsCount() {
+            return this.requests.filter((request) => request.status === "pending")
                 .length;
         },
 
@@ -490,6 +664,32 @@ export default {
 
             return list;
         },
+
+        filteredRequests() {
+            let list = [...this.requests];
+
+            if (this.search.trim()) {
+                const q = this.search.toLowerCase();
+                list = list.filter((request) => {
+                    const contractor = request.contractor ?? {};
+                    return (
+                        contractor.name?.toLowerCase().includes(q) ||
+                        contractor.email?.toLowerCase().includes(q) ||
+                        contractor.phone?.toLowerCase().includes(q) ||
+                        contractor.specialty?.toLowerCase().includes(q) ||
+                        contractor.city?.toLowerCase().includes(q)
+                    );
+                });
+            }
+
+            if (this.filterSpec) {
+                list = list.filter(
+                    (request) => request.contractor?.specialty === this.filterSpec
+                );
+            }
+
+            return list;
+        },
     },
 
     methods: {
@@ -515,6 +715,23 @@ export default {
             }
         },
 
+        async fetchRequests() {
+            this.requestsLoading = true;
+            this.requestsError = null;
+            try {
+                const res = await fetch(this.routes.accreditation_requests, {
+                    headers: { Accept: "application/json" },
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                this.requests = Array.isArray(data) ? data : data.data ?? [];
+            } catch {
+                this.requestsError = "Impossible de charger les demandes.";
+            } finally {
+                this.requestsLoading = false;
+            }
+        },
+
         // ── Modal ─────────────────────────────────────────────────
         openModal(contractor, newValue) {
             this.modal = {
@@ -523,6 +740,79 @@ export default {
                 newValue,
                 loading: false,
             };
+        },
+
+        openRequestModal(request) {
+            this.requestModal = {
+                visible: true,
+                request: { ...request },
+                reason: "",
+                loading: false,
+            };
+        },
+
+        closeRequestModal() {
+            this.requestModal.visible = false;
+        },
+
+        async reviewRequest(status) {
+            if (status === "rejected" && !this.requestModal.reason.trim()) {
+                this.showToast("Le motif est obligatoire pour refuser une demande.", "error");
+                return;
+            }
+
+            this.requestModal.loading = true;
+            try {
+                const csrf = document.querySelector(
+                    'meta[name="csrf-token"]'
+                )?.content;
+                const url = this.routes.accreditation_request_update.replace(
+                    "{id}",
+                    this.requestModal.request.id
+                );
+                const res = await fetch(url, {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": csrf,
+                        Accept: "application/json",
+                    },
+                    body: JSON.stringify({
+                        status,
+                        reason: this.requestModal.reason,
+                    }),
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    this.showToast(data.message ?? "Erreur lors du traitement.", "error");
+                    return;
+                }
+
+                const updated = data.request;
+                const idx = this.requests.findIndex((request) => request.id === updated.id);
+                if (idx !== -1) this.requests[idx] = updated;
+
+                if (updated.contractor?.id) {
+                    const contractorIdx = this.contractors.findIndex(
+                        (contractor) => contractor.contractor_id === updated.contractor.id
+                    );
+                    if (contractorIdx !== -1) {
+                        this.contractors[contractorIdx].accreditation = updated.contractor.accreditation;
+                    }
+                }
+
+                this.requestModal.request = updated;
+                this.showToast(
+                    status === "approved"
+                        ? "Demande acceptée et accréditation attribuée."
+                        : "Demande refusée.",
+                    "success"
+                );
+            } catch {
+                this.showToast("Erreur réseau.", "error");
+            } finally {
+                this.requestModal.loading = false;
+            }
         },
 
         async confirmAccred() {
@@ -668,6 +958,31 @@ export default {
             );
         },
 
+        requestStatusLabel(status) {
+            return (
+                {
+                    pending: "En attente",
+                    approved: "Acceptée",
+                    rejected: "Refusée",
+                }[status] ?? status
+            );
+        },
+
+        formatPhone(phone) {
+            const value = String(phone ?? "").trim();
+            if (!value) return "—";
+            const digits = value.replace(/\D/g, "");
+            if (!digits) return value;
+            if (digits.startsWith("00229")) {
+                return "+229 " + digits.slice(5).match(/.{1,2}/g).join(" ");
+            }
+            if (digits.startsWith("229") && digits.length > 8) {
+                return "+229 " + digits.slice(3).match(/.{1,2}/g).join(" ");
+            }
+            const prefix = value.startsWith("+") ? "+" : "";
+            return prefix + digits.match(/.{1,2}/g).join(" ");
+        },
+
         showToast(message, type = "") {
             const id = ++this.toastId;
             this.toasts.push({ id, message, type });
@@ -697,6 +1012,7 @@ export default {
 
     mounted() {
         this.fetchContractors();
+        this.fetchRequests();
         this.fetchNotifications();
         this.notifInterval = setInterval(
             () => this.fetchNotifications(),
@@ -1100,6 +1416,106 @@ export default {
     border-color: var(--or);
 }
 
+/* ── DEMANDES ── */
+.aac-requests-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.aac-section-head {
+    background: var(--wh);
+    border-radius: 14px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    border: 1px solid var(--grl);
+}
+.aac-section-head h3 {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--dk);
+}
+.aac-section-head p {
+    font-size: 12.5px;
+    color: var(--gr);
+    margin-top: 3px;
+    line-height: 1.45;
+}
+@media (min-width: 640px) {
+    .aac-section-head {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+    }
+}
+.aac-request-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+.aac-request-card {
+    background: var(--wh);
+    border-radius: 14px;
+    border: 1.5px solid var(--grl);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.aac-request-card h4 {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--dk);
+    margin-top: 8px;
+}
+.aac-request-card p {
+    color: var(--gr);
+    font-size: 12.5px;
+    margin-top: 3px;
+}
+.aac-request-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+}
+.aac-request-stats span {
+    background: #f8f4f0;
+    color: var(--dk);
+    border-radius: 999px;
+    padding: 5px 9px;
+    font-size: 11.5px;
+    font-weight: 700;
+}
+.aac-request-status {
+    display: inline-flex;
+    width: fit-content;
+    border-radius: 999px;
+    padding: 5px 10px;
+    font-size: 11.5px;
+    font-weight: 800;
+}
+.aac-request-status.status-pending {
+    background: #fff7ed;
+    color: #9a3412;
+}
+.aac-request-status.status-approved {
+    background: #dcfce7;
+    color: #166534;
+}
+.aac-request-status.status-rejected {
+    background: #fee2e2;
+    color: #991b1b;
+}
+@media (min-width: 680px) {
+    .aac-request-card {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+    }
+}
+
 /* ── LIST ── */
 .aac-list {
     display: flex;
@@ -1387,6 +1803,9 @@ export default {
     flex-direction: column;
     animation: aac-slide-up 0.25s ease;
 }
+.aac-request-modal {
+    max-width: 920px;
+}
 @keyframes aac-slide-up {
     from {
         opacity: 0;
@@ -1442,6 +1861,137 @@ export default {
     gap: 8px;
     background: #faf7f4;
     border-radius: 0 0 18px 18px;
+}
+.aac-profile-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+@media (min-width: 760px) {
+    .aac-profile-grid {
+        grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+    }
+}
+.aac-profile-card {
+    border: 1.5px solid var(--grl);
+    border-radius: 12px;
+    padding: 14px;
+    background: #fff;
+}
+.aac-profile-card h4 {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--dk);
+    margin-bottom: 10px;
+}
+.aac-detail-row,
+.aac-doc-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0e9e4;
+    font-size: 12.5px;
+}
+.aac-detail-row:last-child,
+.aac-doc-row:last-child {
+    border-bottom: 0;
+}
+.aac-detail-row span,
+.aac-doc-row span,
+.aac-muted {
+    color: var(--gr);
+}
+.aac-detail-row strong,
+.aac-doc-row strong {
+    color: var(--dk);
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+.aac-bio,
+.aac-request-message,
+.aac-reviewed-box {
+    font-size: 12.5px;
+    color: var(--gr);
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+.aac-reviewed-box {
+    background: #f8f4f0;
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+.aac-reviewed-box span {
+    display: block;
+    margin-top: 4px;
+}
+.aac-doc-row .doc-approved {
+    color: #15803d;
+}
+.aac-doc-row .doc-rejected {
+    color: #b91c1c;
+}
+.aac-doc-row .doc-pending {
+    color: #b45309;
+}
+.aac-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.aac-history-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 10px;
+    background: #f8f4f0;
+}
+.aac-history-row strong,
+.aac-history-row span {
+    display: block;
+    font-size: 12px;
+}
+.aac-history-row strong {
+    color: var(--dk);
+}
+.aac-history-row span {
+    color: var(--gr);
+    margin-top: 2px;
+}
+.aac-history-status {
+    flex-shrink: 0;
+    border-radius: 999px;
+    background: #e0f2fe;
+    color: #0369a1 !important;
+    padding: 4px 8px;
+    font-weight: 800;
+    text-align: center;
+}
+.aac-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.aac-label {
+    font-size: 12.5px;
+    font-weight: 800;
+    color: var(--dk);
+}
+.aac-textarea {
+    width: 100%;
+    border: 2px solid var(--grl);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-family: "Poppins", sans-serif;
+    resize: vertical;
+    min-height: 92px;
+}
+.aac-textarea:focus {
+    outline: none;
+    border-color: var(--or);
 }
 
 /* Transition visuelle */
@@ -1546,6 +2096,15 @@ export default {
     cursor: not-allowed;
     box-shadow: 0 5px 16px rgba(249, 115, 22, 0.4);
 }
+.aac-btn-red {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(239, 68, 68, 0.25);
+}
+.aac-btn-red:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 16px rgba(239, 68, 68, 0.35);
+}
 .aac-btn-ghost {
     background: var(--grl);
     color: var(--dk);
@@ -1587,6 +2146,7 @@ export default {
     flex-direction: column;
     gap: 8px;
     z-index: 999;
+    width: min(420px, calc(100vw - 32px));
     max-width: calc(100vw - 32px);
 }
 .aac-toast {
@@ -1597,7 +2157,12 @@ export default {
     font-size: 13px;
     font-weight: 600;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-    min-width: 220px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    line-height: 1.4;
+    white-space: normal;
+    overflow-wrap: anywhere;
     animation: aac-slide-up 0.3s ease;
 }
 .aac-toast.success {
@@ -1693,6 +2258,8 @@ export default {
     .aac-toast {
         min-width: unset;
         width: 100%;
+        white-space: normal;
+        overflow-wrap: anywhere;
     }
 }
 

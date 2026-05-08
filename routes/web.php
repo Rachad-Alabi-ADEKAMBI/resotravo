@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminMailController;
+use App\Http\Controllers\AccreditationRequestController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ContractorController;
 use App\Http\Controllers\DocumentController;
@@ -407,6 +408,7 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/configuration/settings', function () {
             return response()->json([
+                'auto_assign_missions'  => \App\Models\Setting::get('auto_assign_missions', '1') === '1',
                 'diagnostic_fee'         => (float) \App\Models\Setting::get('diagnostic_fee', '5000'),
                 'commission_diagnostic'  => (float) \App\Models\Setting::get('commission_diagnostic', '10'),
                 'commission_main_oeuvre' => (float) \App\Models\Setting::get('commission_main_oeuvre', '10'),
@@ -415,16 +417,18 @@ Route::middleware('auth')->group(function () {
 
         Route::put('/configuration/settings', function (\Illuminate\Http\Request $request) {
             $validated = $request->validate([
+                'auto_assign_missions'  => 'required|boolean',
                 'diagnostic_fee'         => 'required|numeric|min:0',
                 'commission_diagnostic'  => 'required|numeric|min:0|max:100',
                 'commission_main_oeuvre' => 'required|numeric|min:0|max:100',
             ]);
 
+            \App\Models\Setting::set('auto_assign_missions',  $validated['auto_assign_missions'] ? '1' : '0');
             \App\Models\Setting::set('diagnostic_fee',         $validated['diagnostic_fee']);
             \App\Models\Setting::set('commission_diagnostic',  $validated['commission_diagnostic']);
             \App\Models\Setting::set('commission_main_oeuvre', $validated['commission_main_oeuvre']);
 
-            return response()->json(['message' => 'Configuration mise a jour.']);
+            return response()->json(['message' => 'Configuration mise à jour.']);
         })->name('configuration.settings.update');
 
         // ── Vues ─────────────────────────────────────────────────
@@ -501,6 +505,8 @@ Route::middleware('auth')->group(function () {
         Route::get   ('/contractors/available',                    [ContractorController::class, 'adminAvailable'])      ->name('contractors.available');
         Route::patch ('/contractors/{contractor}/status',          [ContractorController::class, 'updateStatut'])        ->name('contractors.status');
         Route::patch ('/contractors/{contractor}/accreditation',   [ContractorController::class, 'updateAccreditation']) ->name('contractors.accreditation');
+        Route::get   ('/accreditation-requests',                   [AccreditationRequestController::class, 'adminIndex']) ->name('accreditation-requests.index');
+        Route::patch ('/accreditation-requests/{accreditationRequest}', [AccreditationRequestController::class, 'adminUpdate'])->name('accreditation-requests.update');
 
         // ── Missions par prestataire / client (pour les modals admin) ─
         Route::get('/contractors/{contractor}/missions', function (\App\Models\Contractor $contractor) {
@@ -1142,10 +1148,26 @@ Route::middleware('auth')->group(function () {
         Route::get('/accreditation', function () {
             $user       = Auth::user();
             $contractor = $user->contractor;
+            $completedMissions = $contractor
+                ? max(
+                    (int) $contractor->completed_missions,
+                    \App\Models\Mission::where('contractor_id', $contractor->id)
+                        ->whereIn('status', [\App\Models\Mission::STATUS_COMPLETED, \App\Models\Mission::STATUS_CLOSED])
+                        ->count()
+                )
+                : 0;
+            $latestAccreditationRequest = $contractor
+                ? \App\Models\AccreditationRequest::where('contractor_id', $contractor->id)
+                    ->where('type', \App\Models\AccreditationRequest::TYPE_BUSINESS)
+                    ->latest()
+                    ->first()
+                : null;
             return view('pages.back.contractor.accreditation', [
                 'active'     => 'accreditation',
                 'user'       => $user,
                 'contractor' => $contractor,
+                'completedMissions' => $completedMissions,
+                'latestAccreditationRequest' => $latestAccreditationRequest,
                 'routes'     => [
                     'accreditation_request' => route('contractor.accreditation.request'),
                     'dossier_page'          => route('contractor.dossier'),
@@ -1157,6 +1179,8 @@ Route::middleware('auth')->group(function () {
         })->name('accreditation');
 
         // ── API demande accréditation entreprise ──────────────────
+        Route::post('/accreditation/request', [AccreditationRequestController::class, 'store'])->name('accreditation.request');
+        /*
         Route::post('/accreditation/request', function (\Illuminate\Http\Request $request) {
             $user    = Auth::user();
             $message = $request->input('message', '');
@@ -1169,6 +1193,7 @@ Route::middleware('auth')->group(function () {
             });
             return response()->json(['success' => true]);
         })->name('accreditation.request');
+        */
 
         // ── Paramètres contractor ─────────────────────────────────
         Route::get('/parameters', function () {
@@ -1200,9 +1225,21 @@ Route::middleware('auth')->group(function () {
 
         // Aperçu missions disponibles pour prestataires en attente de validation
         Route::get('/missions/available', function () {
+            $user = Auth::user();
+
             $missions = \App\Models\Mission::with(['client'])
-                ->where('status', 'pending')
-                ->whereNull('contractor_id')
+                ->where(function ($query) use ($user) {
+                    $query->where('status', 'pending')
+                        ->orWhere(function ($assignedQuery) use ($user) {
+                            $assignedQuery->where('status', 'assigned')
+                                ->whereNull('contractor_id')
+                                ->whereHas('proposals', fn($proposal) => $proposal
+                                    ->where('contractor_id', $user->id)
+                                    ->where('status', 'pending')
+                                    ->where('expires_at', '>', now())
+                                );
+                        });
+                })
                 ->latest()
                 ->get()
                 ->map(fn($m) => [
@@ -1221,6 +1258,7 @@ Route::middleware('auth')->group(function () {
         Route::get  ('/missions',                  [MissionController::class, 'index'])        ->name('missions.index');
         Route::get  ('/missions/{mission}',        [MissionController::class, 'show'])         ->name('missions.show');
         Route::get  ('/missions/{mission}/invoice', [PaymentController::class, 'invoice'])     ->name('missions.invoice');
+        Route::post ('/missions/{mission}/proposal-expire', [MissionController::class, 'expireProposal'])->name('missions.proposal-expire');
         Route::patch('/missions/{mission}/status', [MissionController::class, 'updateStatus']) ->name('missions.status');
 
         // ── Devis ─────────────────────────────────────────────────

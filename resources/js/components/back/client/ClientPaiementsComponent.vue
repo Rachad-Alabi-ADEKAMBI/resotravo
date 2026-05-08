@@ -955,6 +955,9 @@ export default {
     display: flex;
     align-items: center;
     gap: 12px;
+    min-width: 0;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
 }
 .cp-btn-retry {
     background: none;

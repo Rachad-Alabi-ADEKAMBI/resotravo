@@ -4,6 +4,7 @@
         plateforme <strong>MESOTRAVO</strong>, accessible à l'adresse <strong>Mesotravo.com</strong>,
         éditée par la société Mesotravo, dont le contact est disponible au
         <strong>+229 01 90 00 36 26</strong> et par WhatsApp au <strong>+229 01 90 00 36 26</strong>.
+        Le numéro IFU de Mesotravo est <strong>3202625062491</strong>.
     </p>
     <p>
         En créant un compte ou en utilisant nos services, vous acceptez sans réserve l'intégralité
@@ -58,6 +59,16 @@
         <li>répondre personnellement de ses actes et de son travail.</li>
     </ul>
     <p>La plateforme peut vérifier les informations et refuser ou suspendre un compte sans justification extensive.</p>
+    <p>
+        L'accréditation <strong>Domicile</strong> est obtenue par défaut après l'inscription.
+        Toutefois, l'artisan doit soumettre son dossier et le faire valider par Mesotravo
+        avant de commencer à recevoir des missions.
+    </p>
+    <p>
+        L'accréditation <strong>Entreprise</strong> peut être demandée par l'artisan après
+        <strong>5 missions terminées</strong> sur la plateforme. Elle reste soumise à validation
+        par l'administration.
+    </p>
 </div>
 
 <div class="legal-article" id="article-4">
@@ -90,7 +101,7 @@
     <p>
         <strong>Règle simple et claire :</strong> toute mission obtenue grâce à la plateforme donne lieu au paiement de la commission,
         même si les parties tentent de finaliser en dehors de celle-ci.
-        Cette obligation s'applique pour toute relation client-artisan initiée via la plateforme pendant une durée de [X mois].
+        Cette obligation s'applique pour toute relation client-artisan initiée via la plateforme.
     </p>
     <p>En cas de contournement :</p>
     <ul>
@@ -190,6 +201,7 @@
         <div class="legal-contact-item"><span>Email</span><span><a href="mailto:contact@Mesotravo.com" class="legal-link">contact@Mesotravo.com</a></span></div>
         <div class="legal-contact-item"><span>Tél.</span><span><a href="tel:+2290190003626" class="legal-link">+229 01 90 00 36 26</a></span></div>
         <div class="legal-contact-item"><span>WhatsApp</span><span><a href="https://wa.me/2290190003626" class="legal-link">+229 01 90 00 36 26</a></span></div>
+        <div class="legal-contact-item"><span>IFU</span><span>3202625062491</span></div>
         <div class="legal-contact-item"><span>Adresse</span><span>Cotonou, Bénin</span></div>
     </div>
 </div>

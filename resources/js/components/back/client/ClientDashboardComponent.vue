@@ -403,7 +403,7 @@
                                     {{ client.email }}
                                 </div>
                                 <div class="cd-profile-meta">
-                                    {{ client.phone }}
+                                    {{ formatPhone(client.phone) }}
                                 </div>
                                 <div class="cd-profile-meta">
                                     {{ client.city }}
@@ -662,11 +662,18 @@
                     <div class="cd-detail-row" v-if="activeMission.accepted_at">
                         <span>Acceptée le</span>
                         <strong>{{
-                            formatDate(activeMission.accepted_at)
+                            formatDateTime(activeMission.accepted_at)
                         }}</strong>
                     </div>
 
                     <!-- Action : confirmer fin des travaux (étape 11) -->
+                    <div class="cd-detail-row" v-if="activeMission.on_the_way_at">
+                        <span>Départ pris le</span>
+                        <strong>{{
+                            formatDateTime(activeMission.on_the_way_at)
+                        }}</strong>
+                    </div>
+
                     <div
                         class="cd-action-block"
                         v-if="activeMission.status === 'awaiting_confirm'"
@@ -861,6 +868,10 @@
                     <div class="cd-field">
                         <label>Adresse d'intervention <span class="req">*</span></label>
                         <div class="cd-addr-modes">
+                            <label v-if="defaultAddress" class="cd-addr-mode-label" :class="{ active: address_mode === 'default' }">
+                                <input type="radio" v-model="address_mode" value="default" />
+                                Adresse par défaut
+                            </label>
                             <label class="cd-addr-mode-label" :class="{ active: address_mode === 'manual' }">
                                 <input type="radio" v-model="address_mode" value="manual" />
                                 Saisir manuellement
@@ -870,6 +881,16 @@
                                 Géolocalisation
                             </label>
                         </div>
+                    </div>
+
+                    <div class="cd-default-address" v-if="address_mode === 'default' && defaultAddress">
+                        <div>
+                            <span>Adresse utilisée</span>
+                            <strong>{{ defaultAddress }}</strong>
+                        </div>
+                        <button class="cd-link-btn" type="button" @click="address_mode = 'geo'">
+                            Choisir une autre adresse sur la carte
+                        </button>
                     </div>
 
                     <!-- Saisie manuelle -->
@@ -901,6 +922,11 @@
                             <button type="button" class="cd-geo-reset" @click="resetGeo">Modifier</button>
                         </div>
                     </div>
+
+                    <label class="cd-save-default" v-if="address_mode !== 'default'">
+                        <input type="checkbox" v-model="newMissionForm.save_as_default_address" />
+                        Définir cette adresse comme adresse par défaut
+                    </label>
 
                     <!-- Photos -->
                     <div class="cd-field">
@@ -945,15 +971,19 @@
                         class="cd-btn cd-btn-ghost"
                         @click="showNewMission = false"
                     >
-                        Annuler
+                        <span class="cd-btn-icon">×</span>
+                        <span>Annuler</span>
                     </button>
                     <button
-                        class="cd-btn cd-btn-orange"
+                        class="cd-btn cd-btn-green cd-btn-publish"
                         @click="confirmSubmitMission"
                         :disabled="loading"
                     >
                         <div class="cd-spinner" v-if="loading"></div>
-                        <span v-else>Publier la mission</span>
+                        <template v-else>
+                            <span class="cd-btn-icon">✓</span>
+                            <span>Publier la mission</span>
+                        </template>
                     </button>
                 </div>
             </div>
@@ -991,15 +1021,19 @@
                         class="cd-btn cd-btn-ghost"
                         @click="showPublishConfirm = false"
                     >
-                        Annuler
+                        <span class="cd-btn-icon">×</span>
+                        <span>Annuler</span>
                     </button>
                     <button
-                        class="cd-btn cd-btn-orange"
+                        class="cd-btn cd-btn-green cd-btn-publish"
                         @click="showPublishConfirm = false; submitMission()"
                         :disabled="loading"
                     >
                         <div class="cd-spinner" v-if="loading"></div>
-                        <span v-else>J'ai compris, publier</span>
+                        <template v-else>
+                            <span class="cd-btn-icon">✓</span>
+                            <span>J'ai compris, publier</span>
+                        </template>
                     </button>
                 </div>
             </div>
@@ -1041,9 +1075,13 @@
                     </div>
                 </div>
                 <div class="cd-modal-footer">
-                    <button class="cd-btn cd-btn-ghost" @click="closeMapModal">Annuler</button>
-                    <button class="cd-btn cd-btn-orange success-action" @click="validatePosition" :disabled="!mapLat">
-                        Valider cette position
+                    <button class="cd-btn cd-btn-ghost" @click="closeMapModal">
+                        <span class="cd-btn-icon">×</span>
+                        <span>Annuler</span>
+                    </button>
+                    <button class="cd-btn cd-btn-green cd-btn-publish" @click="validatePosition" :disabled="!mapLat">
+                        <span class="cd-btn-icon">✓</span>
+                        <span>Valider cette position</span>
                     </button>
                 </div>
             </div>
@@ -1161,7 +1199,7 @@
                         </div>
                         <div class="clm-momo-recap-row">
                             <span>Numéro</span>
-                            <strong>{{ momoModal.phone }}</strong>
+                            <strong>{{ formatPhone(momoModal.phone) }}</strong>
                         </div>
                         <div class="clm-momo-recap-row">
                             <span>Montant</span>
@@ -1179,7 +1217,7 @@
                     <div class="cd-momo-wait-title">Confirmez sur votre téléphone</div>
                     <div class="cd-momo-wait-sub">
                         Une demande de paiement de <strong>{{ formatPrice(momoModal.mission?.total_amount) }}</strong>
-                        a été envoyée au <strong>{{ momoModal.phone }}</strong>.<br>
+                        a été envoyée au <strong>{{ formatPhone(momoModal.phone) }}</strong>.<br>
                         Entrez votre code PIN MoMo pour valider.
                     </div>
                     <div class="cd-momo-wait-timer">{{ momoModal.pollSecondsLeft }}s restantes</div>
@@ -1433,6 +1471,9 @@ export default {
                 service: "",
                 description: "",
                 address: "",
+                latitude: null,
+                longitude: null,
+                save_as_default_address: false,
             },
 
             services: normalizeServices(this.initialServices).length
@@ -1515,6 +1556,9 @@ export default {
 
         todayDate() {
             return new Date().toISOString().split("T")[0];
+        },
+        defaultAddress() {
+            return (this.clientProfile?.address ?? "").trim();
         },
         isApproved() {
             return this.userStatus === "approved";
@@ -1730,13 +1774,14 @@ export default {
                 location_type: "residential",
                 service: "",
                 description: "",
-                address: this.clientProfile.address ?? "",
+                address: this.defaultAddress,
                 latitude: null,
                 longitude: null,
+                save_as_default_address: false,
             };
             this.missionError = "";
             this.geoOk = false;
-            this.address_mode = "manual";
+            this.address_mode = this.defaultAddress ? "default" : "manual";
             this.mapAddress = "";
             this.mapLat = null;
             this.mapLng = null;
@@ -1761,10 +1806,10 @@ export default {
 
         // -- Adresse / Géolocalisation --------------------------------------
         openMapModal() {
-            this.mapAddress = "";
-            this.mapSearch = "";
-            this.mapLat = null;
-            this.mapLng = null;
+            this.mapAddress = this.geoOk ? this.newMissionForm.address : "";
+            this.mapSearch = this.newMissionForm.address || this.defaultAddress || "";
+            this.mapLat = this.geoOk ? this.newMissionForm.latitude : null;
+            this.mapLng = this.geoOk ? this.newMissionForm.longitude : null;
             this.showMapModal = true;
         },
 
@@ -1817,12 +1862,22 @@ export default {
             );
             map.addControl(new mapboxgl.AttributionControl({ compact: true }));
             this.mapboxMap = map;
-            map.once("load", () => map.resize());
+            map.once("load", () => {
+                map.resize();
+                if (this.mapLat && this.mapLng) {
+                    map.flyTo({ center: [this.mapLng, this.mapLat], zoom: 16 });
+                    this.placeMapMarker(this.mapLat, this.mapLng);
+                    return;
+                }
+                if (this.mapSearch.trim()) {
+                    this.searchOnMap();
+                }
+            });
             setTimeout(() => map.resize(), 150);
             map.on("click", (e) => {
                 this.placeMapMarker(e.lngLat.lat, e.lngLat.lng);
             });
-            if (navigator.geolocation) {
+            if (navigator.geolocation && !this.mapSearch.trim() && !this.mapLat) {
                 this.geoLoading = true;
                 navigator.geolocation.getCurrentPosition(
                     (pos) => {
@@ -1887,7 +1942,7 @@ export default {
         resetGeo() {
             this.newMissionForm.latitude = null;
             this.newMissionForm.longitude = null;
-            this.newMissionForm.address = "";
+            this.newMissionForm.address = this.defaultAddress;
             this.geoOk = false;
             this.mapAddress = "";
             this.mapLat = null;
@@ -1942,7 +1997,7 @@ export default {
                 const fd = new FormData();
                 Object.entries(this.newMissionForm).forEach(([k, v]) => {
                     if (v === null || v === undefined) return;
-                    fd.append(k, v);
+                    fd.append(k, typeof v === "boolean" ? (v ? "1" : "0") : v);
                 });
                 this.imageFiles.forEach((f) => fd.append("images[]", f));
                 const res = await fetch(this.routes.missions_store, {
@@ -1975,6 +2030,9 @@ export default {
                 }
 
                 this.missions.unshift(data.mission ?? data);
+                if (this.newMissionForm.save_as_default_address) {
+                    this.clientProfile.address = this.newMissionForm.address;
+                }
                 this.showNewMission = false;
                 this.showPublishConfirm = false;
                 this.showToast("Mission publiée avec succès.", "success");
@@ -2222,9 +2280,41 @@ export default {
             });
         },
 
+        formatDateTime(iso) {
+            if (!iso) return "-";
+            const date = new Date(iso);
+            return (
+                date.toLocaleDateString("fr-FR", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                }) +
+                " - " +
+                date.toLocaleTimeString("fr-FR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                })
+            );
+        },
+
         formatPrice(amount) {
             if (!amount) return "—";
             return new Intl.NumberFormat("fr-FR").format(amount) + " FCFA";
+        },
+
+        formatPhone(phone) {
+            const value = String(phone ?? "").trim();
+            if (!value) return "—";
+            const digits = value.replace(/\D/g, "");
+            if (!digits) return value;
+            if (digits.startsWith("00229")) {
+                return "+229 " + digits.slice(5).match(/.{1,2}/g).join(" ");
+            }
+            if (digits.startsWith("229") && digits.length > 8) {
+                return "+229 " + digits.slice(3).match(/.{1,2}/g).join(" ");
+            }
+            const prefix = value.startsWith("+") ? "+" : "";
+            return prefix + digits.match(/.{1,2}/g).join(" ");
         },
 
         wip(feature) {
@@ -2595,6 +2685,17 @@ export default {
             }
         },
         address_mode(val) {
+            if (val === "default") {
+                this.newMissionForm.address = this.defaultAddress;
+                this.newMissionForm.latitude = null;
+                this.newMissionForm.longitude = null;
+                this.newMissionForm.save_as_default_address = false;
+                this.geoOk = false;
+                return;
+            }
+            if (val === "manual" && !this.newMissionForm.address.trim()) {
+                this.newMissionForm.address = this.defaultAddress;
+            }
             if (val === "geo") this.openMapModal();
         },
     },
@@ -3496,6 +3597,43 @@ export default {
     cursor: not-allowed;
     transform: none;
 }
+.cd-btn-green {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(34, 197, 94, 0.3);
+}
+.cd-btn-green:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+.cd-btn-green:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+.cd-btn-publish {
+    background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+    color: #fff !important;
+    border-color: #16a34a !important;
+}
+.cd-btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    line-height: 1;
+    font-size: 13px;
+    font-weight: 900;
+}
+.cd-btn-ghost .cd-btn-icon {
+    background: #f3f4f6;
+    color: #4b5563;
+}
+.cd-btn-publish .cd-btn-icon {
+    background: rgba(255, 255, 255, 0.22);
+    color: #fff;
+}
 .cd-btn-ghost {
     background: var(--grl);
     color: var(--dk);
@@ -3745,6 +3883,7 @@ export default {
     flex-direction: column;
     gap: 8px;
     z-index: 999;
+    width: min(420px, calc(100vw - 32px));
     max-width: calc(100vw - 32px);
 }
 .cd-toast {
@@ -3755,7 +3894,12 @@ export default {
     font-size: 13px;
     font-weight: 600;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-    min-width: 200px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    line-height: 1.4;
+    white-space: normal;
+    overflow-wrap: anywhere;
     animation: cd-slide-up 0.3s ease;
 }
 .cd-toast.success {
@@ -3938,6 +4082,53 @@ export default {
     border-color: var(--or);
     color: var(--or);
     background: var(--or3);
+}
+.cd-default-address {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1.5px solid var(--grl);
+    border-radius: 12px;
+    background: #fffaf5;
+    margin: -2px 0 12px;
+}
+.cd-default-address span {
+    display: block;
+    color: var(--grm);
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 3px;
+}
+.cd-default-address strong {
+    display: block;
+    color: var(--dk);
+    font-size: 13px;
+    line-height: 1.45;
+}
+.cd-link-btn {
+    border: none;
+    background: transparent;
+    color: var(--or);
+    font: 800 12.5px "Poppins", sans-serif;
+    cursor: pointer;
+    text-align: right;
+    flex-shrink: 0;
+}
+.cd-save-default {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: -2px 0 14px;
+    color: var(--gr);
+    font-size: 12.5px;
+    font-weight: 700;
+}
+.cd-save-default input {
+    accent-color: var(--or);
 }
 
 /* -- Géolocalisation -- */
@@ -4359,6 +4550,8 @@ export default {
     gap: 8px;
     z-index: 9999;
     pointer-events: none;
+    width: min(420px, calc(100vw - 32px));
+    max-width: calc(100vw - 32px);
 }
 .cd-toast {
     background: var(--dk);
@@ -4369,7 +4562,12 @@ export default {
     font-weight: 600;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
     animation: cd-toast-in 0.3s ease;
-    white-space: nowrap;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    line-height: 1.4;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 .cd-toast.success {
     background: #16a34a;

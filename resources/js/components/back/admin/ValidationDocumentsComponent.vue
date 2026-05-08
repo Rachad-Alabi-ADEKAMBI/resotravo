@@ -2815,6 +2815,7 @@ export default {
     flex-direction: column;
     gap: 8px;
     z-index: 999;
+    width: min(420px, calc(100vw - 32px));
     max-width: calc(100vw - 32px);
 }
 .av-toast {
@@ -2825,7 +2826,12 @@ export default {
     font-size: 13px;
     font-weight: 600;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-    min-width: 220px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    line-height: 1.4;
+    white-space: normal;
+    overflow-wrap: anywhere;
     animation: av-slide 0.3s ease;
 }
 .av-toast.success {

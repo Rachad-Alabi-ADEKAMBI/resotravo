@@ -7,6 +7,7 @@ use App\Models\Contractor;
 use App\Models\Mission;
 use App\Models\MissionProposal;
 use App\Models\Reservation;
+use App\Models\Setting;
 use App\Models\User;
 use App\Notifications\AppNotification;
 use Illuminate\Http\JsonResponse;
@@ -39,6 +40,7 @@ class MissionController extends Controller
             'schedule_type'     => ['required', Rule::in(['now', 'later'])],
             'reservation_day'   => 'required_if:schedule_type,later|nullable|date|after_or_equal:today',
             'reservation_time'  => 'required_if:schedule_type,later|nullable|date_format:H:i',
+            'save_as_default_address' => 'nullable|boolean',
         ]);
 
         if ($data['location_type'] === 'business' && $client->account_type === 'individual') {
@@ -47,8 +49,12 @@ class MissionController extends Controller
             ], 403);
         }
 
+        if ($request->boolean('save_as_default_address')) {
+            $client->update(['address' => trim($data['address'])]);
+        }
+
         $mission = Mission::create([
-            ...collect($data)->except(['images', 'schedule_type', 'reservation_day', 'reservation_time'])->toArray(),
+            ...collect($data)->except(['images', 'schedule_type', 'reservation_day', 'reservation_time', 'save_as_default_address'])->toArray(),
             'client_id'      => $client->id,
             'status'         => Mission::STATUS_PENDING,
             'min_distance_m' => $client->min_distance_m ?? 0,
@@ -71,10 +77,14 @@ class MissionController extends Controller
             $mission->update(['images' => $paths]);
         }
 
+        $autoAssignMissions = Setting::get('auto_assign_missions', '1') === '1';
+
         $user->notify(new AppNotification(
             event: 'mission.created',
             title: 'Demande en cours de traitement',
-            body:  "Votre mission « {$mission->service} » a bien été créée. Un prestataire certifié vous sera attribué automatiquement sous peu.",
+            body:  $autoAssignMissions
+                ? "Votre mission « {$mission->service} » a bien été créée. Un prestataire certifié vous sera attribué automatiquement sous peu."
+                : "Votre mission « {$mission->service} » a bien été créée. Elle est en attente d'attribution par l'administration.",
             url:   "/client/missions/{$mission->id}",
             icon:  'clock',
             extra: ['mission_id' => $mission->id, 'service' => $mission->service],
@@ -91,7 +101,9 @@ class MissionController extends Controller
             ))
         );
 
-        $this->assignContractor($mission);
+        if ($autoAssignMissions) {
+            $this->assignContractor($mission);
+        }
 
         return response()->json([
             'message' => 'Mission created successfully.',
@@ -117,7 +129,9 @@ class MissionController extends Controller
         $user   = Auth::user();
         $status = $request->query('status');
 
-        $query = Mission::with(['client', 'contractor', 'quote.items', 'reservation'])
+        $this->expirePendingProposals();
+
+        $query = Mission::with(['client', 'contractor', 'quote.items', 'reservation', 'proposals'])
             ->when($user->role === 'client', function ($q) use ($user) {
                 $clientId = Client::where('user_id', $user->id)->value('id');
                 $q->where('client_id', $clientId);
@@ -138,7 +152,9 @@ class MissionController extends Controller
             ->latest()
             ->paginate(50);
 
-        return response()->json($query);
+        return response()->json(
+            $query->through(fn (Mission $mission) => $this->formatMission($mission))
+        );
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -157,6 +173,10 @@ class MissionController extends Controller
 
         // ── Cas spécial : refus via proposal multi-prestataires ──
         if ($data['status'] === 'proposal_rejected') {
+            if (blank($data['reported_issue'] ?? null)) {
+                return response()->json(['message' => 'Veuillez indiquer un motif de refus.'], 422);
+            }
+
             $proposal = $mission->proposals()
                 ->where('contractor_id', $user->id)
                 ->where('status', 'pending')
@@ -198,13 +218,22 @@ class MissionController extends Controller
                 return response()->json(['message' => 'Proposition introuvable ou déjà traitée.'], 422);
             }
 
+            if ($proposal->isExpired()) {
+                $proposal->expire();
+
+                return response()->json([
+                    'message' => 'Le délai de 5 minutes est dépassé. La mission doit être proposée à un autre prestataire.',
+                    'mission' => $this->formatMission($mission->fresh()->load(['client', 'contractor', 'quote.items', 'proposals'])),
+                ], 422);
+            }
+
             $proposal->accept(); // assigne contractor_id + invalide les autres proposals
 
             $this->notifyStatusChange($mission->fresh(), null);
 
             return response()->json([
                 'message' => 'Mission acceptée.',
-                'mission' => $this->formatMission($mission->fresh()->load(['client', 'contractor', 'quote.items'])),
+                'mission' => $this->formatMission($mission->fresh()->load(['client', 'contractor', 'quote.items', 'proposals'])),
             ]);
         }
 
@@ -282,7 +311,12 @@ class MissionController extends Controller
      */
     public function adminIndex(Request $request): JsonResponse
     {
-        $missions = Mission::with(['client', 'contractor', 'proposals'])
+        $missions = Mission::with([
+                'client',
+                'contractor',
+                'proposals.contractor.contractor',
+                'proposalLogs.contractorUser.contractor',
+            ])
             ->when($request->status,    fn($q) => $q->byStatus($request->status))
             ->when($request->service,   fn($q) => $q->where('service', $request->service))
             ->when($request->date_from, fn($q) => $q->whereDate('created_at', '>=', $request->date_from))
@@ -300,7 +334,13 @@ class MissionController extends Controller
      */
     public function adminShow(Mission $mission): JsonResponse
     {
-        $mission->load(['client', 'contractor', 'quote', 'proposals.contractor.contractor']);
+        $mission->load([
+            'client',
+            'contractor',
+            'quote',
+            'proposals.contractor.contractor',
+            'proposalLogs.contractorUser.contractor',
+        ]);
 
         return response()->json($this->formatMissionForAdmin($mission));
     }
@@ -379,14 +419,51 @@ class MissionController extends Controller
             ], 422);
         }
 
+        $eligibleIds = User::query()
+            ->certifiedForRole('contractor')
+            ->whereIn('id', $newIds)
+            ->whereHas('contractor', fn($q) => $q->where('available', true))
+            ->pluck('id')
+            ->toArray();
+
+        $invalidIds = array_values(array_diff($newIds, $eligibleIds));
+
+        if (!empty($invalidIds)) {
+            return response()->json([
+                'message' => 'Une mission ne peut être proposée qu\'à des prestataires disponibles avec tous les documents requis approuvés.',
+                'invalid_contractor_ids' => $invalidIds,
+            ], 422);
+        }
+
         $proposals = [];
 
-        foreach ($newIds as $contractorId) {
-            $proposal = $mission->proposals()->create([
-                'contractor_id' => $contractorId,
-                'status'        => 'pending',
-                'proposed_at'   => now(),
-                'expires_at'    => now()->addMinutes(5),
+        foreach ($eligibleIds as $contractorId) {
+            $proposedAt = now();
+            $proposal = $mission->proposals()
+                ->where('contractor_id', $contractorId)
+                ->first();
+
+            if ($proposal) {
+                $proposal->update([
+                    'status'        => 'pending',
+                    'proposed_at'   => $proposedAt,
+                    'expires_at'    => $proposedAt->copy()->addMinutes(5),
+                    'responded_at'  => null,
+                    'reject_reason' => null,
+                ]);
+            } else {
+                $proposal = $mission->proposals()->create([
+                    'contractor_id' => $contractorId,
+                    'status'        => 'pending',
+                    'proposed_at'   => $proposedAt,
+                    'expires_at'    => $proposedAt->copy()->addMinutes(5),
+                ]);
+            }
+
+            $proposal->logEvent('proposed', 'pending', meta: [
+                'source' => 'admin_propose',
+                'admin_id' => Auth::id(),
+                'reproposed' => $proposal->wasRecentlyCreated === false,
             ]);
 
             // Charger le profil pour la réponse JSON
@@ -425,13 +502,61 @@ class MissionController extends Controller
         return response()->json([
             'success'   => true,
             'proposals' => $proposals,
-            'mission'   => $this->formatMissionForAdmin($mission->fresh()),
+            'mission'   => $this->formatMissionForAdmin($mission->fresh([
+                'client',
+                'contractor',
+                'proposals.contractor.contractor',
+                'proposalLogs.contractorUser.contractor',
+            ])),
+        ]);
+    }
+
+    public function expireProposal(Request $request, Mission $mission): JsonResponse
+    {
+        $user = Auth::user();
+
+        abort_unless($user?->role === 'contractor', 403);
+
+        $proposal = $mission->proposals()
+            ->where('contractor_id', $user->id)
+            ->where('status', 'pending')
+            ->first();
+
+        if (!$proposal) {
+            return response()->json([
+                'message' => 'Aucune proposition active trouvée.',
+                'mission' => $this->formatMission($mission->fresh()->load(['client', 'contractor', 'quote.items', 'proposals'])),
+            ], 422);
+        }
+
+        if (!$proposal->isExpired()) {
+            return response()->json([
+                'message' => 'Le délai de réponse est encore actif.',
+                'mission' => $this->formatMission($mission->fresh()->load(['client', 'contractor', 'quote.items', 'proposals'])),
+            ]);
+        }
+
+        $proposal->expire();
+
+        return response()->json([
+            'message' => 'Proposition expirée.',
+            'mission' => $this->formatMission($mission->fresh()->load(['client', 'contractor', 'quote.items', 'proposals'])),
         ]);
     }
 
     // ══════════════════════════════════════════════════════════════
     // PRIVATE — Notifications
     // ══════════════════════════════════════════════════════════════
+
+    private function expirePendingProposals(): void
+    {
+        MissionProposal::with(['mission', 'contractor'])
+            ->where('status', 'pending')
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '<=', now())
+            ->get()
+            ->each(fn (MissionProposal $proposal) => $proposal->expire());
+    }
 
     private function notifyStatusChange(Mission $mission, ?string $reportedIssue): void
     {
@@ -595,6 +720,7 @@ class MissionController extends Controller
     private function assignContractor(Mission $mission): void
     {
         $query = Contractor::where('available', true)
+            ->whereHas('user', fn($q) => $q->certifiedForRole('contractor'))
             ->where(function ($q) use ($mission) {
                 if ($mission->location_type === 'business') {
                     $q->whereIn('accreditation', ['business', 'both']);
@@ -715,6 +841,13 @@ class MissionController extends Controller
     {
         $client     = $mission->client;
         $contractor = $mission->contractor;
+        $proposal   = null;
+
+        if (Auth::user()?->role === 'contractor') {
+            $proposal = $mission->relationLoaded('proposals')
+                ? $mission->proposals->firstWhere('contractor_id', Auth::id())
+                : $mission->proposals()->where('contractor_id', Auth::id())->latest()->first();
+        }
 
         return [
             'id'               => $mission->id,
@@ -738,10 +871,21 @@ class MissionController extends Controller
             'reported_issue'   => $mission->reported_issue,
             'assigned_at'      => $mission->assigned_at?->toISOString(),
             'accepted_at'      => $mission->accepted_at?->toISOString(),
+            'on_the_way_at'    => $mission->on_the_way_at?->toISOString(),
             'arrived_at'       => $mission->arrived_at?->toISOString(),
             'completed_at'     => $mission->completed_at?->toISOString(),
             'paid_at'          => $mission->paid_at?->toISOString(),
             'created_at'       => $mission->created_at->toISOString(),
+            'proposal'         => $proposal ? [
+                'id'                => $proposal->id,
+                'status'            => $proposal->status,
+                'proposed_at'       => $proposal->proposed_at?->toISOString(),
+                'expires_at'        => $proposal->expires_at?->toISOString(),
+                'responded_at'      => $proposal->responded_at?->toISOString(),
+                'seconds_remaining' => $proposal->expires_at
+                    ? max(0, now()->diffInSeconds($proposal->expires_at, false))
+                    : null,
+            ] : null,
             'client' => $client ? [
                 'id'              => $client->id,
                 'user_id'         => $client->user_id,
@@ -809,6 +953,7 @@ class MissionController extends Controller
             'service'       => $mission->service,
             'address'       => $mission->address,
             'description'   => $mission->description,
+            'images'        => $mission->images ?? [],
             'location_type' => $mission->location_type ?? 'residential',
             'total_amount'  => $mission->total_amount,
             'commission'    => $mission->commission,
@@ -837,12 +982,39 @@ class MissionController extends Controller
                 'id'            => $p->id,
                 'contractor_id' => $p->contractor_id,
                 'status'        => $p->status,
+                'proposed_at'   => $p->proposed_at?->toISOString(),
+                'expires_at'    => $p->expires_at?->toISOString(),
+                'responded_at'  => $p->responded_at?->toISOString(),
+                'reject_reason' => $p->reject_reason,
                 'contractor'    => [
                     'first_name' => $p->contractor?->contractor?->first_name,
                     'last_name'  => $p->contractor?->contractor?->last_name,
                     'specialty'  => $p->contractor?->contractor?->specialty,
                 ],
             ])->toArray(),
+            'proposal_history' => ($mission->relationLoaded('proposalLogs') ? $mission->proposalLogs : collect())
+                ->sortByDesc(fn($log) => $log->created_at)
+                ->values()
+                ->map(fn($log) => [
+                    'id'                  => $log->id,
+                    'proposal_id'         => $log->mission_proposal_id,
+                    'contractor_user_id'  => $log->contractor_user_id,
+                    'contractor_id'       => $log->contractor_id,
+                    'event'               => $log->event,
+                    'status'              => $log->status,
+                    'proposed_at'         => $log->proposed_at?->toISOString(),
+                    'expires_at'          => $log->expires_at?->toISOString(),
+                    'responded_at'        => $log->responded_at?->toISOString(),
+                    'reason'              => $log->reason,
+                    'created_at'          => $log->created_at?->toISOString(),
+                    'contractor'          => [
+                        'first_name' => $log->contractorUser?->contractor?->first_name,
+                        'last_name'  => $log->contractorUser?->contractor?->last_name,
+                        'specialty'  => $log->contractorUser?->contractor?->specialty,
+                        'user_name'  => $log->contractorUser?->name,
+                    ],
+                ])
+                ->toArray(),
         ];
     }
 }

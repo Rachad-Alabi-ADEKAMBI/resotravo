@@ -250,11 +250,11 @@
                                 Sélectionner votre spécialité...
                             </option>
                             <option
-                                v-for="s in specialtyList"
-                                :key="s"
-                                :value="s"
+                                v-for="s in sortedSpecialties"
+                                :key="s.name"
+                                :value="s.name"
                             >
-                                {{ s }}
+                                {{ s.icon }} {{ s.name }}
                             </option>
                         </select>
                         <div class="rc-err" v-if="errors.specialty">
@@ -474,36 +474,7 @@
                 <!-- ── ÉTAPE 4 : Succès ── -->
                 <div v-if="step === 4" class="rc-success">
                     <div class="rc-success-icon">🎉</div>
-                    <h2>Dossier soumis avec succès !</h2>
-                    <p>
-                        Bienvenue <strong>{{ form.first_name }}</strong> !<br />
-                        Votre compte a été créé. Votre dossier sera vérifié sous
-                        <strong>24-48h</strong>.<br />
-                        Vous serez notifié par <strong>email et SMS</strong> dès
-                        validation.
-                    </p>
-
-                    <div class="rc-success-info">
-                        <div class="rc-success-info-title">
-                            En attendant, vous pouvez :
-                        </div>
-                        <div class="rc-success-info-list">
-                            <div>✅ Consulter les commandes disponibles</div>
-                            <div>✅ Compléter votre profil public</div>
-                            <div>✅ Explorer les zones d'intervention</div>
-                            <div>
-                                ⏳ Accepter des missions (après certification)
-                            </div>
-                        </div>
-                    </div>
-
-                    <a
-                        class="rc-btn rc-btn-primary"
-                        :href="routes.dashboard"
-                        style="text-decoration: none"
-                    >
-                        Accéder à mon espace →
-                    </a>
+                    <h2>Félicitations ! Votre compte a été créé avec succès.</h2>
                 </div>
             </div>
         </div>
@@ -548,7 +519,9 @@
                                 Les présentes Conditions Générales d'Utilisation
                                 (CGU) régissent l'utilisation de la plateforme
                                 <strong>Mesotravo</strong>, accessible à
-                                l'adresse <strong>mesotravo.bj</strong>.
+                                l'adresse <strong>mesotravo.com</strong>.
+                                Le numéro IFU de Mesotravo est
+                                <strong>3202625062491</strong>.
                             </p>
                             <p>
                                 En créant un compte ou en utilisant nos
@@ -590,8 +563,8 @@
                                 <strong>Mission</strong> : toute intervention
                                 commandée par un Client via la plateforme.<br />
                                 <strong>Commission</strong> : rémunération de
-                                Mesotravo fixée à 10% du montant de chaque
-                                mission réalisée.
+                                Mesotravo prélevée sur les prestations réalisées
+                                selon les conditions applicables.
                             </p>
                         </div>
 
@@ -631,12 +604,14 @@
                             </p>
                             <p>
                                 <strong>Accréditation DOMICILE</strong> :
-                                accordée automatiquement après validation du
-                                dossier.
+                                obtenue par défaut après l'inscription. Toutefois,
+                                le prestataire doit soumettre son dossier et le
+                                faire valider par Mesotravo avant de commencer à
+                                recevoir des missions.
                                 <strong>Accréditation ENTREPRISE</strong> :
-                                délivrée exclusivement par décision de
-                                l'administrateur après vérification
-                                complémentaire.
+                                le prestataire peut en faire la demande après
+                                avoir terminé 5 missions sur la plateforme. Elle
+                                reste soumise à validation par l'administration.
                             </p>
                         </div>
 
@@ -662,9 +637,9 @@
                             </h4>
                             <p>
                                 Le paiement s'effectue exclusivement via MTN
-                                MoMo. Mesotravo prélève une commission de 10%
-                                sur chaque prestation réalisée. Le prestataire
-                                perçoit 90% du montant du devis approuvé. Tout
+                                MoMo. Mesotravo prélève une commission sur les
+                                prestations réalisées selon les conditions
+                                applicables. Tout
                                 paiement hors-plateforme dégage Mesotravo de
                                 toute responsabilité.
                             </p>
@@ -760,6 +735,7 @@
                                 ✉️ contact@mesotravo.com<br />
                                 📞 +229 01 90 00 36 26<br />
                                 💬 WhatsApp : +229 01 90 00 36 26<br />
+                                🧾 IFU : 3202625062491<br />
                                 📍 Cotonou, Bénin
                             </p>
                         </div>
@@ -904,6 +880,7 @@ export default {
                 cgu: "/cgu",
                 policy: "/policy",
                 contact: "#",
+                services_public: "/services/public",
                 service_suggestions: "/services/suggestions",
             }),
         },
@@ -1005,9 +982,93 @@ export default {
             ];
             return map[Math.min(score, 4)];
         },
+        sortedSpecialties() {
+            return this.specialtyList
+                .map((service) => this.normalizeServiceOption(service))
+                .filter((service) => service.name)
+                .sort((a, b) =>
+                    a.name.localeCompare(b.name, "fr", {
+                        sensitivity: "base",
+                    })
+                );
+        },
+    },
+
+    mounted() {
+        this.loadPublicServices();
     },
 
     methods: {
+        normalizeServiceOption(service) {
+            if (typeof service === "string") {
+                return {
+                    id: null,
+                    name: service,
+                    icon: this.fallbackSpecialtyIcon(service),
+                };
+            }
+
+            const name = String(service?.name ?? "").trim();
+            return {
+                id: service?.id ?? null,
+                name,
+                icon: service?.icon || this.fallbackSpecialtyIcon(name),
+            };
+        },
+
+        fallbackSpecialtyIcon(name) {
+            const icons = {
+                plomberie: "🚿",
+                électricité: "⚡",
+                electricite: "⚡",
+                menuiserie: "🪚",
+                ferronnerie: "⚙️",
+                climatisation: "❄️",
+                "mécanique auto": "🔩",
+                "mecanique auto": "🔩",
+                vulcanisation: "🛞",
+                maintenance: "🏗️",
+                "maintenance générale": "🏗️",
+                "maintenance generale": "🏗️",
+                nettoyage: "🧹",
+                peinture: "🖌️",
+                carrelage: "🧱",
+                jardinage: "🌿",
+                informatique: "💻",
+                maçonnerie: "🧱",
+                maconnerie: "🧱",
+                soudure: "🔥",
+                "sécurité / surveillance": "🛡️",
+                "securite / surveillance": "🛡️",
+                "couture / confection": "🧵",
+                autre: "🔧",
+            };
+            return icons[String(name ?? "").trim().toLowerCase()] ?? "🔧";
+        },
+
+        async loadPublicServices() {
+            if (!this.routes.services_public) return;
+
+            try {
+                const response = await window.axios.get(this.routes.services_public);
+                const services = Array.isArray(response?.data)
+                    ? response.data
+                    : [];
+
+                if (services.length > 0) {
+                    this.specialtyList = services.map((service) =>
+                        this.normalizeServiceOption(service)
+                    );
+                    this.syncSelectedSpecialty();
+                }
+            } catch (error) {
+                console.error(
+                    "[RegisterContractor] Impossible de charger les spécialités",
+                    error
+                );
+            }
+        },
+
         /* ── Modal CGU ── */
         openCguModal() {
             this.cguModal.visible = true;
@@ -1075,8 +1136,20 @@ export default {
                 const serviceName = response?.data?.service?.name || name;
                 const serviceId = response?.data?.service?.id || null;
 
-                if (!this.specialtyList.includes(serviceName)) {
-                    this.specialtyList.push(serviceName);
+                if (
+                    !this.specialtyList.some(
+                        (service) =>
+                            this.normalizeServiceOption(service).name ===
+                            serviceName
+                    )
+                ) {
+                    this.specialtyList.push({
+                        id: serviceId,
+                        name: serviceName,
+                        icon:
+                            response?.data?.service?.icon ||
+                            this.fallbackSpecialtyIcon(serviceName),
+                    });
                 }
 
                 this.form.specialty = serviceName;
@@ -1113,9 +1186,14 @@ export default {
         },
 
         syncSelectedSpecialty() {
-            if (this.form.specialty !== this.suggestionModal.serviceName) {
-                this.form.service_id = null;
-            }
+            const selected = this.sortedSpecialties.find(
+                (service) => service.name === this.form.specialty
+            );
+            this.form.service_id =
+                selected?.id ??
+                (this.form.specialty === this.suggestionModal.serviceName
+                    ? this.form.service_id
+                    : null);
         },
 
         /* ── Validation par étape ── */
@@ -1161,7 +1239,7 @@ export default {
                     this.errors.password = "At least one number required.";
                 if (this.form.password !== this.form.password_confirmation)
                     this.errors.password_confirmation =
-                        "Passwords do not match.";
+                        "Les mots de passe ne correspondent pas.";
                 if (!this.form.cgv)
                     this.errors.cgv =
                         "You must accept the terms and conditions.";
@@ -1267,6 +1345,7 @@ export default {
                 );
 
                 this.step = 4;
+                window.location.href = this.routes.dashboard;
             } catch (err) {
                 const status = err?.response?.status;
                 const data = err?.response?.data;
@@ -1830,10 +1909,12 @@ export default {
 
 /* MODAL CGU */
 .rc-modal-cgu {
-    max-width: 860px;
+    width: min(1120px, calc(100vw - 40px));
+    max-width: 1120px !important;
     padding: 0;
     display: flex;
     flex-direction: column;
+    height: min(860px, calc(100vh - 40px));
     max-height: 94vh;
     overflow: hidden;
 }
@@ -1860,7 +1941,7 @@ export default {
 .rc-modal-cgu-body {
     flex: 1;
     overflow-y: auto;
-    padding: 20px 28px;
+    padding: 24px 36px;
     scroll-behavior: smooth;
 }
 .rc-modal-cgu-body::-webkit-scrollbar {
@@ -1886,10 +1967,28 @@ export default {
     border-radius: 0 99px 99px 0;
 }
 .rc-modal-cgu-footer {
-    padding: 16px 28px 24px;
+    padding: 18px 36px 26px;
     display: flex;
     gap: 12px;
     border-top: 1.5px solid var(--grl, #e8ddd4);
+}
+@media (max-width: 640px) {
+    .rc-modal-cgu {
+        width: calc(100vw - 20px);
+        height: calc(100vh - 20px);
+        max-height: calc(100vh - 20px);
+        border-radius: 16px;
+    }
+    .rc-modal-cgu-header {
+        padding: 18px 16px 12px;
+    }
+    .rc-modal-cgu-body {
+        padding: 18px 16px;
+    }
+    .rc-modal-cgu-footer {
+        padding: 14px 16px 18px;
+        flex-direction: column;
+    }
 }
 
 /* Contenu CGU dans le modal */
@@ -2123,6 +2222,7 @@ export default {
     color: var(--gr, #7c6a5a);
     line-height: 1.6;
     margin-bottom: 10px;
+    overflow-wrap: anywhere;
 }
 .rc-modal-errors {
     list-style: none;
@@ -2137,6 +2237,7 @@ export default {
     border: 1px solid #fecaca;
     border-radius: 8px;
     padding: 8px 12px;
+    overflow-wrap: anywhere;
 }
 .rc-modal-errors li::before {
     content: "✕ ";
@@ -2158,6 +2259,7 @@ export default {
     color: #15803d;
     font-size: 13px;
     line-height: 1.5;
+    overflow-wrap: anywhere;
 }
 @media (max-width: 480px) {
     .rc-modal-actions {

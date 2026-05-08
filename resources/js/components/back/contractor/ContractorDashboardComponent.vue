@@ -220,6 +220,9 @@
                                         <div class="ctr-mission-title">{{ m.service }}</div>
                                         <div class="ctr-mission-addr">📍 {{ m.address }}</div>
                                         <div class="ctr-mission-meta">{{ formatDate(m.created_at) }}</div>
+                                        <div class="ctr-mission-desc" v-if="m.description">
+                                            {{ m.description }}
+                                        </div>
                                         <div class="ctr-mission-imgs" v-if="m.images && m.images.length">
                                             <img v-for="(url, i) in m.images.slice(0, 4)" :key="i" :src="url" class="ctr-mission-img-thumb" @click.stop="dashLightbox = url" />
                                             <span class="ctr-mission-imgs-more" v-if="m.images.length > 4">+{{ m.images.length - 4 }}</span>
@@ -227,7 +230,9 @@
                                     </div>
                                 </div>
                                 <div class="ctr-mission-right">
-                                    <span class="ctr-badge-locked">🔒 Documents à vérifier</span>
+                                    <span class="ctr-badge-locked">
+                                        🔒 {{ lockedMissionLabel }}
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -286,11 +291,26 @@
                                         {{ m.service }}
                                     </div>
                                     <div class="ctr-mission-meta">
-                                        {{ m.client ? m.client.name : "—" }} ·
+                                        — ·
                                         {{ formatDate(m.created_at) }}
                                     </div>
                                     <div class="ctr-mission-addr">
                                         📍 {{ m.address }}
+                                    </div>
+                                    <div class="ctr-mission-desc" v-if="m.description">
+                                        {{ m.description }}
+                                    </div>
+                                    <div class="ctr-mission-accepted" v-if="m.accepted_at">
+                                        Acceptée le {{ formatDateTime(m.accepted_at) }}
+                                    </div>
+                                    <div class="ctr-proposal-timer ctr-proposal-timer--compact" v-if="showProposalTimer(m)">
+                                        <div class="ctr-proposal-timer-top">
+                                            <span>Temps restant</span>
+                                            <strong>{{ formatProposalTimer(m) }}</strong>
+                                        </div>
+                                        <div class="ctr-proposal-track">
+                                            <div class="ctr-proposal-fill" :style="{ width: proposalTimerPercent(m) + '%' }"></div>
+                                        </div>
                                     </div>
                                     <!-- Miniatures images -->
                                     <div class="ctr-mission-imgs" v-if="m.images && m.images.length">
@@ -317,6 +337,9 @@
                                             ? formatPrice(m.total_amount * 0.9)
                                             : "—"
                                     }}
+                                </div>
+                                <div class="ctr-mission-meta" v-if="m.accepted_at">
+                                    {{ formatDateTime(m.accepted_at) }}
                                 </div>
                                 <div
                                     class="ctr-msg-unread"
@@ -371,7 +394,7 @@
                                     {{ contractorProfile.specialty }}
                                 </div>
                                 <div class="ctr-profile-meta">
-                                    📞 {{ contractorProfile.phone }}
+                                    📞 {{ formatPhone(contractorProfile.phone) }}
                                 </div>
                                 <div class="ctr-profile-meta">
                                     📍 {{ contractorProfile.intervention_zone }}
@@ -705,6 +728,10 @@
                                     <span>Description</span>
                                     <strong>{{ activeMission.description }}</strong>
                                 </div>
+                                <div class="ctm-row" v-if="activeMission.accepted_at">
+                                    <span>Acceptée le</span>
+                                    <strong>{{ formatDateTime(activeMission.accepted_at) }}</strong>
+                                </div>
                                 <div class="ctm-row" v-if="activeMission.total_amount">
                                     <span>Votre part (90%)</span>
                                     <strong class="ctm-val-green">{{ formatPrice(activeMission.total_amount * 0.9) }}</strong>
@@ -712,10 +739,18 @@
                             </div>
 
                             <!-- Photos -->
-                            <div class="ctm-section" v-if="activeMission.images && activeMission.images.length">
-                                <div class="ctm-section-title">📷 Photos</div>
-                                <div class="ctr-dash-images">
-                                    <img v-for="(url, i) in activeMission.images" :key="i" :src="url" @click="dashLightbox = url" class="ctr-dash-img" />
+                            <div class="ctm-section" v-if="activeMissionImages.length">
+                                <div class="ctm-section-title">📷 Photos de la mission</div>
+                                <div class="ctm-photo-grid">
+                                    <button
+                                        type="button"
+                                        class="ctm-photo-btn"
+                                        v-for="(url, i) in activeMissionImages"
+                                        :key="i"
+                                        @click="dashLightbox = url"
+                                    >
+                                        <img :src="url" :alt="`Photo mission ${i + 1}`" />
+                                    </button>
                                 </div>
                             </div>
 
@@ -740,11 +775,7 @@
                             <div class="ctm-section" v-if="activeMission.client">
                                 <div class="ctm-section-title">👤 Client</div>
                                 <div class="ctm-row">
-                                    <span>Nom</span>
-                                    <strong>
-                                        {{ activeMission.client.name }}
-                                        <span v-if="activeMission.client.is_verified" class="ctm-verified-badge">✅ Identité vérifiée</span>
-                                    </strong>
+                                    <span>Nom —</span>
                                 </div>
                                 <div class="ctm-row">
                                     <span>Contact</span>
@@ -782,10 +813,22 @@
                             <div class="ctm-action-block ctm-action-new" v-if="activeMission.status === 'assigned'">
                                 <div class="ctm-action-new-icon">📬</div>
                                 <div class="ctm-action-new-title">Nouvelle mission proposée</div>
-                                <div class="ctm-action-new-sub">Vous avez 5 minutes pour répondre.</div>
+                                <div class="ctr-proposal-timer ctr-proposal-timer--panel" v-if="showProposalTimer(activeMission)">
+                                    <div class="ctr-proposal-timer-top">
+                                        <span>Temps restant pour accepter</span>
+                                        <strong>{{ formatProposalTimer(activeMission) }}</strong>
+                                    </div>
+                                    <div class="ctr-proposal-track">
+                                        <div class="ctr-proposal-fill" :style="{ width: proposalTimerPercent(activeMission) + '%' }"></div>
+                                    </div>
+                                    <div class="ctr-proposal-deadline">
+                                        Proposition reçue à {{ formatTime(activeMission.proposal?.proposed_at) }}
+                                    </div>
+                                </div>
+                                <div class="ctm-action-new-sub" v-else>Cette proposition n'a plus de délai actif.</div>
                                 <div class="ctm-action-row">
                                     <button class="ctm-btn ctm-btn-red" @click="openRefuseModal(activeMission)" :disabled="actionLoading">✗ Refuser</button>
-                                    <button class="ctm-btn ctm-btn-green" @click="updateStatus(activeMission, 'accepted')" :disabled="actionLoading">
+                                    <button class="ctm-btn ctm-btn-green" @click="updateStatus(activeMission, 'accepted')" :disabled="actionLoading || isProposalExpired(activeMission)">
                                         <div class="ctm-spinner" v-if="actionLoading"></div>
                                         <span v-else>✓ Accepter</span>
                                     </button>
@@ -872,7 +915,12 @@
                 </div>
                 <div class="ctr-modal-footer">
                     <button class="ctm-btn ctm-btn-ghost" @click="activeMission = null">Fermer</button>
-                    <button class="ctm-btn ctm-btn-chat" @click="chatMissionId = activeMission.id" v-if="activeMission.status !== 'pending'">
+                    <button
+                        class="ctm-btn ctm-btn-chat"
+                        @click="openChat(activeMission.id)"
+                        :disabled="!canMessageMission(activeMission)"
+                        :class="{ 'ctm-btn-disabled': !canMessageMission(activeMission) }"
+                    >
                         💬 Messages
                         <span class="ctr-chat-badge" v-if="unreadByMission[activeMission.id] > 0">{{ unreadByMission[activeMission.id] }}</span>
                     </button>
@@ -1477,6 +1525,8 @@ export default {
                 email: "",
                 role: "contractor",
                 status: "pending",
+                documents_verified: false,
+                documents_need_verification: true,
             }),
         },
         contractorProfile: {
@@ -1518,6 +1568,7 @@ export default {
                 missions_quote_store: "/contractor/missions/{id}/quote",
                 missions_show: "/contractor/missions/{id}",
                 missions_status: "/contractor/missions/{id}/status",
+                missions_proposal_expire: "/contractor/missions/{id}/proposal-expire",
                 notifications: "/notifications",
                 notifications_read: "/notifications/{id}/read",
                 notifications_all: "/notifications/read-all",
@@ -1550,6 +1601,9 @@ export default {
             toasts: [],
             toastId: 0,
             actionLoading: false,
+            timerNow: Date.now(),
+            proposalTimerInterval: null,
+            expiringProposalIds: [],
 
             workflowSteps: [
                 { step: 1, label: "En attente" },
@@ -1709,25 +1763,41 @@ export default {
         },
 
         showAvailableMissions() {
-            if (this.userStatus === 'pending') return true;
+            if (this.needsDocumentVerification) return true;
             if (this.userStatus === 'approved' && this.contractorProfile.accreditation === 'none') return true;
             return false;
         },
 
         availableMissionsMessage() {
-            if (this.userStatus === 'pending') {
+            if (this.needsDocumentVerification) {
                 return 'Vous pouvez consulter les missions proposées par les clients, mais vous devez faire vérifier vos documents avant de pouvoir postuler.';
             }
             return 'Vous devez obtenir des accréditations pour postuler aux missions.';
+        },
+
+        needsDocumentVerification() {
+            return Boolean(this.user.documents_need_verification)
+                || this.userStatus !== 'approved'
+                || !this.user.documents_verified;
+        },
+
+        lockedMissionLabel() {
+            return this.needsDocumentVerification
+                ? 'Documents à vérifier'
+                : 'Accréditation requise';
         },
 
         docProgress() {
             return this.localDocProgress ?? this.docProgressData;
         },
 
+        activeMissionImages() {
+            return this.normalizeMissionImages(this.activeMission);
+        },
+
         kpis() {
             const c = this.contractorProfile;
-            const missions = Array.isArray(this.missions) ? this.missions : [];
+            const missions = this.visibleMissionsForContractor(this.missions);
             const active = [
                 "assigned",
                 "accepted",
@@ -1781,8 +1851,9 @@ export default {
         filteredMissions() {
             let list;
             if (this.tab === "all") {
-                list = this.missions;
+                list = this.visibleMissionsForContractor(this.missions);
             } else {
+                const missions = this.visibleMissionsForContractor(this.missions);
                 const active = [
                     "assigned",
                     "accepted",
@@ -1795,20 +1866,20 @@ export default {
                     "awaiting_confirm",
                 ];
                 if (this.tab === "active")
-                    list = this.missions.filter((m) =>
+                    list = missions.filter((m) =>
                         active.includes(m.status)
                     );
                 else if (this.tab === "assigned")
-                    list = this.missions.filter((m) => m.status === "assigned");
+                    list = missions.filter((m) => m.status === "assigned");
                 else if (this.tab === "closed")
-                    list = this.missions.filter((m) =>
+                    list = missions.filter((m) =>
                         ["completed", "closed"].includes(m.status)
                     );
                 else if (this.tab === "cancelled")
-                    list = this.missions.filter(
+                    list = missions.filter(
                         (m) => m.status === "cancelled"
                     );
-                else list = this.missions;
+                else list = missions;
             }
             return list.slice(0, 5);
         },
@@ -1855,13 +1926,164 @@ export default {
     },
 
     methods: {
+        normalizeMissionImages(mission) {
+            const rawImages = mission?.images;
+            if (!rawImages) return [];
+
+            let images = rawImages;
+            if (typeof rawImages === "string") {
+                try {
+                    images = JSON.parse(rawImages);
+                } catch {
+                    images = rawImages.split(",").map((image) => image.trim());
+                }
+            }
+
+            if (!Array.isArray(images)) {
+                images = Object.values(images);
+            }
+
+            return images
+                .map((image) => {
+                    const value =
+                        typeof image === "string"
+                            ? image
+                            : image?.url ?? image?.path ?? image?.src ?? "";
+                    return String(value).trim();
+                })
+                .filter(Boolean)
+                .map((url) => {
+                    if (/^(https?:)?\/\//i.test(url) || url.startsWith("data:")) {
+                        return url;
+                    }
+                    if (url.startsWith("/storage/") || url.startsWith("storage/")) {
+                        return url.startsWith("/") ? url : `/${url}`;
+                    }
+                    if (url.startsWith("/")) return url;
+                    return `/storage/${url}`;
+                });
+        },
+
+        proposalSecondsRemaining(mission) {
+            const expiresAt = mission?.proposal?.expires_at;
+            if (!expiresAt || mission?.proposal?.status !== "pending") return 0;
+            return Math.max(0, Math.ceil((new Date(expiresAt).getTime() - this.timerNow) / 1000));
+        },
+
+        showProposalTimer(mission) {
+            return mission?.status === "assigned"
+                && mission?.proposal?.status === "pending"
+                && Boolean(mission?.proposal?.expires_at);
+        },
+
+        isProposalExpired(mission) {
+            return this.showProposalTimer(mission) && this.proposalSecondsRemaining(mission) <= 0;
+        },
+
+        isMissionVisibleForContractor(mission) {
+            if (mission?.status !== "assigned") return true;
+            return this.showProposalTimer(mission) && this.proposalSecondsRemaining(mission) > 0;
+        },
+
+        visibleMissionsForContractor(missions) {
+            return (Array.isArray(missions) ? missions : []).filter((mission) =>
+                this.isMissionVisibleForContractor(mission)
+            );
+        },
+
+        canMessageMission(mission) {
+            return [
+                "accepted",
+                "contact_made",
+                "on_the_way",
+                "tracking",
+                "in_progress",
+                "quote_submitted",
+                "order_placed",
+                "awaiting_confirm",
+                "completed",
+                "closed",
+            ].includes(mission?.status);
+        },
+
+        proposalTimerPercent(mission) {
+            if (!this.showProposalTimer(mission)) return 0;
+            return Math.max(0, Math.min(100, (this.proposalSecondsRemaining(mission) / 300) * 100));
+        },
+
+        formatProposalTimer(mission) {
+            const seconds = this.proposalSecondsRemaining(mission);
+            const minutes = Math.floor(seconds / 60);
+            const rest = seconds % 60;
+            return `${String(minutes).padStart(2, "0")}:${String(rest).padStart(2, "0")}`;
+        },
+
+        formatTime(iso) {
+            if (!iso) return "—";
+            return new Date(iso).toLocaleTimeString("fr-FR", {
+                hour: "2-digit",
+                minute: "2-digit",
+            });
+        },
+
+        startProposalTimer() {
+            this.stopProposalTimer();
+            this.proposalTimerInterval = setInterval(() => {
+                this.timerNow = Date.now();
+                this.expireElapsedProposals();
+            }, 1000);
+        },
+
+        stopProposalTimer() {
+            if (!this.proposalTimerInterval) return;
+            clearInterval(this.proposalTimerInterval);
+            this.proposalTimerInterval = null;
+        },
+
+        expireElapsedProposals() {
+            if (!this.routes.missions_proposal_expire) return;
+            this.missions
+                .filter((mission) => this.isProposalExpired(mission))
+                .forEach((mission) => this.expireProposal(mission));
+        },
+
+        async expireProposal(mission) {
+            const proposalId = mission?.proposal?.id;
+            if (!proposalId || this.expiringProposalIds.includes(proposalId)) return;
+
+            this.expiringProposalIds.push(proposalId);
+            try {
+                const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+                const url = this.routes.missions_proposal_expire.replace("{id}", mission.id);
+                const res = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "X-CSRF-TOKEN": csrf,
+                        Accept: "application/json",
+                    },
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok) {
+                    this.removeMissionFromList(mission.id);
+                    if (this.activeMission?.id === mission.id) {
+                        this.activeMission = null;
+                    }
+                    this.showToast("Délai expiré. L'équipe Mesotravo a été notifiée.", "warning");
+                } else if (data.mission) {
+                    this.updateMissionInList(data.mission);
+                }
+            } finally {
+                this.expiringProposalIds = this.expiringProposalIds.filter((id) => id !== proposalId);
+            }
+        },
+
         // ── Missions ──────────────────────────────────────────────
         syncActiveMission() {
             if (!this.activeMission?.id) return;
             const refreshed = this.missions.find(
                 (mission) => mission.id === this.activeMission.id
             );
-            this.activeMission = refreshed
+            this.activeMission = refreshed && this.isMissionVisibleForContractor(refreshed)
                 ? { ...this.activeMission, ...refreshed }
                 : null;
         },
@@ -1967,10 +2189,14 @@ export default {
         async confirmRefuse() {
             const reason =
                 this.refuseModal.reason === "other"
-                    ? this.refuseModal.customReason
+                    ? this.refuseModal.customReason.trim()
                     : this.refuseOptions.find(
                           (o) => o.value === this.refuseModal.reason
                       )?.label ?? this.refuseModal.reason;
+            if (!reason) {
+                this.showToast("Veuillez préciser le motif du refus.", "error");
+                return;
+            }
 
             this.refuseModal.loading = true;
             try {
@@ -2321,7 +2547,8 @@ export default {
 
         // ── Helpers ───────────────────────────────────────────────
         countByTab(key) {
-            if (key === "all") return this.missions.length;
+            const missions = this.visibleMissionsForContractor(this.missions);
+            if (key === "all") return missions.length;
             const active = [
                 "assigned",
                 "accepted",
@@ -2334,17 +2561,17 @@ export default {
                 "awaiting_confirm",
             ];
             if (key === "active")
-                return this.missions.filter((m) => active.includes(m.status))
+                return missions.filter((m) => active.includes(m.status))
                     .length;
             if (key === "assigned")
-                return this.missions.filter((m) => m.status === "assigned")
+                return missions.filter((m) => m.status === "assigned")
                     .length;
             if (key === "closed")
-                return this.missions.filter((m) =>
+                return missions.filter((m) =>
                     ["completed", "closed"].includes(m.status)
                 ).length;
             if (key === "cancelled")
-                return this.missions.filter((m) => m.status === "cancelled")
+                return missions.filter((m) => m.status === "cancelled")
                     .length;
             return 0;
         },
@@ -2423,12 +2650,44 @@ export default {
             });
         },
 
+        formatDateTime(iso) {
+            if (!iso) return "—";
+            const d = new Date(iso);
+            return (
+                d.toLocaleDateString("fr-FR", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                }) +
+                " à " +
+                d.toLocaleTimeString("fr-FR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                })
+            );
+        },
+
         formatPrice(amount) {
             if (!amount) return "—";
             return (
                 new Intl.NumberFormat("fr-FR").format(Math.round(amount)) +
                 " FCFA"
             );
+        },
+
+        formatPhone(phone) {
+            const value = String(phone ?? "").trim();
+            if (!value) return "—";
+            const digits = value.replace(/\D/g, "");
+            if (!digits) return value;
+            if (digits.startsWith("00229")) {
+                return "+229 " + digits.slice(5).match(/.{1,2}/g).join(" ");
+            }
+            if (digits.startsWith("229") && digits.length > 8) {
+                return "+229 " + digits.slice(3).match(/.{1,2}/g).join(" ");
+            }
+            const prefix = value.startsWith("+") ? "+" : "";
+            return prefix + digits.match(/.{1,2}/g).join(" ");
         },
 
         openMission(m) {
@@ -2702,7 +2961,7 @@ export default {
                 return `<tr><td><span style="background:${bg};color:#fff;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700;margin-right:8px;">${tl}</span>${i.description}</td><td style="text-align:center;">${i.quantity}</td><td style="text-align:right;">${this.formatPrice(i.unit_price)}</td><td style="text-align:right;font-weight:700;">${this.formatPrice(total)}</td></tr>`;
             }).join("");
             const clientName = mission.client?.name ?? '';
-            const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Devis #${quote.id}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;color:#1c1412;padding:32px 40px;max-width:800px;margin:0 auto}.print-btn{display:block;margin:0 auto 24px;padding:10px 28px;background:#f97316;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:18px;border-bottom:2px solid #f97316}.brand{font-size:24px;font-weight:900;color:#f97316}.brand em{color:#1c1412;font-style:normal}.meta{font-size:12px;color:#7c6a5a;text-align:right;line-height:1.8}.meta strong{color:#1c1412;font-size:14px;display:block}.section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#7c6a5a;margin:20px 0 8px}.info-row{font-size:13px;color:#7c6a5a;margin-bottom:4px}.info-row strong{color:#1c1412}.diag-box{background:#fff7ed;border-left:3px solid #f97316;padding:10px 14px;font-size:13px;color:#7c6a5a;margin:16px 0;border-radius:0 6px 6px 0}table{width:100%;border-collapse:collapse;margin:10px 0}thead th{background:#f8f4f0;font-size:10px;font-weight:700;text-transform:uppercase;color:#7c6a5a;padding:10px 12px;text-align:left}tbody td{padding:9px 12px;border-bottom:1px solid #f0e9e4;font-size:13px}tfoot td{padding:14px 12px;font-weight:700;font-size:15px;border-top:2px solid #f97316}tfoot td:last-child{text-align:right;color:#f97316}.note{margin-top:28px;padding:12px 16px;background:#f8f4f0;border-radius:6px;font-size:11px;color:#7c6a5a}.footer{margin-top:24px;text-align:center;font-size:10px;color:#b0a09a;padding-top:14px;border-top:1px solid #e8ddd4}@media print{.print-btn{display:none!important}}</style></head><body><button class="print-btn" onclick="window.print()">⬇ Enregistrer en PDF</button><div class="header"><div><div class="brand">Meso<em>Travo</em></div></div><div class="meta"><strong>Devis n°${quote.id}${quote.version > 1 ? ' — v' + quote.version : ''}</strong>Mission #${mission.id} · ${mission.service}<br>Émis le ${new Date().toLocaleDateString('fr-FR')}</div></div><div class="section-label">Détails</div><div class="info-row">📍 Adresse : <strong>${mission.address}</strong></div>${clientName ? `<div class="info-row">👤 Client : <strong>${clientName}</strong></div>` : ''}${quote.diagnosis ? `<div class="diag-box"><strong>🔍 Diagnostic</strong><br>${quote.diagnosis}</div>` : ''}<div class="section-label">Lignes du devis</div><table><thead><tr><th>Désignation</th><th>Qté</th><th>Prix unitaire</th><th>Total</th></tr></thead><tbody>${lines}</tbody><tfoot><tr><td colspan="3">Total TTC</td><td>${this.formatPrice(quote.amount_incl_tax)}</td></tr></tfoot></table><div class="note">⚠️ Ce devis est soumis à approbation via Mesotravo. Aucun paiement hors-plateforme n'est autorisé.</div><div class="footer">Mesotravo.com</div></body></html>`;
+            const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Devis #${quote.id}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;color:#1c1412;padding:32px 40px;max-width:800px;margin:0 auto}.print-btn{display:block;margin:0 auto 24px;padding:10px 28px;background:#f97316;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:18px;border-bottom:2px solid #f97316}.brand{font-size:24px;font-weight:900;color:#f97316}.brand em{color:#1c1412;font-style:normal}.brand-sub{font-size:11px;color:#7c6a5a;margin-top:3px}.meta{font-size:12px;color:#7c6a5a;text-align:right;line-height:1.8}.meta strong{color:#1c1412;font-size:14px;display:block}.section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#7c6a5a;margin:20px 0 8px}.info-row{font-size:13px;color:#7c6a5a;margin-bottom:4px}.info-row strong{color:#1c1412}.diag-box{background:#fff7ed;border-left:3px solid #f97316;padding:10px 14px;font-size:13px;color:#7c6a5a;margin:16px 0;border-radius:0 6px 6px 0}table{width:100%;border-collapse:collapse;margin:10px 0}thead th{background:#f8f4f0;font-size:10px;font-weight:700;text-transform:uppercase;color:#7c6a5a;padding:10px 12px;text-align:left}tbody td{padding:9px 12px;border-bottom:1px solid #f0e9e4;font-size:13px}tfoot td{padding:14px 12px;font-weight:700;font-size:15px;border-top:2px solid #f97316}tfoot td:last-child{text-align:right;color:#f97316}.note{margin-top:28px;padding:12px 16px;background:#f8f4f0;border-radius:6px;font-size:11px;color:#7c6a5a}.footer{margin-top:24px;text-align:center;font-size:10px;color:#b0a09a;padding-top:14px;border-top:1px solid #e8ddd4}@media print{.print-btn{display:none!important}}</style></head><body><button class="print-btn" onclick="window.print()">⬇ Enregistrer en PDF</button><div class="header"><div><div class="brand">Meso<em>Travo</em></div><div class="brand-sub">IFU : 3202625062491</div></div><div class="meta"><strong>Devis n°${quote.id}${quote.version > 1 ? ' — v' + quote.version : ''}</strong>Mission #${mission.id} · ${mission.service}<br>Émis le ${new Date().toLocaleDateString('fr-FR')}</div></div><div class="section-label">Détails</div><div class="info-row">📍 Adresse : <strong>${mission.address}</strong></div>${clientName ? `<div class="info-row">👤 Client : <strong>${clientName}</strong></div>` : ''}${quote.diagnosis ? `<div class="diag-box"><strong>🔍 Diagnostic</strong><br>${quote.diagnosis}</div>` : ''}<div class="section-label">Lignes du devis</div><table><thead><tr><th>Désignation</th><th>Qté</th><th>Prix unitaire</th><th>Total</th></tr></thead><tbody>${lines}</tbody><tfoot><tr><td colspan="3">Total TTC</td><td>${this.formatPrice(quote.amount_incl_tax)}</td></tr></tfoot></table><div class="note">⚠️ Ce devis est soumis à approbation via Mesotravo. Aucun paiement hors-plateforme n'est autorisé.</div><div class="footer">Mesotravo.com<br>IFU : 3202625062491</div></body></html>`;
             const win = window.open('', '_blank', 'width=860,height=720');
             if (win) { win.document.write(html); win.document.close(); }
         },
@@ -2801,10 +3060,14 @@ export default {
         async confirmRefuse() {
             const reason =
                 this.refuseModal.reason === "other"
-                    ? this.refuseModal.customReason
+                    ? this.refuseModal.customReason.trim()
                     : this.refuseOptions.find(
                           (o) => o.value === this.refuseModal.reason
                       )?.label ?? "";
+            if (!reason) {
+                this.showToast("Veuillez préciser le motif du refus.", "error");
+                return;
+            }
             this.refuseModal.loading = true;
             try {
                 const csrf = document.querySelector(
@@ -2934,6 +3197,10 @@ export default {
                 });
         },
 
+        removeMissionFromList(missionId) {
+            this.missions = this.missions.filter((mission) => mission.id !== missionId);
+        },
+
         updateMissionInList(updated) {
             const idx = this.missions.findIndex((m) => m.id === updated.id);
             if (idx !== -1)
@@ -3031,6 +3298,7 @@ export default {
             this.fetchMissions();
         }
         this.startMissionPolling();
+        this.startProposalTimer();
         this.fetchNotifications();
         this.notifInterval = setInterval(
             () => this.fetchNotifications(),
@@ -3044,6 +3312,7 @@ export default {
 
     beforeUnmount() {
         this.stopMissionPolling();
+        this.stopProposalTimer();
         clearInterval(this.notifInterval);
         document.removeEventListener("click", this.handleClickOutside);
     },
@@ -3617,6 +3886,70 @@ export default {
     color: var(--gr);
     margin-top: 1px;
 }
+.ctr-mission-desc {
+    font-size: 12px;
+    color: var(--dk);
+    line-height: 1.45;
+    margin-top: 5px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+}
+.ctr-mission-accepted {
+    font-size: 11.5px;
+    color: #16a34a;
+    font-weight: 700;
+    margin-top: 5px;
+}
+.ctr-proposal-timer {
+    background: #fff7ed;
+    border: 1.5px solid #fed7aa;
+    border-radius: 10px;
+    padding: 10px;
+    box-shadow: 0 6px 16px rgba(249, 115, 22, 0.12);
+}
+.ctr-proposal-timer--compact {
+    margin-top: 8px;
+    max-width: 280px;
+}
+.ctr-proposal-timer--panel {
+    margin: 12px 0 14px;
+}
+.ctr-proposal-timer-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    color: #7c2d12;
+    font-size: 12px;
+    font-weight: 700;
+}
+.ctr-proposal-timer-top strong {
+    color: var(--or2);
+    font-size: 20px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+}
+.ctr-proposal-track {
+    height: 8px;
+    background: #ffedd5;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 8px;
+}
+.ctr-proposal-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--or), var(--or2));
+    border-radius: inherit;
+    transition: width 0.35s ease;
+}
+.ctr-proposal-deadline {
+    color: var(--gr);
+    font-size: 12px;
+    margin-top: 8px;
+}
 .ctr-mission-imgs {
     display: flex;
     flex-wrap: wrap;
@@ -4045,9 +4378,11 @@ export default {
     max-width: 500px;
     max-height: 92vh;
     overflow-y: auto;
+    overflow-x: hidden;
     display: flex;
     flex-direction: column;
     animation: ctr-slide-up 0.25s ease;
+    overscroll-behavior: contain;
 }
 @keyframes ctr-slide-up {
     from {
@@ -4068,9 +4403,10 @@ export default {
     border-bottom: 2px solid var(--grl);
     position: sticky;
     top: 0;
-    background: var(--wh);
+    background: #fff;
     border-radius: 18px 18px 0 0;
-    z-index: 1;
+    z-index: 30;
+    box-shadow: 0 8px 18px rgba(28, 20, 18, 0.06);
 }
 .ctr-modal-header h3 {
     font-size: 17px;
@@ -4091,8 +4427,10 @@ export default {
     flex-shrink: 0;
 }
 .ctr-modal-body {
-    padding: 20px 24px;
+    padding: 18px;
     flex: 1;
+    min-width: 0;
+    overflow-x: hidden;
 }
 .ctr-modal-footer {
     padding: 14px 24px;
@@ -4175,6 +4513,99 @@ export default {
     font-weight: 700;
     color: var(--dk);
     text-align: right;
+}
+
+/* Mission modal shared layout */
+.ctm-panel-cols {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+}
+.ctm-section {
+    background: #fff;
+    border: 1.5px solid #eadfd6;
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(28, 20, 18, 0.04);
+}
+.ctm-section-title {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--dk);
+    text-transform: uppercase;
+    letter-spacing: 0;
+    margin-bottom: 14px;
+}
+.ctm-row {
+    display: grid;
+    grid-template-columns: minmax(88px, 0.34fr) minmax(0, 1fr);
+    align-items: start;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0e7df;
+    font-size: 13.5px;
+    gap: 10px;
+    min-width: 0;
+}
+.ctm-row:last-child {
+    border-bottom: none;
+}
+.ctm-row span {
+    color: var(--gr);
+    line-height: 1.45;
+}
+.ctm-row strong {
+    font-weight: 700;
+    color: var(--dk);
+    text-align: left;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+    min-width: 0;
+}
+.ctm-client-private {
+    color: var(--gr) !important;
+    font-weight: 800;
+    letter-spacing: 0;
+}
+.ctm-val-green {
+    color: #16a34a !important;
+}
+.ctm-masked {
+    font-size: 12px;
+    color: var(--gr);
+    font-style: italic;
+}
+.ctm-photo-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+.ctm-photo-btn {
+    border: 1.5px solid #eadfd6;
+    border-radius: 12px;
+    padding: 0;
+    background: #fff;
+    overflow: hidden;
+    cursor: pointer;
+    aspect-ratio: 4 / 3;
+    transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+}
+.ctm-photo-btn:hover {
+    transform: translateY(-1px);
+    border-color: var(--or);
+    box-shadow: 0 8px 20px rgba(249, 115, 22, 0.18);
+}
+.ctm-photo-btn img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+@media (min-width: 520px) {
+    .ctm-photo-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
 }
 
 /* ACTION BLOCK */
@@ -4621,6 +5052,7 @@ export default {
     flex-direction: column;
     gap: 8px;
     z-index: 999;
+    width: min(420px, calc(100vw - 32px));
     max-width: calc(100vw - 32px);
 }
 .ctr-toast {
@@ -4631,7 +5063,12 @@ export default {
     font-size: 13px;
     font-weight: 600;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-    min-width: 200px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    line-height: 1.4;
+    white-space: normal;
+    overflow-wrap: anywhere;
     animation: ctr-slide-up 0.3s ease;
 }
 .ctr-toast.success {
@@ -4646,12 +5083,28 @@ export default {
         display: none;
     }
     .ctr-modal {
-        max-height: 100vh;
+        width: 100%;
+        max-width: 100vw;
+        max-height: min(92vh, 100dvh);
         border-radius: 18px 18px 0 0;
     }
     .ctr-modal-overlay {
         align-items: flex-end;
         padding: 0;
+    }
+    .ctr-modal-header {
+        padding: 16px 18px 14px;
+    }
+    .ctr-modal-body {
+        padding: 14px;
+    }
+    .ctm-row {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+    .ctm-action-row .ctm-btn {
+        min-width: 0;
+        width: 100%;
     }
 }
 
@@ -4720,10 +5173,57 @@ export default {
     margin-top: 3px;
 }
 
+.ctm-action-block {
+    background: #fff;
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 16px;
+    border: 1.5px solid #eadfd6;
+    box-shadow: 0 2px 8px rgba(28, 20, 18, 0.04);
+}
+.ctm-action-block p {
+    font-size: 13.5px;
+    color: var(--gr);
+    margin-bottom: 12px;
+    line-height: 1.6;
+}
+.ctm-action-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+.ctm-action-row .ctm-btn {
+    flex: 1;
+    justify-content: center;
+    min-width: 138px;
+}
+.ctm-action-new {
+    border-color: #fed7aa;
+    background: #fff7ed;
+    text-align: left;
+}
+.ctm-action-new-icon {
+    font-size: 30px;
+    margin-bottom: 10px;
+}
+.ctm-action-new-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--dk);
+    margin-bottom: 6px;
+}
+.ctm-action-new-sub {
+    font-size: 13.5px;
+    color: var(--gr);
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
 .ctm-btn {
-    padding: 9px 18px;
+    padding: 11px 18px;
     border-radius: 10px;
-    font-weight: 700;
+    font-weight: 800;
     font-size: 13.5px;
     cursor: pointer;
     border: none;
@@ -4733,6 +5233,8 @@ export default {
     align-items: center;
     gap: 6px;
     justify-content: center;
+    min-height: 42px;
+    line-height: 1.2;
 }
 .ctm-btn-orange {
     background: linear-gradient(135deg, var(--or), var(--or2));
@@ -4743,22 +5245,27 @@ export default {
     transform: translateY(-1px);
 }
 .ctm-btn-green {
-    background: #22c55e;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
     color: #fff;
+    box-shadow: 0 3px 10px rgba(34, 197, 94, 0.3);
 }
 .ctm-btn-green:hover:not(:disabled) {
-    background: #16a34a;
+    transform: translateY(-1px);
+    box-shadow: 0 5px 16px rgba(34, 197, 94, 0.4);
 }
 .ctm-btn-red {
-    background: #ef4444;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
     color: #fff;
+    box-shadow: 0 3px 10px rgba(239, 68, 68, 0.25);
 }
 .ctm-btn-red:hover:not(:disabled) {
-    background: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 5px 16px rgba(239, 68, 68, 0.35);
 }
 .ctm-btn-ghost {
-    background: var(--grl);
+    background: #f8f4f0;
     color: var(--dk);
+    border: 1.5px solid #eadfd6;
 }
 .ctm-btn-ghost:hover {
     background: #d5c9c0;
@@ -5163,6 +5670,8 @@ export default {
     flex-direction: column;
     gap: 8px;
     z-index: 999;
+    width: min(420px, calc(100vw - 32px));
+    max-width: calc(100vw - 32px);
 }
 .ctm-toast {
     background: var(--dk);
@@ -5172,7 +5681,12 @@ export default {
     font-size: 13px;
     font-weight: 600;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-    min-width: 200px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    line-height: 1.4;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 .ctm-toast.success {
     background: #16a34a;
@@ -5211,6 +5725,10 @@ export default {
     padding: 12px 16px 14px;
     border-bottom: 1px solid #e5e7eb;
     background: #faf7f5;
+    position: relative;
+    z-index: 0;
+    min-width: 0;
+    overflow: hidden;
 }
 .ctm-workflow-track {
     height: 5px; background: #e5e7eb; border-radius: 99px; overflow: hidden; margin-bottom: 12px;

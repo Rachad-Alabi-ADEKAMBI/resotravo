@@ -106,6 +106,7 @@ class Mission extends Model
         'min_distance_m',
         'assigned_at',
         'accepted_at',
+        'on_the_way_at',
         'arrived_at',
         'completed_at',
         'total_amount',
@@ -127,6 +128,7 @@ class Mission extends Model
         'dispute_open'   => 'boolean',
         'assigned_at'    => 'datetime',
         'accepted_at'    => 'datetime',
+        'on_the_way_at'  => 'datetime',
         'arrived_at'     => 'datetime',
         'completed_at'   => 'datetime',
         'paid_at'        => 'datetime',
@@ -188,6 +190,11 @@ class Mission extends Model
     public function proposals(): HasMany
     {
         return $this->hasMany(MissionProposal::class);
+    }
+
+    public function proposalLogs(): HasMany
+    {
+        return $this->hasMany(MissionProposalLog::class);
     }
 
     public function reservation(): HasOne
@@ -276,7 +283,7 @@ class Mission extends Model
         match ($newStatus) {
             self::STATUS_ASSIGNED    => $this->assigned_at  = now(),
             self::STATUS_ACCEPTED    => $this->accepted_at  = now(),
-            self::STATUS_ON_THE_WAY  => $this->accepted_at  = $this->accepted_at ?? now(), // préserver accepted_at
+            self::STATUS_ON_THE_WAY  => $this->markOnTheWay(),
             self::STATUS_IN_PROGRESS => $this->arrived_at   = now(),
             self::STATUS_COMPLETED   => $this->completed_at = now(),
             self::STATUS_CLOSED      => $this->paid_at      = now(),
@@ -298,6 +305,13 @@ class Mission extends Model
         $this->save();
 
         return $this;
+    }
+
+    private function markOnTheWay(): void
+    {
+        $now = now();
+        $this->accepted_at = $this->accepted_at ?? $now;
+        $this->on_the_way_at = $this->on_the_way_at ?? $now;
     }
 
     /**
