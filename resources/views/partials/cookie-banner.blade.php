@@ -24,13 +24,15 @@
         <button onclick="setCookieConsent('refused')" style="
             padding:8px 20px; border-radius:6px;
             border:1px solid #666; background:transparent; color:#f5f5f5;
-            font-size:14px; cursor:pointer;
-        ">Refuser</button>
+            font-size:14px; cursor:pointer; display:inline-flex;
+            align-items:center; justify-content:center; gap:7px;
+        "><span aria-hidden="true">&#10005;</span> Refuser</button>
         <button onclick="setCookieConsent('accepted')" style="
             padding:8px 20px; border-radius:6px;
             border:none; background:#f97316; color:#fff;
-            font-size:14px; font-weight:600; cursor:pointer;
-        ">Accepter</button>
+            font-size:14px; font-weight:600; cursor:pointer; display:inline-flex;
+            align-items:center; justify-content:center; gap:7px;
+        "><span aria-hidden="true">&#10003;</span> Accepter</button>
     </div>
 </div>
 <script>

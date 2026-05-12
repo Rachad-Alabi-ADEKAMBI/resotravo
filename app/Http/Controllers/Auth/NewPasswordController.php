@@ -35,6 +35,11 @@ class NewPasswordController extends Controller
             'token' => ['required'],
             'email' => ['required', 'email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        ], [
+            'email.required' => "Veuillez renseigner votre adresse email.",
+            'email.email' => "Veuillez saisir une adresse email valide.",
+            'password.required' => "Veuillez saisir un nouveau mot de passe.",
+            'password.confirmed' => "La confirmation du mot de passe ne correspond pas.",
         ]);
 
         // Here we will attempt to reset the user's password. If it is successful we
@@ -56,8 +61,17 @@ class NewPasswordController extends Controller
         // the application's home authenticated view. If there is an error we can
         // redirect them back to where they came from with their error message.
         return $status == Password::PASSWORD_RESET
-                    ? redirect()->route('login')->with('status', __($status))
+                    ? redirect()->route('login')->with('status', "Votre mot de passe a bien été réinitialisé. Vous pouvez vous connecter.")
                     : back()->withInput($request->only('email'))
-                        ->withErrors(['email' => __($status)]);
+                        ->withErrors(['email' => $this->statusMessage($status)]);
+    }
+
+    private function statusMessage(string $status): string
+    {
+        return match ($status) {
+            Password::INVALID_TOKEN => "Le lien de réinitialisation est invalide ou a expiré.",
+            Password::INVALID_USER => "Aucun compte Mesotravo n'est associé à cette adresse email.",
+            default => "Impossible de réinitialiser le mot de passe. Veuillez demander un nouveau lien.",
+        };
     }
 }

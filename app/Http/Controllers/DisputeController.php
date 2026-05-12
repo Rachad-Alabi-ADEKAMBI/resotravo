@@ -24,32 +24,10 @@ class DisputeController extends Controller
     {
         try {
             $disputes = Dispute::orderByDesc('opened_at')
+                ->with(['mission.client.user', 'mission.contractor.user', 'client.user', 'contractor.user', 'admin'])
+                ->withCount(['messages', 'attachments'])
                 ->get()
-                ->map(fn(Dispute $d) => [
-                    'id'                => $d->id,
-                    'subject'           => $d->subject,
-                    'description'       => $d->description,
-                    'status'            => $d->status,
-                    'status_label'      => $d->status_label,
-                    'is_resolved'       => $d->is_resolved,
-                    'verdict'           => $d->verdict,
-                    'verdict_label'     => $d->verdict_label,
-                    'verdict_note'      => $d->verdict_note,
-                    'contractor_suspended' => $d->contractor_suspended,
-                    'mission_id'        => $d->mission_id,
-                    'mission_service'   => '—',
-                    'mission_status'    => '—',
-                    'client_name'       => '—',
-                    'client_email'      => '—',
-                    'contractor_name'   => '—',
-                    'contractor_email'  => '—',
-                    'admin_name'        => '—',
-                    'messages_count'    => 0,
-                    'attachments_count' => 0,
-                    'opened_at_label'   => $d->opened_at?->format('d/m/Y H:i'),
-                    'opened_ago'        => $d->opened_at?->locale('fr')->diffForHumans(),
-                    'resolved_at_label' => $d->resolved_at?->format('d/m/Y H:i'),
-                ]);
+                ->map(fn(Dispute $d) => $this->formatDispute($d));
 
             return response()->json($disputes);
 

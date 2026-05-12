@@ -33,8 +33,8 @@
 
     <div class="nav-cta">
         @guest
-            <a class="btn btn-outline" href="{{ route('login') }}">Se connecter</a>
-            <a class="btn btn-primary" href="{{ route('home') }}#register">S'inscrire →</a>
+            <a class="btn btn-outline" href="{{ route('login') }}"><span aria-hidden="true">🔐</span> Se connecter</a>
+            <a class="btn btn-primary" href="{{ route('home') }}#register"><span aria-hidden="true">📝</span> S'inscrire →</a>
         @endguest
         @auth
             <a class="btn btn-outline" href="{{ route('dashboard') }}">Mon espace</a>
@@ -61,8 +61,8 @@
 
     <div class="nav-mobile-cta">
         @guest
-            <a class="btn btn-outline btn-block" href="{{ route('login') }}">Se connecter</a>
-            <a class="btn btn-primary btn-block" href="{{ route('home') }}#register">S'inscrire gratuitement →</a>
+            <a class="btn btn-outline btn-block" href="{{ route('login') }}"><span aria-hidden="true">🔐</span> Se connecter</a>
+            <a class="btn btn-primary btn-block" href="{{ route('home') }}#register"><span aria-hidden="true">📝</span> S'inscrire gratuitement →</a>
         @endguest
         @auth
             <a class="btn btn-outline btn-block" href="{{ route('dashboard') }}">Mon espace</a>
@@ -79,6 +79,13 @@
 <style>
 .nav-links a { display:inline-flex;align-items:center;gap:5px }
 .nav-icon    { font-size:14px;line-height:1 }
+.nav-cta .btn,
+.nav-mobile-cta .btn {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
+}
 </style>
 
 <script>

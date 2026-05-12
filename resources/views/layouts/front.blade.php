@@ -59,6 +59,12 @@
 
   <style>
     #mesotravo-app { visibility: hidden; }
+    body.mesotravo-page-loading {
+      overflow: hidden;
+    }
+    body.mesotravo-page-loading > *:not(#Mesotravo-loader) {
+      visibility: hidden !important;
+    }
     #Mesotravo-loader {
       position: fixed;
       inset: 0;
@@ -67,7 +73,9 @@
       align-items: center;
       justify-content: center;
       gap: 16px;
-      background: #fff;
+      background:
+        radial-gradient(circle at 50% 34%, rgba(249, 115, 22, .10), transparent 30%),
+        #fff;
       color: var(--dk);
       font-family: 'Poppins', sans-serif;
       font-size: 15px;
@@ -75,6 +83,15 @@
       padding: 18px;
     }
     #Mesotravo-loader.hidden { display: none; }
+    body:not(.mesotravo-page-loading) #Mesotravo-loader {
+      display: none;
+    }
+    #Mesotravo-loader .loader-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
     #Mesotravo-loader .loader-ring {
       width: 40px;
       height: 40px;
@@ -492,7 +509,7 @@
   @yield('styles')
 </head>
 
-<body>
+<body class="mesotravo-page-loading">
 
 <!-- Google Tag Manager (noscript) -->
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-M476WRKF"
@@ -506,9 +523,20 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   @include('partials.nav', ['active' => $active ?? ''])
 
   <div id="Mesotravo-loader">
-    <div class="loader-ring"></div>
-    <div>Chargement…</div>
+    <div class="loader-content">
+      <div class="loader-ring"></div>
+    </div>
   </div>
+
+  <script>
+    window.setTimeout(function () {
+      document.body.classList.remove('mesotravo-page-loading');
+      var app = document.getElementById('mesotravo-app');
+      var loader = document.getElementById('Mesotravo-loader');
+      if (app) app.style.visibility = 'visible';
+      if (loader) loader.classList.add('hidden');
+    }, 15000);
+  </script>
 
   {{-- #app est ici : Vue monte sur ce div et trouve les composants dans @yield('content') --}}
   <div id="mesotravo-app">

@@ -137,7 +137,7 @@
                             formatPrice(stats.commissions_percues)
                         }}</span>
                     </div>
-                    <div class="ar-kpi-label">Commissions perçues (10%)</div>
+                    <div class="ar-kpi-label">Commissions perçues</div>
                 </div>
                 <div class="ar-kpi ar-kpi--blue">
                     <div class="ar-kpi-icon">✅</div>
@@ -251,8 +251,8 @@
                                 <th>Prestataire</th>
                                 <th>Date</th>
                                 <th>Montant total</th>
-                                <th>Commission (10%)</th>
-                                <th>Versé presta (90%)</th>
+                                <th>Commission</th>
+                                <th>Versé presta</th>
                                 <th>Statut</th>
                             </tr>
                         </thead>
@@ -296,7 +296,7 @@
                                         class="ar-commission"
                                         v-if="m.total_amount"
                                     >
-                                        {{ formatPrice(m.total_amount * 0.1) }}
+                                        {{ formatPrice(m.commission) }}
                                     </span>
                                     <span v-else>—</span>
                                 </td>
@@ -305,7 +305,7 @@
                                         class="ar-payout"
                                         v-if="m.total_amount"
                                     >
-                                        {{ formatPrice(m.total_amount * 0.9) }}
+                                        {{ formatPrice(m.net_amount) }}
                                     </span>
                                     <span v-else>—</span>
                                 </td>
@@ -591,8 +591,8 @@ export default {
                 "Prestataire",
                 "Date",
                 "Montant total",
-                "Commission (10%)",
-                "Versé presta (90%)",
+                "Commission",
+                "Versé presta",
                 "Statut",
             ];
             const lines = rows.map((m) =>
@@ -603,8 +603,8 @@ export default {
                     `"${(m.contractor_name ?? "").replace(/"/g, '""')}"`,
                     this.formatDate(m.completed_at ?? m.created_at),
                     m.total_amount ?? 0,
-                    m.total_amount ? (m.total_amount * 0.1).toFixed(0) : 0,
-                    m.total_amount ? (m.total_amount * 0.9).toFixed(0) : 0,
+                    m.commission ? Number(m.commission).toFixed(0) : 0,
+                    m.net_amount ? Number(m.net_amount).toFixed(0) : 0,
                     this.statusLabel(m.status),
                 ].join(";")
             );

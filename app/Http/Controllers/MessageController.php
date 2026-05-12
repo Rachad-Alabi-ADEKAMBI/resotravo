@@ -123,6 +123,12 @@ class MessageController extends Controller
             return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
+        if ($this->conversationIsLocked($conversation)) {
+            return response()->json([
+                'message' => 'La mission est terminee. La conversation reste consultable, mais les nouveaux messages sont desactives.',
+            ], 423);
+        }
+
         $request->validate([
             'body' => 'required|string|max:2000',
         ]);
@@ -157,6 +163,12 @@ class MessageController extends Controller
 
         if (!$conversation->participants()->where('user_id', $user->id)->exists()) {
             return response()->json(['message' => 'Accès refusé.'], 403);
+        }
+
+        if ($this->conversationIsLocked($conversation)) {
+            return response()->json([
+                'message' => 'La mission est terminee. La conversation reste consultable, mais les nouveaux messages sont desactives.',
+            ], 423);
         }
 
         $request->validate([
@@ -257,6 +269,13 @@ class MessageController extends Controller
         $conversation->participants()
             ->where('user_id', $userId)
             ->update(['last_read_at' => now()]);
+    }
+
+    private function conversationIsLocked(Conversation $conversation): bool
+    {
+        $conversation->loadMissing('mission');
+
+        return in_array($conversation->mission?->status, ['completed', 'closed', 'cancelled'], true);
     }
 
     private function formatConversation(Conversation $c, int $userId): array

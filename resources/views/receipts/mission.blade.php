@@ -1,3 +1,11 @@
+@php
+    $viewer = auth()->user();
+    $isContractorReceipt = $viewer?->role === 'contractor';
+    $receiptAmount = $isContractorReceipt
+        ? $mission->contractorPayoutAmount()
+        : (float) $mission->total_amount;
+    $contractorIfu = trim((string) ($mission->contractor->ifu ?? ''));
+@endphp
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -233,7 +241,7 @@
             <div class="receipt-brand">
                 <img src="{{ asset('images/logo_mesotravo.png') }}" alt="Mesotravo">
             </div>
-            <div class="receipt-title">Reçu de paiement officiel · IFU : 3202625062491</div>
+            <div class="receipt-title">{{ $isContractorReceipt ? 'Reçu prestataire' : 'Reçu de paiement officiel' }} · IFU : 3202625062491</div>
         </div>
         <div class="receipt-badge">
             <div class="receipt-badge-num">N° {{ str_pad($mission->id, 6, '0', STR_PAD_LEFT) }}</div>
@@ -267,6 +275,9 @@
                     {{ trim(($mission->contractor->first_name ?? '') . ' ' . ($mission->contractor->last_name ?? '')) ?: '—' }}
                     @if($mission->contractor->specialty ?? null)
                         <br><small style="font-weight:400;color:#8A7D78">{{ $mission->contractor->specialty }}</small>
+                    @endif
+                    @if($contractorIfu)
+                        <br><small style="font-weight:400;color:#8A7D78">IFU : {{ $contractorIfu }}</small>
                     @endif
                 </strong>
             </div>
@@ -358,8 +369,8 @@
             </div>
             @endif
             <div class="totals-row total-final">
-                <span>💳 Total payé</span>
-                <span>{{ number_format($mission->total_amount, 0, ',', ' ') }} FCFA</span>
+                <span>{{ $isContractorReceipt ? '💳 Montant net reçu' : '💳 Total payé' }}</span>
+                <span>{{ number_format($receiptAmount, 0, ',', ' ') }} FCFA</span>
             </div>
         </div>
 

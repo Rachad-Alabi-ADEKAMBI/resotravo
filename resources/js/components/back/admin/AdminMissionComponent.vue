@@ -406,9 +406,31 @@
                                 </div>
                                 <div class="amis-detail-row">
                                     <span>Adresse</span
-                                    ><strong>{{
-                                        activeMission.address
-                                    }}</strong>
+                                    ><strong class="amis-address-actions">
+                                        {{ activeMission.address }}
+                                        <a
+                                            v-if="hasMissionLocation(activeMission)"
+                                            class="amis-map-view-btn"
+                                            :href="missionMapUrl(activeMission)"
+                                            target="_blank"
+                                            rel="noopener"
+                                        >
+                                            🗺️ Voir le lieu
+                                        </a>
+                                        <a
+                                            v-if="hasMissionLocation(activeMission)"
+                                            class="amis-map-view-btn amis-map-route-btn"
+                                            :href="missionDirectionsUrl(activeMission)"
+                                            target="_blank"
+                                            rel="noopener"
+                                        >
+                                            🧭 Itinéraire
+                                        </a>
+                                    </strong>
+                                </div>
+                                <div class="amis-detail-row" v-if="activeMission.reservation">
+                                    <span>Date prévue de réalisation</span>
+                                    <strong>{{ formatReservationSlot(activeMission) }}</strong>
                                 </div>
                                 <div class="amis-detail-row">
                                     <span>Description</span
@@ -463,23 +485,48 @@
                                 </div>
                                 <div
                                     class="amis-detail-row"
-                                    v-if="activeMission.total_amount"
+                                    v-if="activeMission.accepted_at"
                                 >
-                                    <span>Commission (10%)</span>
-                                    <strong class="amis-val-green">{{
-                                        formatPrice(
-                                            activeMission.total_amount * 0.1
-                                        )
+                                    <span>Acceptée le</span>
+                                    <strong>{{
+                                        formatDateTime(activeMission.accepted_at)
+                                    }}</strong>
+                                </div>
+                                <div
+                                    class="amis-detail-row"
+                                    v-if="activeMission.on_the_way_at"
+                                >
+                                    <span>Prestataire Départ pris le</span>
+                                    <strong>{{
+                                        formatDateTime(activeMission.on_the_way_at)
+                                    }}</strong>
+                                </div>
+                                <div
+                                    class="amis-detail-row"
+                                    v-if="activeMission.arrived_at"
+                                >
+                                    <span>Prestataire arrivé le</span>
+                                    <strong>{{
+                                        formatDateTime(activeMission.arrived_at)
                                     }}</strong>
                                 </div>
                                 <div
                                     class="amis-detail-row"
                                     v-if="activeMission.total_amount"
                                 >
-                                    <span>Part prestataire (90%)</span>
+                                    <span>Commission</span>
+                                    <strong class="amis-val-green">{{
+                                        formatPrice(activeMission.commission || 0)
+                                    }}</strong>
+                                </div>
+                                <div
+                                    class="amis-detail-row"
+                                    v-if="activeMission.total_amount"
+                                >
+                                    <span>Part prestataire</span>
                                     <strong>{{
                                         formatPrice(
-                                            activeMission.total_amount * 0.9
+                                            activeMission.contractor_payout || 0
                                         )
                                     }}</strong>
                                 </div>
@@ -958,7 +1005,7 @@
                                     <button
                                         class="amis-btn amis-btn-green"
                                         style="width: 100%"
-                                        @click="sendProposals"
+                                        @click="sendProposals(false)"
                                         :disabled="proposalLoading"
                                     >
                                         <div
@@ -1017,8 +1064,175 @@
                 <!-- end modal-body -->
 
                 <div class="amis-modal-footer">
+                    <button
+                        class="amis-btn amis-btn-orange"
+                        :disabled="!hasMissionMessages(activeMission)"
+                        :title="hasMissionMessages(activeMission) ? 'Voir les messages de la mission' : 'Aucun message pour cette mission'"
+                        @click="openMessagesModal(activeMission)"
+                    >
+                        💬 Accéder aux messages
+                        <span v-if="activeMission.messages_count">
+                            ({{ activeMission.messages_count }})
+                        </span>
+                    </button>
                     <button class="amis-btn amis-btn-ghost" @click="closeModal">
                         Fermer
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════ MODAL MESSAGES MISSION ══════════════ -->
+        <div
+            class="amis-modal-overlay"
+            v-if="messagesModal.visible"
+            @click.self="closeMessagesModal"
+        >
+            <div class="amis-modal amis-messages-modal">
+                <div class="amis-modal-header">
+                    <div class="amis-modal-header-left">
+                        <div class="amis-modal-header-icon">💬</div>
+                        <div>
+                            <h3>Messages de la mission</h3>
+                            <div class="amis-modal-sub">
+                                Mission #{{ messagesModal.mission?.id }} ·
+                                {{ messagesModal.mission?.service }}
+                            </div>
+                        </div>
+                    </div>
+                    <button class="amis-modal-close" @click="closeMessagesModal">
+                        &#215;
+                    </button>
+                </div>
+
+                <div class="amis-modal-body amis-messages-body">
+                    <div class="amis-messages-loading" v-if="messagesModal.loading">
+                        Chargement des messages...
+                    </div>
+                    <div class="amis-alert-error" v-else-if="messagesModal.error">
+                        {{ messagesModal.error }}
+                    </div>
+                    <div class="amis-messages-empty" v-else-if="messagesModal.messages.length === 0">
+                        <div class="amis-messages-empty-icon">💬</div>
+                        <div>Aucun message échangé pour cette mission.</div>
+                    </div>
+                    <div class="amis-messages-list" v-else>
+                        <div
+                            class="amis-admin-message"
+                            v-for="message in messagesModal.messages"
+                            :key="message.id"
+                            :class="'role-' + (message.sender_role || 'user')"
+                        >
+                            <div class="amis-admin-message-head">
+                                <strong>{{ message.sender_name }}</strong>
+                                <span class="amis-message-role">
+                                    {{ messageRoleLabel(message.sender_role) }}
+                                </span>
+                                <span class="amis-message-date">
+                                    {{ formatDateTime(message.created_at) }}
+                                </span>
+                            </div>
+                            <div class="amis-admin-message-text" v-if="message.body">
+                                {{ message.body }}
+                            </div>
+                            <div
+                                class="amis-admin-attachment"
+                                v-if="message.attachment_url"
+                            >
+                                <img
+                                    v-if="message.type === 'image'"
+                                    :src="message.attachment_url"
+                                    :alt="message.attachment_name"
+                                    @click="windowOpen(message.attachment_url)"
+                                />
+                                <audio
+                                    v-else-if="message.type === 'audio'"
+                                    controls
+                                    :src="message.attachment_url"
+                                    preload="metadata"
+                                ></audio>
+                                <a
+                                    v-else
+                                    :href="message.attachment_url"
+                                    target="_blank"
+                                    rel="noopener"
+                                    class="amis-admin-file"
+                                >
+                                    📎 {{ message.attachment_name || "Pièce jointe" }}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="amis-modal-footer">
+                    <button class="amis-btn amis-btn-ghost" @click="closeMessagesModal">
+                        Fermer
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════ CONFIRM ACCRÉDITATION ENTREPRISE ══════════════ -->
+        <div
+            class="amis-modal-overlay"
+            v-if="businessAccreditationConfirm.visible"
+            @click.self="cancelBusinessAccreditationAssignment"
+        >
+            <div class="amis-modal amis-business-warning-modal">
+                <div class="amis-modal-header">
+                    <div>
+                        <h3>Accréditation Entreprise manquante</h3>
+                        <div class="amis-modal-sub">
+                            Cette mission concerne un client entreprise.
+                        </div>
+                    </div>
+                    <button
+                        class="amis-modal-close"
+                        @click="cancelBusinessAccreditationAssignment"
+                    >
+                        &#215;
+                    </button>
+                </div>
+                <div class="amis-modal-body">
+                    <div class="amis-business-warning-box">
+                        Les prestataires ci-dessous n'ont pas l'accréditation
+                        Entreprise. Voulez-vous quand même leur proposer cette
+                        mission ?
+                    </div>
+                    <div class="amis-business-warning-list">
+                        <div
+                            class="amis-business-warning-item"
+                            v-for="contractor in businessAccreditationConfirm.contractors"
+                            :key="contractor.id"
+                        >
+                            <span>{{
+                                contractor.name ||
+                                contractorFullName(contractor)
+                            }}</span>
+                            <strong>{{
+                                contractor.accreditation || "none"
+                            }}</strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="amis-modal-footer">
+                    <button
+                        class="amis-btn amis-btn-ghost"
+                        @click="cancelBusinessAccreditationAssignment"
+                    >
+                        Retour
+                    </button>
+                    <button
+                        class="amis-btn amis-btn-orange"
+                        @click="continueBusinessAccreditationAssignment"
+                        :disabled="businessAccreditationConfirm.loading"
+                    >
+                        <div
+                            class="amis-spinner"
+                            v-if="businessAccreditationConfirm.loading"
+                        ></div>
+                        <span v-else>Continuer quand même</span>
                     </button>
                 </div>
             </div>
@@ -1149,6 +1363,18 @@ export default {
                 visible: false,
                 mission: null,
                 reason: "",
+                loading: false,
+            },
+            messagesModal: {
+                visible: false,
+                mission: null,
+                messages: [],
+                loading: false,
+                error: "",
+            },
+            businessAccreditationConfirm: {
+                visible: false,
+                contractors: [],
                 loading: false,
             },
 
@@ -1302,6 +1528,17 @@ export default {
             );
         },
 
+        selectedContractorsWithoutBusinessAccreditation() {
+            if (!this.missionRequiresBusinessAccreditation(this.activeMission)) {
+                return [];
+            }
+
+            return this.availableContractors.filter((contractor) =>
+                this.selectedContractors.includes(contractor.id) &&
+                !this.hasBusinessAccreditation(contractor)
+            );
+        },
+
         alreadyProposedIds() {
             if (!this.activeMission?.proposals) return [];
             return this.activeMission.proposals
@@ -1446,6 +1683,46 @@ export default {
             this.selectedContractors = [];
         },
 
+        async openMessagesModal(mission) {
+            if (!mission || !this.hasMissionMessages(mission)) return;
+            this.messagesModal = {
+                visible: true,
+                mission,
+                messages: [],
+                loading: true,
+                error: "",
+            };
+
+            try {
+                const url = (this.routes.missions_messages || "/admin/missions/{id}/messages")
+                    .replace("{id}", mission.id)
+                    .replace(":id", mission.id);
+                const res = await fetch(url, {
+                    headers: { Accept: "application/json" },
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.message || "Impossible de charger les messages.");
+                }
+                this.messagesModal.messages = data.messages ?? [];
+            } catch (error) {
+                this.messagesModal.error =
+                    error.message || "Impossible de charger les messages.";
+            } finally {
+                this.messagesModal.loading = false;
+            }
+        },
+
+        closeMessagesModal() {
+            this.messagesModal = {
+                visible: false,
+                mission: null,
+                messages: [],
+                loading: false,
+                error: "",
+            };
+        },
+
         // ── PROPOSITION MULTI-PRESTATAIRES ────────────────────────
         openProposalPanel(m) {
             this.openMission(m);
@@ -1457,6 +1734,17 @@ export default {
 
         isAlreadyProposed(contractorId) {
             return this.alreadyProposedIds.includes(contractorId);
+        },
+
+        missionRequiresBusinessAccreditation(mission) {
+            return (
+                mission?.client?.account_type === "company" ||
+                mission?.location_type === "business"
+            );
+        },
+
+        hasBusinessAccreditation(contractor) {
+            return ["business", "both"].includes(contractor?.accreditation);
         },
 
         toggleContractor(id) {
@@ -1483,9 +1771,23 @@ export default {
             }
         },
 
-        async sendProposals() {
+        async sendProposals(forceBusinessAssignment = false) {
+            forceBusinessAssignment = forceBusinessAssignment === true;
+
             if (this.selectedContractors.length === 0) return;
+
+            const missingBusiness = this.selectedContractorsWithoutBusinessAccreditation;
+            if (!forceBusinessAssignment && missingBusiness.length > 0) {
+                this.businessAccreditationConfirm = {
+                    visible: true,
+                    contractors: missingBusiness,
+                    loading: false,
+                };
+                return;
+            }
+
             this.proposalLoading = true;
+            this.businessAccreditationConfirm.loading = forceBusinessAssignment;
 
             try {
                 const csrf = document.querySelector(
@@ -1504,11 +1806,22 @@ export default {
                     },
                     body: JSON.stringify({
                         contractor_ids: this.selectedContractors,
+                        force_business_assignment: forceBusinessAssignment,
                     }),
                 });
 
                 const data = await res.json();
                 if (!res.ok) {
+                    if (data.requires_business_confirmation) {
+                        this.businessAccreditationConfirm = {
+                            visible: true,
+                            contractors:
+                                data.contractors_without_business_accreditation ??
+                                missingBusiness,
+                            loading: false,
+                        };
+                        return;
+                    }
                     this.showToast(
                         data.message ?? "Erreur lors de l'envoi.",
                         "error"
@@ -1553,6 +1866,7 @@ export default {
                           }. Le premier à accepter sera assigné.`;
 
                 this.selectedContractors = [];
+                this.businessAccreditationConfirm.visible = false;
                 this.showToast(successMessage, "success");
 
                 // Recharger la liste des disponibles pour mettre à jour les statuts
@@ -1564,7 +1878,20 @@ export default {
                 );
             } finally {
                 this.proposalLoading = false;
+                this.businessAccreditationConfirm.loading = false;
             }
+        },
+
+        continueBusinessAccreditationAssignment() {
+            this.sendProposals(true);
+        },
+
+        cancelBusinessAccreditationAssignment() {
+            this.businessAccreditationConfirm = {
+                visible: false,
+                contractors: [],
+                loading: false,
+            };
         },
 
         // ── Actions admin ─────────────────────────────────────────
@@ -1863,12 +2190,61 @@ export default {
             );
         },
 
+        formatReservationSlot(mission) {
+            const day = mission?.reservation?.day;
+            if (!day) return "—";
+            const time = String(mission?.reservation?.time || "").slice(0, 5);
+            const [year, month, date] = String(day).slice(0, 10).split("-");
+            const formattedDate = new Date(Number(year), Number(month) - 1, Number(date))
+                .toLocaleDateString("fr-FR", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                });
+            return time ? `${formattedDate} à ${time}` : formattedDate;
+        },
+
+        messageRoleLabel(role) {
+            if (role === "client") return "Client";
+            if (role === "contractor") return "Prestataire";
+            if (role === "admin") return "Admin";
+            return "Utilisateur";
+        },
+
+        windowOpen(url) {
+            window.open(url, "_blank", "noopener");
+        },
+
         formatPrice(amount) {
             if (!amount && amount !== 0) return "—";
             return (
                 new Intl.NumberFormat("fr-FR").format(Math.round(amount)) +
                 " FCFA"
             );
+        },
+
+        missionMapUrl(mission) {
+            const lat = mission?.latitude;
+            const lng = mission?.longitude;
+            const target =
+                lat && lng ? `${lat},${lng}` : mission?.address ?? "";
+            return `https://www.google.com/maps?q=${encodeURIComponent(target)}`;
+        },
+        missionDirectionsUrl(mission) {
+            const lat = mission?.latitude;
+            const lng = mission?.longitude;
+            const target =
+                lat && lng ? `${lat},${lng}` : mission?.address ?? "";
+            return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(target)}&travelmode=driving`;
+        },
+        hasMissionLocation(mission) {
+            return Boolean(
+                (mission?.latitude && mission?.longitude) ||
+                    String(mission?.address ?? "").trim()
+            );
+        },
+        hasMissionMessages(mission) {
+            return Number(mission?.messages_count ?? 0) > 0;
         },
 
         formatPhone(phone) {
@@ -2861,6 +3237,168 @@ export default {
     word-break: break-word;
     overflow-wrap: anywhere;
 }
+.amis-contractor-review-card {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    margin: 6px 0;
+    border: 1px solid #fde68a;
+    border-radius: 12px;
+    background: #fffbeb;
+}
+.amis-review-icon {
+    color: #f59e0b;
+    font-size: 26px;
+    line-height: 1;
+}
+.amis-review-title {
+    color: #92400e;
+    font-size: 13px;
+    font-weight: 800;
+}
+.amis-review-score {
+    color: var(--dk);
+    font-size: 13px;
+    font-weight: 700;
+    margin-top: 2px;
+}
+.amis-review-score span {
+    color: var(--gr);
+    font-weight: 600;
+}
+.amis-review-stars {
+    margin-top: 5px;
+    color: #d1d5db;
+    font-size: 16px;
+    letter-spacing: 1px;
+}
+.amis-review-stars span.active {
+    color: #f59e0b;
+}
+.amis-address-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.amis-map-view-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: 5px 12px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--or), var(--or2));
+    color: #fff;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+.amis-map-view-btn span,
+.amis-map-view-btn {
+    color: #fff;
+}
+.amis-map-route-btn {
+    background: linear-gradient(135deg, #16a34a, #15803d);
+}
+.amis-messages-modal {
+    max-width: 820px;
+}
+.amis-messages-body {
+    max-height: min(68vh, 620px);
+    overflow-y: auto;
+}
+.amis-messages-loading,
+.amis-messages-empty {
+    padding: 28px;
+    text-align: center;
+    color: var(--gr);
+    font-weight: 700;
+}
+.amis-messages-empty-icon {
+    font-size: 34px;
+    margin-bottom: 8px;
+}
+.amis-messages-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.amis-admin-message {
+    max-width: 78%;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid var(--grl);
+    background: #fff;
+}
+.amis-admin-message.role-client {
+    align-self: flex-start;
+    background: #fff7ed;
+    border-color: #fed7aa;
+}
+.amis-admin-message.role-contractor {
+    align-self: flex-end;
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+.amis-admin-message.role-admin {
+    align-self: center;
+    background: #f3f4f6;
+}
+.amis-admin-message-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 7px;
+    font-size: 12px;
+}
+.amis-message-role {
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.07);
+    color: var(--dk);
+    font-weight: 800;
+}
+.amis-message-date {
+    color: var(--gr);
+    margin-left: auto;
+}
+.amis-admin-message-text {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    line-height: 1.55;
+    font-size: 13.5px;
+}
+.amis-admin-attachment {
+    margin-top: 10px;
+}
+.amis-admin-attachment img {
+    display: block;
+    max-width: min(320px, 100%);
+    max-height: 260px;
+    object-fit: contain;
+    border-radius: 10px;
+    cursor: pointer;
+}
+.amis-admin-attachment audio {
+    width: min(320px, 100%);
+}
+.amis-admin-file {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: #fff;
+    border: 1px solid var(--grl);
+    color: var(--dk);
+    text-decoration: none;
+    font-weight: 800;
+    font-size: 12.5px;
+}
 .amis-mission-photos {
     padding: 12px 0;
     border-bottom: 1px solid var(--grl);
@@ -3442,6 +3980,44 @@ export default {
 }
 
 /* ── TOASTS ── */
+.amis-business-warning-modal {
+    max-width: 480px;
+}
+.amis-business-warning-box {
+    padding: 12px 14px;
+    border: 1px solid #fed7aa;
+    border-radius: 10px;
+    background: #fff7ed;
+    color: #9a3412;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.5;
+}
+.amis-business-warning-list {
+    display: grid;
+    gap: 8px;
+    margin-top: 12px;
+}
+.amis-business-warning-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 11px;
+    border: 1px solid #eadfd6;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 13px;
+}
+.amis-business-warning-item span {
+    font-weight: 800;
+    color: var(--dk);
+}
+.amis-business-warning-item strong {
+    color: #b45309;
+    text-transform: uppercase;
+    font-size: 11px;
+}
 .amis-toast-container {
     position: fixed;
     bottom: 20px;

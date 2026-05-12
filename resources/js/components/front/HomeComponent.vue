@@ -36,12 +36,12 @@
                     <a
                         class="btn btn-primary btn-lg"
                         :href="routes.registerClient"
-                        >🔍 Faire une demande →</a
+                        >🔍 Inscription client</a
                     >
                     <a
                         class="btn btn-ghost btn-lg"
                         :href="routes.registerContractor"
-                        >👷 Devenir prestataire</a
+                        >👷 Inscription Prestataire</a
                     >
                 </div>
             </div>
@@ -174,6 +174,7 @@
                     class="btn btn-ghost services-more-btn"
                     @click="showMoreServices"
                 >
+                    <span aria-hidden="true">➕</span>
                     Voir plus
                 </button>
             </div>
@@ -251,7 +252,7 @@
                     <span class="btn-icon">🚀</span> Commencez maintenant
                 </a>
                 <a class="btn btn-primary btn-lg" :href="routes.registerClient"
-                    >🔍 Faire une demande →</a
+                    >🔍 Inscription client</a
                 >
             </div>
         </div>

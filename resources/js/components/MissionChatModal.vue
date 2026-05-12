@@ -183,7 +183,18 @@
             </div>
 
             <!-- ── BARRE DE SAISIE ── -->
-            <div class="chat-input-bar">
+            <div class="chat-readonly-bar" v-if="isConversationLocked">
+                <span class="chat-readonly-icon">🔒</span>
+                <div>
+                    <strong>Conversation verrouillée</strong>
+                    <p>
+                        La mission est terminée. Vous pouvez consulter les messages,
+                        mais vous ne pouvez plus en envoyer.
+                    </p>
+                </div>
+            </div>
+
+            <div class="chat-input-bar" v-else>
                 <div
                     class="chat-attach-btn"
                     title="Joindre une photo ou un fichier"
@@ -306,6 +317,12 @@ export default {
                 msgs,
             }));
         },
+
+        isConversationLocked() {
+            return ["completed", "closed", "cancelled"].includes(
+                this.conversation?.mission_status,
+            );
+        },
     },
 
     methods: {
@@ -401,6 +418,8 @@ export default {
 
         // ── Envoi texte ───────────────────────────────────────────
         async send() {
+            if (this.isConversationLocked) return;
+
             console.log(
                 "[Chat] send — draft:",
                 this.draft,
@@ -456,6 +475,11 @@ export default {
 
         // ── Envoi fichier ─────────────────────────────────────────
         onFileSelect(e) {
+            if (this.isConversationLocked) {
+                e.target.value = "";
+                return;
+            }
+
             const file = e.target.files[0];
             if (!file) return;
             this.pendingFile = file;
@@ -489,6 +513,8 @@ export default {
         },
 
         async sendAttachment() {
+            if (this.isConversationLocked) return;
+
             if (!this.pendingFile || this.sending) return;
             this.sending = true;
             const formData = new FormData();
@@ -983,6 +1009,29 @@ export default {
     border-top: 1px solid #e8ddd4;
     background: #fff;
     flex-shrink: 0;
+}
+.chat-readonly-bar {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border-top: 1px solid #fed7aa;
+    background: #fff7ed;
+    color: #7c2d12;
+    flex-shrink: 0;
+    font-size: 12.5px;
+}
+.chat-readonly-icon {
+    line-height: 1.4;
+}
+.chat-readonly-bar strong {
+    display: block;
+    color: #9a3412;
+    font-size: 13px;
+}
+.chat-readonly-bar p {
+    margin: 2px 0 0;
+    line-height: 1.4;
 }
 .chat-attach-btn {
     width: 36px;

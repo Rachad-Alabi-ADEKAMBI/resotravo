@@ -33,6 +33,7 @@
         'missions_index'         => route('contractor.missions.index'),
         'missions_available'     => route('contractor.missions.available'),
         'missions_status'        => url('/contractor/missions/{id}/status'),
+        'mission_receipt'        => url('/contractor/missions/{id}/receipt'),
         'missions_proposal_expire' => url('/contractor/missions/{id}/proposal-expire'),
         'missions_quote_store'   => url('/contractor/missions/{id}/quote'),
         'notifications'          => route('notifications.index'),

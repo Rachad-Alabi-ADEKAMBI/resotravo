@@ -48,6 +48,7 @@
             'missions_available' => route('contractor.missions.available'),
             'missions_show'      => url('/contractor/missions/{id}'),
             'missions_status'    => url('/contractor/missions/{id}/status'),
+            'mission_receipt'    => url('/contractor/missions/{id}/receipt'),
             'missions_proposal_expire' => url('/contractor/missions/{id}/proposal-expire'),
             'notifications'      => route('notifications.index'),
             'notifications_read' => url('/notifications/{id}/read'),
@@ -62,6 +63,7 @@
             'conversations_attach'   => url('/conversations/{id}/attachment'),
             'missions_quote_store'   => url('/contractor/missions/{id}/quote'),
             'conversations_read'     => url('/conversations/{id}/read'),
+            'unread_summary'         => route('unread-messages'),
         ]) }}"
     :diagnostic-fee="{{ (float) \App\Models\Setting::get('diagnostic_fee', 5000) }}"
     :commission-diagnostic="{{ (float) \App\Models\Setting::get('commission_diagnostic', 10) }}"

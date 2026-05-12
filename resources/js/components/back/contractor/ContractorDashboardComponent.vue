@@ -331,12 +331,13 @@
                                     :class="badgeClass(m.status)"
                                     >{{ labelOf(m) }}</span
                                 >
-                                <div class="ctr-mission-price">
-                                    {{
-                                        m.total_amount
-                                            ? formatPrice(m.total_amount * 0.9)
-                                            : "—"
-                                    }}
+                                <div class="ctr-mission-amounts" v-if="missionQuoteTotal(m)">
+                                    <div class="ctr-mission-quote-total">
+                                        Montant devis: {{ formatPrice(missionQuoteTotal(m)) }}
+                                    </div>
+                                    <div class="ctr-mission-price">
+                                        Votre part {{ formatPrice(contractorNetForMission(m)) }}
+                                    </div>
                                 </div>
                                 <div class="ctr-mission-meta" v-if="m.accepted_at">
                                     {{ formatDateTime(m.accepted_at) }}
@@ -345,12 +346,11 @@
                                     class="ctr-msg-unread"
                                     v-if="unreadByMission[m.id]"
                                 >
-                                    💬
-                                    <span
-                                        >{{ unreadByMission[m.id] }} non lu{{
-                                            unreadByMission[m.id] > 1 ? "s" : ""
-                                        }}</span
-                                    >
+                                    <span aria-hidden="true">&#128172;</span>
+                                    {{ unreadByMission[m.id] }} message{{
+                                        unreadByMission[m.id] > 1 ? "s" : ""
+                                    }}
+                                    non lu{{ unreadByMission[m.id] > 1 ? "s" : "" }}
                                 </div>
                             </div>
                         </div>
@@ -722,7 +722,54 @@
                                 </div>
                                 <div class="ctm-row">
                                     <span>Adresse</span>
-                                    <strong>{{ activeMission.address }}</strong>
+                                    <strong class="ctm-address-actions">
+                                        <span class="ctm-address-text">{{ activeMission.address }}</span>
+                                        <a
+                                            v-if="hasMissionCoordinates(activeMission)"
+                                            class="ctm-map-view-btn"
+                                            :href="missionMapUrl(activeMission)"
+                                            target="_blank"
+                                            rel="noopener"
+                                        >
+                                            Voir le lieu
+                                        </a>
+                                        <a
+                                            v-if="hasMissionCoordinates(activeMission)"
+                                            class="ctm-map-view-btn ctm-route-btn"
+                                            :href="missionDirectionsUrl(activeMission)"
+                                            target="_blank"
+                                            rel="noopener"
+                                        >
+                                            Itinéraire
+                                        </a>
+                                        <span
+                                            class="ctm-address-distance"
+                                            v-if="shouldShowMissionDistance"
+                                        >
+                                            <span v-if="contractorGeo.loading">Localisation en cours...</span>
+                                            <template v-else-if="hasValidMissionDistance">
+                                                Vous êtes à
+                                                <strong v-if="missionDistance < 1">{{ Math.round(missionDistance * 1000) }} m</strong>
+                                                <strong v-else>{{ missionDistance.toFixed(1) }} km</strong>
+                                                du client
+                                            </template>
+                                            <span v-else-if="contractorGeo.error === 'denied'">
+                                                Activez la géolocalisation pour calculer la distance.
+                                            </span>
+                                            <button
+                                                v-else-if="contractorGeo.error"
+                                                type="button"
+                                                class="ctm-distance-retry-inline"
+                                                @click.stop="requestGeoAndComputeDistance"
+                                            >
+                                                Calculer la distance
+                                            </button>
+                                        </span>
+                                    </strong>
+                                </div>
+                                <div class="ctm-row" v-if="activeMission.reservation">
+                                    <span>Date prévue de réalisation</span>
+                                    <strong>{{ formatReservationSlot(activeMission) }}</strong>
                                 </div>
                                 <div class="ctm-row" v-if="activeMission.description">
                                     <span>Description</span>
@@ -732,9 +779,17 @@
                                     <span>Acceptée le</span>
                                     <strong>{{ formatDateTime(activeMission.accepted_at) }}</strong>
                                 </div>
+                                <div class="ctm-row" v-if="activeMission.on_the_way_at">
+                                    <span>Prestataire Départ pris le</span>
+                                    <strong>{{ formatDateTime(activeMission.on_the_way_at) }}</strong>
+                                </div>
+                                <div class="ctm-row" v-if="activeMission.arrived_at">
+                                    <span>Prestataire arrivé le</span>
+                                    <strong>{{ formatDateTime(activeMission.arrived_at) }}</strong>
+                                </div>
                                 <div class="ctm-row" v-if="activeMission.total_amount">
-                                    <span>Votre part (90%)</span>
-                                    <strong class="ctm-val-green">{{ formatPrice(activeMission.total_amount * 0.9) }}</strong>
+                                    <span>Votre part</span>
+                                    <strong class="ctm-val-green">{{ formatPrice(contractorNetForMission(activeMission)) }}</strong>
                                 </div>
                             </div>
 
@@ -754,23 +809,6 @@
                                 </div>
                             </div>
 
-                            <!-- Distance -->
-                            <div class="ctm-distance-block" v-if="activeMission.status === 'assigned' && activeMission.latitude && activeMission.longitude">
-                                <div v-if="contractorGeo.loading" class="ctm-distance-loading">
-                                    <span class="ctm-spinner"></span> Localisation en cours...
-                                </div>
-                                <div v-else-if="missionDistance !== null" class="ctm-distance-value">
-                                    📍
-                                    <template v-if="missionDistance < 1">Vous êtes à <strong>{{ Math.round(missionDistance * 1000) }} m</strong> du client</template>
-                                    <template v-else>Vous êtes à <strong>{{ missionDistance.toFixed(1) }} km</strong> du client</template>
-                                </div>
-                                <div v-else-if="contractorGeo.error === 'denied'" class="ctm-distance-error">🔒 Activez la géolocalisation dans votre navigateur.</div>
-                                <div v-else-if="contractorGeo.error" class="ctm-distance-error">
-                                    Impossible d'obtenir votre position.
-                                    <button class="ctm-retry-btn" @click="requestGeoAndComputeDistance">Réessayer</button>
-                                </div>
-                            </div>
-
                             <!-- Client -->
                             <div class="ctm-section" v-if="activeMission.client">
                                 <div class="ctm-section-title">👤 Client</div>
@@ -785,22 +823,20 @@
 
                             <!-- Résumé devis -->
                             <div class="ctm-section ctm-quote-summary" v-if="activeMission.quote && activeMission.quote.status !== 'draft'">
-                                <div class="ctm-section-title">
-                                    📄 Devis {{ activeMission.quote.version > 1 ? 'v' + activeMission.quote.version : '' }}
+                                <div class="ctm-section-title ctm-quote-summary-title">
+                                    ▯ Devis
                                 </div>
-                                <div class="ctm-row" v-for="item in activeMission.quote.items" :key="item.id">
-                                    <span>{{ item.description }}</span>
-                                    <strong>{{ formatPrice(item.quantity * item.unit_price) }}</strong>
+                                <div class="ctm-quote-summary-line"></div>
+                                <div class="ctm-quote-summary-amount">
+                                    <span>Montant du<br>devis</span>
+                                    <strong>{{ formatPrice(activeMission.quote.amount_incl_tax) }}</strong>
                                 </div>
-                                <div class="ctm-row ctm-quote-total">
-                                    <span>Total</span>
-                                    <strong class="ctm-val-green">{{ formatPrice(activeMission.quote.amount_incl_tax) }}</strong>
-                                </div>
+                                <div class="ctm-quote-summary-line ctm-quote-summary-line--soft"></div>
                                 <div class="ctm-quote-summary-footer">
                                     <div class="ctm-quote-status-badge" :class="effectiveQuoteStatus(activeMission)">
                                         {{ quoteStatusLabel(effectiveQuoteStatus(activeMission)) }}
                                     </div>
-                                    <button class="ctm-quote-pdf-btn" @click="downloadQuotePdf(activeMission)" title="Télécharger PDF">⬇ PDF</button>
+                                    <button class="ctm-quote-pdf-btn" @click="downloadQuotePdf(activeMission)" title="Télécharger PDF">⬇ Télécharger le devis</button>
                                 </div>
                             </div>
 
@@ -838,7 +874,11 @@
                             <!-- En route -->
                             <div class="ctm-action-block" v-if="['accepted', 'contact_made'].includes(activeMission.status)">
                                 <p>🚗 Prêt à partir ? Informez le client en cliquant sur le bouton ci-dessous.</p>
-                                <button class="ctm-btn ctm-btn-orange ctm-btn-full" @click="updateStatus(activeMission, 'on_the_way')" :disabled="actionLoading">
+                                <p class="ctm-reservation-lock" v-if="isReservationBeforeMissionDay(activeMission)">
+                                    Cette mission est réservée pour le {{ formatReservationSlot(activeMission) }}.
+                                    Vous pourrez la démarrer le jour prévu.
+                                </p>
+                                <button v-else class="ctm-btn ctm-btn-orange ctm-btn-full" @click="updateStatus(activeMission, 'on_the_way')" :disabled="actionLoading">
                                     <div class="ctm-spinner" v-if="actionLoading"></div>
                                     <span v-else>🚗 Je suis en route →</span>
                                 </button>
@@ -846,8 +886,12 @@
 
                             <!-- Arrivé sur place -->
                             <div class="ctm-action-block" v-if="['on_the_way', 'tracking'].includes(activeMission.status)">
-                                <p>📍 Êtes-vous arrivé sur place ?</p>
-                                <button class="ctm-btn ctm-btn-orange ctm-btn-full" @click="updateStatus(activeMission, 'in_progress')" :disabled="actionLoading">
+                                <p class="ctm-reservation-lock" v-if="isReservationBeforeMissionDay(activeMission)">
+                                    Cette mission est réservée pour le {{ formatReservationSlot(activeMission) }}.
+                                    Vous pourrez la démarrer le jour prévu.
+                                </p>
+                                <p v-else>📍 Êtes-vous arrivé sur place ?</p>
+                                <button v-if="!isReservationBeforeMissionDay(activeMission)" class="ctm-btn ctm-btn-orange ctm-btn-full" @click="updateStatus(activeMission, 'in_progress')" :disabled="actionLoading">
                                     <div class="ctm-spinner" v-if="actionLoading"></div>
                                     <span v-else>📍 Je suis arrivé sur place</span>
                                 </button>
@@ -878,6 +922,10 @@
                                 <div>
                                     <div class="ctm-action-wait-title">Devis en attente d'approbation</div>
                                     <div class="ctm-action-wait-sub">Le client doit approuver votre devis pour démarrer les travaux.</div>
+                                    <div class="ctm-action-row" style="margin-top:12px">
+                                        <button class="ctm-btn ctm-btn-orange" @click="openQuoteModal(activeMission)">✎ Modifier le devis</button>
+                                        <button class="ctm-btn ctm-btn-ghost" @click="downloadQuotePdf(activeMission)">⬇ Télécharger le devis</button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -894,7 +942,7 @@
                             <div class="ctm-action-block ctm-action-wait" v-if="activeMission.status === 'awaiting_confirm'">
                                 <div class="ctm-action-wait-icon">⏳</div>
                                 <div>
-                                    <div class="ctm-action-wait-title">En attente du client</div>
+                                    <div class="ctm-action-wait-title">En attente de la confirmation du client</div>
                                     <div class="ctm-action-wait-sub">Le client doit confirmer la fin des travaux pour déclencher votre paiement.</div>
                                 </div>
                             </div>
@@ -904,9 +952,6 @@
                                 <div class="ctm-action-done-icon">🎉</div>
                                 <div>
                                     <div class="ctm-action-done-title">Mission {{ activeMission.status === 'closed' ? 'clôturée' : 'terminée' }}</div>
-                                    <div class="ctm-action-done-sub" v-if="activeMission.status === 'closed'">
-                                        Votre paiement de {{ formatPrice(activeMission.total_amount * 0.9) }} a été effectué.
-                                    </div>
                                 </div>
                             </div>
 
@@ -921,8 +966,10 @@
                         :disabled="!canMessageMission(activeMission)"
                         :class="{ 'ctm-btn-disabled': !canMessageMission(activeMission) }"
                     >
-                        💬 Messages
-                        <span class="ctr-chat-badge" v-if="unreadByMission[activeMission.id] > 0">{{ unreadByMission[activeMission.id] }}</span>
+                        💬 Contacter le client
+                        <span class="ctr-chat-badge" v-if="unreadByMission[activeMission.id] > 0">
+                            {{ unreadByMission[activeMission.id] }} non lu{{ unreadByMission[activeMission.id] > 1 ? 's' : '' }}
+                        </span>
                     </button>
                 </div>
             </div>
@@ -1219,6 +1266,7 @@
                         <div class="ctm-qblock-title">
                             🔍 Diagnostic
                             <span class="ctm-commission-tag">{{ commissionDiagnostic }}% Mesotravo</span>
+                            <button type="button" class="ctm-help-dot" @click="showCommissionHelp('diagnostic')" title="Comprendre ce pourcentage">?</button>
                         </div>
                         <div class="ctm-diag-amount-row">
                             <div class="ctm-diag-amount-val">
@@ -1315,6 +1363,7 @@
                             <span class="ctm-quote-section-title">
                                 🛠️ Main d'œuvre
                                 <span class="ctm-commission-tag">{{ commissionMainOeuvre }}% Mesotravo</span>
+                                <button type="button" class="ctm-help-dot" @click="showCommissionHelp('labor')" title="Comprendre ce pourcentage">?</button>
                             </span>
                         </div>
                         <div class="ctm-quote-labor-row">
@@ -1323,10 +1372,12 @@
                                     >Description</label
                                 >
                                 <input
-                                    class="ctm-quote-input"
+                                    class="ctm-quote-input ctm-quote-input-locked"
                                     type="text"
                                     v-model="quoteModal.labor.description"
                                     placeholder="Ex : Pose et raccordement robinet…"
+                                    disabled
+                                    readonly
                                 />
                             </div>
                             <div class="ctm-quote-field ctm-field-amount">
@@ -1350,12 +1401,12 @@
                         <div class="ctm-recap-row" v-if="quoteModal.diagnostic_fee > 0">
                             <span>Diagnostic</span>
                             <div class="ctm-recap-vals">
-                                <span class="ctm-recap-net-line">Votre part : {{ formatPrice((quoteModal.diagnostic_fee || 0) * (1 - commissionDiagnostic / 100)) }}</span>
-                                <strong>{{ formatPrice(quoteModal.diagnostic_fee || 0) }}</strong>
+                                <span class="ctm-recap-net-line">Mesotravo : {{ formatPrice((quoteModal.diagnostic_fee || 0) * (commissionDiagnostic / 100)) }}</span>
+                                <strong>{{ formatPrice((quoteModal.diagnostic_fee || 0) * (1 - commissionDiagnostic / 100)) }}</strong>
                             </div>
                         </div>
                         <div class="ctm-recap-row" v-if="partsSubtotal > 0">
-                            <span>Pièces & matériaux</span>
+                            <span>Pièces à acheter</span>
                             <div class="ctm-recap-vals">
                                 <strong>{{ formatPrice(partsSubtotal) }}</strong>
                             </div>
@@ -1363,17 +1414,22 @@
                         <div class="ctm-recap-row" v-if="(quoteModal.labor.unit_price || 0) > 0">
                             <span>Main d'œuvre</span>
                             <div class="ctm-recap-vals">
-                                <span class="ctm-recap-net-line">Votre part : {{ formatPrice((quoteModal.labor.unit_price || 0) * (1 - commissionMainOeuvre / 100)) }}</span>
-                                <strong>{{ formatPrice(quoteModal.labor.unit_price || 0) }}</strong>
+                                <span class="ctm-recap-net-line">Mesotravo : {{ formatPrice((quoteModal.labor.unit_price || 0) * (commissionMainOeuvre / 100)) }}</span>
+                                <strong>{{ formatPrice((quoteModal.labor.unit_price || 0) * (1 - commissionMainOeuvre / 100)) }}</strong>
                             </div>
                         </div>
                         <div class="ctm-recap-divider"></div>
                         <div class="ctm-recap-total">
-                            <span>Total devis</span>
-                            <strong>{{ formatPrice(quoteTotal) }}</strong>
+                            <span>Prestataire</span>
+                            <strong>{{ formatPrice(contractorNet) }}</strong>
                         </div>
                         <div class="ctm-recap-net-total">
-                            💰 Votre net estimé : <strong>{{ formatPrice(contractorNet) }}</strong>
+                            Mesotravo :
+                            <strong>{{ formatPrice(mesotravoShare) }}</strong>
+                        </div>
+                        <div class="ctm-recap-grand-total">
+                            <span>Total du devis</span>
+                            <strong>{{ formatPrice(quoteTotal) }}</strong>
                         </div>
                     </div>
 
@@ -1414,6 +1470,29 @@
                         <span v-else>📤 Soumettre au client</span>
                     </button>
                 </div>
+            </div>
+        </div>
+
+        <div
+            class="ctm-modal-overlay ctm-help-overlay"
+            v-if="helpModal.visible"
+            @click.self="closeHelpModal"
+        >
+            <div class="ctm-help-modal">
+                <div class="ctm-help-head">
+                    <div>
+                        <div class="ctm-help-kicker">Calcul Mesotravo</div>
+                        <h3>{{ helpModal.title }}</h3>
+                    </div>
+                    <button class="ctm-modal-close" @click="closeHelpModal">&#215;</button>
+                </div>
+                <p>{{ helpModal.body }}</p>
+                <div class="ctm-help-note">
+                    Le montant des pièces et matériaux est toujours reversé à 100% au prestataire.
+                </div>
+                <button class="ctm-btn ctm-btn-orange ctm-btn-full" @click="closeHelpModal">
+                    Compris
+                </button>
             </div>
         </div>
 
@@ -1508,6 +1587,26 @@
                 :key="t.id"
             >
                 {{ t.message }}
+            </div>
+        </div>
+
+        <div
+            class="ctr-modal-overlay"
+            v-if="completionPopup.visible"
+            @click.self="completionPopup.visible = false"
+        >
+            <div class="ctr-completion-popup">
+                <button class="ctr-completion-close" @click="completionPopup.visible = false">&times;</button>
+                <div class="ctr-completion-icon">✓</div>
+                <h3>Mission terminée</h3>
+                <p>{{ completionPopup.message }}</p>
+                <div class="ctr-completion-progress" v-if="completionPopup.completedCount">
+                    <span :style="{ width: Math.min(100, (completionPopup.completedCount / 5) * 100) + '%' }"></span>
+                </div>
+                <div class="ctr-completion-count" v-if="completionPopup.completedCount">
+                    {{ Math.min(completionPopup.completedCount, 5) }} / 5 missions
+                </div>
+                <button class="ctr-btn ctr-btn-orange" @click="completionPopup.visible = false">Fermer</button>
             </div>
         </div>
     </div>
@@ -1632,6 +1731,11 @@ export default {
                 error: null,
                 _lineId: 0,
             },
+            helpModal: {
+                visible: false,
+                title: "",
+                body: "",
+            },
             abandonModal: {
                 visible: false,
                 mission: null,
@@ -1653,6 +1757,13 @@ export default {
             notifLoading: false,
             unreadCount: 0,
             notifInterval: null,
+            completionPopup: {
+                visible: false,
+                message: "",
+                completedCount: 0,
+                remaining: 0,
+                notificationId: null,
+            },
 
             localDocuments: [],
             localDocProgress: null,
@@ -1700,6 +1811,7 @@ export default {
                 { key: "all", label: "Toutes" },
                 { key: "active", label: "En cours" },
                 { key: "assigned", label: "Proposées" },
+                { key: "reservations", label: "Réservations" },
                 { key: "closed", label: "Terminées" },
                 { key: "cancelled", label: "Annulées" },
             ],
@@ -1794,6 +1906,13 @@ export default {
         activeMissionImages() {
             return this.normalizeMissionImages(this.activeMission);
         },
+        hasValidMissionDistance() {
+            return Number.isFinite(Number(this.missionDistance));
+        },
+        shouldShowMissionDistance() {
+            return this.hasMissionCoordinates(this.activeMission)
+                && ["assigned", "accepted", "contact_made", "on_the_way", "tracking"].includes(this.activeMission?.status);
+        },
 
         kpis() {
             const c = this.contractorProfile;
@@ -1871,6 +1990,10 @@ export default {
                     );
                 else if (this.tab === "assigned")
                     list = missions.filter((m) => m.status === "assigned");
+                else if (this.tab === "reservations")
+                    list = missions.filter((m) =>
+                        this.hasFutureReservation(m)
+                    );
                 else if (this.tab === "closed")
                     list = missions.filter((m) =>
                         ["completed", "closed"].includes(m.status)
@@ -1911,9 +2034,15 @@ export default {
         contractorNet() {
             const diagNet  = (Number(this.quoteModal.diagnostic_fee) || 0) * (1 - this.commissionDiagnostic / 100);
             const laborNet = (Number(this.quoteModal.labor.unit_price) || 0) * (1 - this.commissionMainOeuvre / 100);
-            return diagNet + this.partsSubtotal + laborNet;
+            return diagNet + laborNet;
+        },
+        mesotravoShare() {
+            const diag = (Number(this.quoteModal.diagnostic_fee) || 0) * (this.commissionDiagnostic / 100);
+            const labor = (Number(this.quoteModal.labor.unit_price) || 0) * (this.commissionMainOeuvre / 100);
+            return Math.max(0, diag + labor);
         },
         quoteIsValid() {
+            const hasDiag = (Number(this.quoteModal.diagnostic_fee) || 0) > 0;
             const hasValidPart = this.quoteModal.partLines.some(
                 (l) =>
                     l.description?.trim() && l.quantity > 0 && l.unit_price >= 0
@@ -1921,7 +2050,7 @@ export default {
             const hasLabor =
                 (Number(this.quoteModal.labor.unit_price) || 0) > 0 &&
                 this.quoteModal.labor.description?.trim();
-            return hasValidPart || hasLabor;
+            return hasDiag || hasValidPart || hasLabor;
         },
     },
 
@@ -2004,6 +2133,32 @@ export default {
                 "completed",
                 "closed",
             ].includes(mission?.status);
+        },
+
+        todayIsoDate() {
+            const now = new Date();
+            const month = String(now.getMonth() + 1).padStart(2, "0");
+            const day = String(now.getDate()).padStart(2, "0");
+            return `${now.getFullYear()}-${month}-${day}`;
+        },
+
+        isReservationBeforeMissionDay(mission) {
+            const day = mission?.reservation?.day;
+            return Boolean(day) && String(day).slice(0, 10) > this.todayIsoDate();
+        },
+
+        formatReservationSlot(mission) {
+            const day = mission?.reservation?.day;
+            if (!day) return "le jour prévu";
+            const time = String(mission?.reservation?.time || "").slice(0, 5);
+            const [year, month, date] = String(day).slice(0, 10).split("-");
+            const formattedDate = new Date(Number(year), Number(month) - 1, Number(date))
+                .toLocaleDateString("fr-FR", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                });
+            return time ? `${formattedDate} à ${time}` : formattedDate;
         },
 
         proposalTimerPercent(mission) {
@@ -2141,6 +2296,17 @@ export default {
         },
 
         async updateStatus(mission, status) {
+            if (
+                ["on_the_way", "in_progress"].includes(status) &&
+                this.isReservationBeforeMissionDay(mission)
+            ) {
+                this.showToast(
+                    `Cette mission est réservée pour le ${this.formatReservationSlot(mission)}. Vous pourrez la démarrer le jour prévu.`,
+                    "warning"
+                );
+                return;
+            }
+
             this.actionLoading = true;
             try {
                 const csrf = document.querySelector(
@@ -2259,7 +2425,26 @@ export default {
         },
 
         async saveSchedule() {
+            if (this.scheduleModal.loading) return;
+
+            if (this.scheduleModal.available) {
+                if (!this.scheduleModal.start_time || !this.scheduleModal.end_time) {
+                    this.showToast("Veuillez renseigner l'heure de début et l'heure de fin.", "error");
+                    return;
+                }
+                if (this.scheduleModal.end_time <= this.scheduleModal.start_time) {
+                    this.showToast("L'heure de fin doit être après l'heure de début.", "error");
+                    return;
+                }
+                if (!this.scheduleModal.working_days.length) {
+                    this.showToast("Sélectionnez au moins un jour travaillé.", "error");
+                    return;
+                }
+            }
+
             this.scheduleModal.loading = true;
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
             try {
                 const csrf = document.querySelector(
                     'meta[name="csrf-token"]'
@@ -2284,8 +2469,12 @@ export default {
                         Accept: "application/json",
                     },
                     body: JSON.stringify(payload),
+                    signal: controller.signal,
                 });
-                const data = await res.json();
+                const contentType = res.headers.get("content-type") || "";
+                const data = contentType.includes("application/json")
+                    ? await res.json()
+                    : { message: await res.text() };
                 console.log("[Horaires] HTTP", res.status, "— Réponse:", data);
                 if (!res.ok) {
                     if (data.errors) {
@@ -2320,8 +2509,14 @@ export default {
                 );
             } catch (e) {
                 console.error("[Horaires] Erreur JS:", e);
-                this.showToast("Erreur lors de la mise à jour.", "error");
+                this.showToast(
+                    e.name === "AbortError"
+                        ? "Le serveur ne répond pas. Vérifiez votre connexion puis réessayez."
+                        : "Erreur lors de la mise à jour.",
+                    "error"
+                );
             } finally {
+                clearTimeout(timeoutId);
                 this.scheduleModal.loading = false;
             }
         },
@@ -2397,6 +2592,7 @@ export default {
                 const data = await res.json();
                 this.notifications = data.notifications ?? [];
                 this.unreadCount = data.unread_count ?? 0;
+                this.showCompletionPopupFromNotifications(this.notifications);
             } catch {
                 /* silencieux */
             } finally {
@@ -2546,6 +2742,13 @@ export default {
         },
 
         // ── Helpers ───────────────────────────────────────────────
+        hasFutureReservation(mission) {
+            if (!mission?.reservation?.day) return false;
+            const day = mission.reservation.day;
+            const time = mission.reservation.time?.substring(0, 5) || "23:59";
+            return new Date(`${day}T${time}`) >= new Date();
+        },
+
         countByTab(key) {
             const missions = this.visibleMissionsForContractor(this.missions);
             if (key === "all") return missions.length;
@@ -2565,6 +2768,9 @@ export default {
                     .length;
             if (key === "assigned")
                 return missions.filter((m) => m.status === "assigned")
+                    .length;
+            if (key === "reservations")
+                return missions.filter((m) => this.hasFutureReservation(m))
                     .length;
             if (key === "closed")
                 return missions.filter((m) =>
@@ -2668,10 +2874,111 @@ export default {
         },
 
         formatPrice(amount) {
-            if (!amount) return "—";
+            if (!amount && amount !== 0) return "—";
             return (
                 new Intl.NumberFormat("fr-FR").format(Math.round(amount)) +
                 " FCFA"
+            );
+        },
+
+        receiptUrl(mission) {
+            return (this.routes.mission_receipt || "/contractor/missions/{id}/receipt").replace(
+                "{id}",
+                mission.id
+            );
+        },
+
+        missionMapUrl(mission) {
+            const coords = this.normalizedMissionCoordinates(mission);
+            if (!coords) return "#";
+            const { lat, lng } = coords;
+            return `https://www.google.com/maps?q=${encodeURIComponent(`${lat},${lng}`)}`;
+        },
+
+        missionDirectionsUrl(mission) {
+            const coords = this.normalizedMissionCoordinates(mission);
+            if (!coords) return "#";
+            const { lat, lng } = coords;
+            return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${lat},${lng}`)}&travelmode=driving`;
+        },
+
+        hasMissionCoordinates(mission) {
+            return this.normalizedMissionCoordinates(mission) !== null;
+        },
+
+        normalizedMissionCoordinates(mission) {
+            const lat = Number(mission?.latitude);
+            const lng = Number(mission?.longitude);
+
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+                return null;
+            }
+
+            if (lat === 0 && lng === 0) {
+                return null;
+            }
+
+            if (!this.isValidLatLng(lat, lng)) {
+                return null;
+            }
+
+            if (this.looksLikeBeninLngLat(lat, lng) && this.isValidLatLng(lng, lat)) {
+                return { lat: lng, lng: lat };
+            }
+
+            return { lat, lng };
+        },
+
+        isValidLatLng(lat, lng) {
+            return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+        },
+
+        looksLikeBeninLngLat(lat, lng) {
+            const beninLng = lat >= -1.8 && lat <= 4.5;
+            const beninLat = lng >= 5.5 && lng <= 13.2;
+            return beninLng && beninLat;
+        },
+
+        contractorNetForMission(mission) {
+            if (!mission) return 0;
+
+            const quoteItems = mission.quote?.items ?? [];
+            if (quoteItems.length) {
+                return quoteItems.reduce((sum, item) => {
+                    const total =
+                        (Number(item.quantity) || 0) *
+                        (Number(item.unit_price) || 0);
+
+                    if (item.type === "diagnostic") {
+                        return sum + total * (1 - this.commissionDiagnostic / 100);
+                    }
+
+                    if (item.type === "labor") {
+                        return sum + total * (1 - this.commissionMainOeuvre / 100);
+                    }
+
+                    return sum;
+                }, 0);
+            }
+
+            if (mission.contractor_payout !== undefined && mission.contractor_payout !== null) {
+                return Number(mission.contractor_payout) || 0;
+            }
+
+            if (mission.commission !== undefined && mission.commission !== null) {
+                return Math.max(
+                    0,
+                    (Number(mission.total_amount) || 0) -
+                        (Number(mission.commission) || 0)
+                );
+            }
+
+            return Number(mission.total_amount) || 0;
+        },
+
+        missionQuoteTotal(mission) {
+            return Number(
+                mission?.quote?.amount_incl_tax ?? mission?.total_amount ?? 0
             );
         },
 
@@ -2710,14 +3017,23 @@ export default {
 
         async requestGeoAndComputeDistance() {
             const m = this.activeMission;
-            if (!m?.latitude || !m?.longitude) return;
+            const missionCoords = this.normalizedMissionCoordinates(m);
+            if (!missionCoords) return;
 
             const compute = (lat, lng) => {
-                this.missionDistance = this.haversineKm(
-                    lat, lng,
-                    parseFloat(m.latitude),
-                    parseFloat(m.longitude)
-                );
+                const fromLat = Number(lat);
+                const fromLng = Number(lng);
+                const toLat = missionCoords.lat;
+                const toLng = missionCoords.lng;
+
+                if (![fromLat, fromLng, toLat, toLng].every(Number.isFinite)) {
+                    this.missionDistance = null;
+                    this.contractorGeo.error = 'unavailable';
+                    return;
+                }
+
+                const distance = this.haversineKm(fromLat, fromLng, toLat, toLng);
+                this.missionDistance = Number.isFinite(distance) ? distance : null;
                 this.contractorGeo.error = null;
             };
 
@@ -2839,7 +3155,7 @@ export default {
         },
 
         addPartLine() {
-            this.quoteModal.partLines.push({
+            this.quoteModal.partLines.unshift({
                 _id: this.quoteModal._lineId++,
                 description: "",
                 quantity: 1,
@@ -2849,6 +3165,24 @@ export default {
 
         removePartLine(idx) {
             this.quoteModal.partLines.splice(idx, 1);
+        },
+
+        showCommissionHelp(type) {
+            const rate = type === "diagnostic"
+                ? this.commissionDiagnostic
+                : this.commissionMainOeuvre;
+            const label = type === "diagnostic" ? "diagnostic" : "main d'œuvre";
+            this.helpModal = {
+                visible: true,
+                title: `Commission sur le ${label}`,
+                body:
+                    `Mesotravo retient ${rate}% uniquement sur le ${label}. ` +
+                    "Le client voit le montant total du devis, et votre part est calculée automatiquement.",
+            };
+        },
+
+        closeHelpModal() {
+            this.helpModal.visible = false;
         },
 
         lineTotal(line) {
@@ -2863,6 +3197,16 @@ export default {
 
             // Construire les items
             const items = [];
+
+            const diagFee = Number(this.quoteModal.diagnostic_fee) || 0;
+            if (diagFee > 0) {
+                items.push({
+                    type: "diagnostic",
+                    description: "Diagnostic",
+                    quantity: 1,
+                    unit_price: diagFee,
+                });
+            }
 
             for (const l of this.quoteModal.partLines) {
                 if (!l.description?.trim()) {
@@ -2898,7 +3242,7 @@ export default {
 
             if (items.length === 0) {
                 this.quoteModal.error =
-                    "Ajoutez au moins une pièce ou un montant de main d'œuvre.";
+                    "Ajoutez au moins une pièce ou un diagnostic.";
                 this.quoteModal.loading = false;
                 return;
             }
@@ -2961,18 +3305,20 @@ export default {
                 return `<tr><td><span style="background:${bg};color:#fff;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700;margin-right:8px;">${tl}</span>${i.description}</td><td style="text-align:center;">${i.quantity}</td><td style="text-align:right;">${this.formatPrice(i.unit_price)}</td><td style="text-align:right;font-weight:700;">${this.formatPrice(total)}</td></tr>`;
             }).join("");
             const clientName = mission.client?.name ?? '';
-            const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Devis #${quote.id}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;color:#1c1412;padding:32px 40px;max-width:800px;margin:0 auto}.print-btn{display:block;margin:0 auto 24px;padding:10px 28px;background:#f97316;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:18px;border-bottom:2px solid #f97316}.brand{font-size:24px;font-weight:900;color:#f97316}.brand em{color:#1c1412;font-style:normal}.brand-sub{font-size:11px;color:#7c6a5a;margin-top:3px}.meta{font-size:12px;color:#7c6a5a;text-align:right;line-height:1.8}.meta strong{color:#1c1412;font-size:14px;display:block}.section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#7c6a5a;margin:20px 0 8px}.info-row{font-size:13px;color:#7c6a5a;margin-bottom:4px}.info-row strong{color:#1c1412}.diag-box{background:#fff7ed;border-left:3px solid #f97316;padding:10px 14px;font-size:13px;color:#7c6a5a;margin:16px 0;border-radius:0 6px 6px 0}table{width:100%;border-collapse:collapse;margin:10px 0}thead th{background:#f8f4f0;font-size:10px;font-weight:700;text-transform:uppercase;color:#7c6a5a;padding:10px 12px;text-align:left}tbody td{padding:9px 12px;border-bottom:1px solid #f0e9e4;font-size:13px}tfoot td{padding:14px 12px;font-weight:700;font-size:15px;border-top:2px solid #f97316}tfoot td:last-child{text-align:right;color:#f97316}.note{margin-top:28px;padding:12px 16px;background:#f8f4f0;border-radius:6px;font-size:11px;color:#7c6a5a}.footer{margin-top:24px;text-align:center;font-size:10px;color:#b0a09a;padding-top:14px;border-top:1px solid #e8ddd4}@media print{.print-btn{display:none!important}}</style></head><body><button class="print-btn" onclick="window.print()">⬇ Enregistrer en PDF</button><div class="header"><div><div class="brand">Meso<em>Travo</em></div><div class="brand-sub">IFU : 3202625062491</div></div><div class="meta"><strong>Devis n°${quote.id}${quote.version > 1 ? ' — v' + quote.version : ''}</strong>Mission #${mission.id} · ${mission.service}<br>Émis le ${new Date().toLocaleDateString('fr-FR')}</div></div><div class="section-label">Détails</div><div class="info-row">📍 Adresse : <strong>${mission.address}</strong></div>${clientName ? `<div class="info-row">👤 Client : <strong>${clientName}</strong></div>` : ''}${quote.diagnosis ? `<div class="diag-box"><strong>🔍 Diagnostic</strong><br>${quote.diagnosis}</div>` : ''}<div class="section-label">Lignes du devis</div><table><thead><tr><th>Désignation</th><th>Qté</th><th>Prix unitaire</th><th>Total</th></tr></thead><tbody>${lines}</tbody><tfoot><tr><td colspan="3">Total TTC</td><td>${this.formatPrice(quote.amount_incl_tax)}</td></tr></tfoot></table><div class="note">⚠️ Ce devis est soumis à approbation via Mesotravo. Aucun paiement hors-plateforme n'est autorisé.</div><div class="footer">Mesotravo.com<br>IFU : 3202625062491</div></body></html>`;
+            const issuedAt = new Date().toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const missionSlot = mission.reservation?.day ? `<br>Mission prévue le ${new Date(`${mission.reservation.day}T${(mission.reservation.time || '00:00').substring(0, 5)}`).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}` : '';
+            const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Devis #${quote.id}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;color:#1c1412;padding:32px 40px;max-width:800px;margin:0 auto}.print-btn{display:block;margin:0 auto 24px;padding:10px 28px;background:#f97316;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:18px;border-bottom:2px solid #f97316}.brand{font-size:24px;font-weight:900;color:#f97316}.brand em{color:#1c1412;font-style:normal}.brand-sub{font-size:11px;color:#7c6a5a;margin-top:3px}.meta{font-size:12px;color:#7c6a5a;text-align:right;line-height:1.8}.meta strong{color:#1c1412;font-size:14px;display:block}.section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#7c6a5a;margin:20px 0 8px}.info-row{font-size:13px;color:#7c6a5a;margin-bottom:4px}.info-row strong{color:#1c1412}.diag-box{background:#fff7ed;border-left:3px solid #f97316;padding:10px 14px;font-size:13px;color:#7c6a5a;margin:16px 0;border-radius:0 6px 6px 0}table{width:100%;border-collapse:collapse;margin:10px 0}thead th{background:#f8f4f0;font-size:10px;font-weight:700;text-transform:uppercase;color:#7c6a5a;padding:10px 12px;text-align:left}tbody td{padding:9px 12px;border-bottom:1px solid #f0e9e4;font-size:13px}tfoot td{padding:14px 12px;font-weight:700;font-size:15px;border-top:2px solid #f97316}tfoot td:last-child{text-align:right;color:#f97316}.note{margin-top:28px;padding:12px 16px;background:#f8f4f0;border-radius:6px;font-size:11px;color:#7c6a5a}.footer{margin-top:24px;text-align:center;font-size:10px;color:#b0a09a;padding-top:14px;border-top:1px solid #e8ddd4}@media print{.print-btn{display:none!important}}</style></head><body><button class="print-btn" onclick="window.print()">⬇ Enregistrer en PDF</button><div class="header"><div><div class="brand">Meso<em>Travo</em></div><div class="brand-sub">Courtier en travaux<br>IFU : 3202625062491<br>+229 01 90 00 36 26<br>contact@mesotravo.com</div></div><div class="meta"><strong>Devis n°${quote.id}${quote.version > 1 ? ' — v' + quote.version : ''}</strong>Mission #${mission.id} · ${mission.service}<br>Émis le ${issuedAt}${missionSlot}</div></div><div class="section-label">Détails</div><div class="info-row">📍 Adresse : <strong>${mission.address}</strong></div>${clientName ? `<div class="info-row">👤 Adressé à : <strong>${clientName}</strong></div>` : ''}${quote.diagnosis ? `<div class="diag-box"><strong>🔍 Diagnostic</strong><br>${quote.diagnosis}</div>` : ''}<div class="section-label">Lignes du devis</div><table><thead><tr><th>Désignation</th><th>Qté</th><th>Prix unitaire</th><th>Total</th></tr></thead><tbody>${lines}</tbody><tfoot><tr><td colspan="3">Total TTC</td><td>${this.formatPrice(quote.amount_incl_tax)}</td></tr></tfoot></table><div class="note">⚠️ Ce devis est soumis à approbation via Mesotravo. Aucun paiement hors Mesotravo n'est autorisé.</div><div class="footer">Mesotravo.com · Courtier en travaux<br>+229 01 90 00 36 26 · contact@mesotravo.com<br>IFU : 3202625062491</div></body></html>`;
             const win = window.open('', '_blank', 'width=860,height=720');
             if (win) { win.document.write(html); win.document.close(); }
         },
 
         quoteStatusLabel(status) {
             const map = {
-                draft: "📝 Brouillon",
-                submitted: "⏳ En attente d'approbation",
-                approved: "✅ Approuvé par le client",
-                rejected: "❌ Refusé",
-                revised: "🔄 Révisé",
+                draft: "Brouillon",
+                submitted: "En attente d'approbation",
+                approved: "Approuvé par le client",
+                rejected: "Refusé",
+                revised: "Révisé",
             };
             return map[status] ?? status;
         },
@@ -3111,6 +3457,22 @@ export default {
         },
 
         // ── Chat ──────────────────────────────────────────────────
+        async fetchUnreadSummary() {
+            if (!this.routes.unread_summary) return;
+
+            try {
+                const res = await fetch(this.routes.unread_summary, {
+                    headers: { Accept: "application/json" },
+                });
+                if (!res.ok) return;
+
+                const data = await res.json();
+                this.unreadByMission = data.by_mission ?? {};
+            } catch {
+                /* silencieux */
+            }
+        },
+
         openChat(missionId) {
             this.chatMissionId = missionId;
         },
@@ -3145,11 +3507,30 @@ export default {
                 const data = await res.json();
                 this.notifications = data.notifications ?? [];
                 this.unreadCount = data.unread_count ?? 0;
+                this.showCompletionPopupFromNotifications(this.notifications);
             } catch {
                 /* silencieux */
             } finally {
                 this.notifLoading = false;
             }
+        },
+        showCompletionPopupFromNotifications(notifications) {
+            const notification = (notifications || []).find((n) =>
+                !n.read && n.event === "mission.completed" && n.show_completion_popup
+            );
+            if (!notification) return;
+
+            const storageKey = `meso_completion_popup_${notification.id}`;
+            if (localStorage.getItem(storageKey)) return;
+            localStorage.setItem(storageKey, "1");
+
+            this.completionPopup = {
+                visible: true,
+                message: notification.body,
+                completedCount: Number(notification.completed_missions || 0),
+                remaining: Number(notification.remaining_business_accreditation_missions || 0),
+                notificationId: notification.id,
+            };
         },
         toggleNotif() {
             this.notifOpen = !this.notifOpen;
@@ -3300,6 +3681,7 @@ export default {
         this.startMissionPolling();
         this.startProposalTimer();
         this.fetchNotifications();
+        this.fetchUnreadSummary();
         this.notifInterval = setInterval(
             () => this.fetchNotifications(),
             30000
@@ -3881,6 +4263,21 @@ export default {
     color: var(--gr);
     margin-top: 2px;
 }
+.ctr-msg-unread {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    width: fit-content;
+    margin-top: 6px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #fff7ed;
+    color: #f97316;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.25;
+    white-space: nowrap;
+}
 .ctr-mission-addr {
     font-size: 12px;
     color: var(--gr);
@@ -3985,10 +4382,22 @@ export default {
     gap: 4px;
     flex-shrink: 0;
 }
+.ctr-mission-amounts {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    text-align: right;
+}
+.ctr-mission-quote-total {
+    font-size: 11.5px;
+    font-weight: 650;
+    color: var(--gr);
+}
 .ctr-mission-price {
     font-size: 12.5px;
     font-weight: 700;
-    color: var(--dk);
+    color: var(--or2);
 }
 
 /* BADGES */
@@ -4484,10 +4893,11 @@ export default {
     font-size: 11px;
     font-weight: 800;
     border-radius: 99px;
-    padding: 0 6px;
+    padding: 2px 8px;
     min-width: 18px;
     height: 18px;
     margin-left: 6px;
+    white-space: nowrap;
 }
 .ctr-dash-lightbox {
     position: fixed;
@@ -4562,6 +4972,58 @@ export default {
     line-height: 1.45;
     overflow-wrap: anywhere;
     min-width: 0;
+}
+.ctm-address-actions {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.ctm-address-text {
+    min-width: min(100%, 220px);
+}
+.ctm-address-distance {
+    flex-basis: 100%;
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 2px;
+    color: #ea580c;
+    font-size: 12px;
+    font-weight: 800;
+}
+.ctm-address-distance strong {
+    color: #16a34a !important;
+    font-weight: 900;
+}
+.ctm-distance-retry-inline {
+    border: none;
+    background: transparent;
+    color: #ea580c;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 900;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+}
+.ctm-map-view-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: 5px 12px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--or), var(--or2));
+    color: #fff;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+.ctm-route-btn {
+    background: linear-gradient(135deg, #16a34a, #15803d);
 }
 .ctm-client-private {
     color: var(--gr) !important;
@@ -5078,6 +5540,76 @@ export default {
     background: #dc2626;
 }
 
+.ctr-completion-popup {
+    position: relative;
+    width: min(420px, calc(100vw - 32px));
+    background: #fff;
+    border-radius: 18px;
+    padding: 28px;
+    box-shadow: 0 24px 80px rgba(15, 23, 42, 0.22);
+    text-align: center;
+}
+
+.ctr-completion-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    border: 0;
+    background: transparent;
+    color: #475569;
+    font-size: 26px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.ctr-completion-icon {
+    width: 54px;
+    height: 54px;
+    margin: 0 auto 14px;
+    border-radius: 999px;
+    background: #16a34a;
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-size: 30px;
+    font-weight: 900;
+}
+
+.ctr-completion-popup h3 {
+    margin: 0 0 10px;
+    color: #111827;
+    font-size: 22px;
+}
+
+.ctr-completion-popup p {
+    margin: 0;
+    color: #374151;
+    line-height: 1.55;
+    font-weight: 700;
+}
+
+.ctr-completion-progress {
+    height: 8px;
+    margin: 18px 0 8px;
+    border-radius: 999px;
+    background: #e5e7eb;
+    overflow: hidden;
+}
+
+.ctr-completion-progress span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: #ff6b00;
+}
+
+.ctr-completion-count {
+    margin-bottom: 18px;
+    color: #6b7280;
+    font-size: 13px;
+    font-weight: 800;
+}
+
 @media (max-width: 480px) {
     .ctr-dispo-btn {
         display: none;
@@ -5187,6 +5719,16 @@ export default {
     margin-bottom: 12px;
     line-height: 1.6;
 }
+.ctm-reservation-lock {
+    margin: 0;
+    padding: 10px 12px;
+    border: 1px solid #fed7aa;
+    border-radius: 10px;
+    background: #fff7ed;
+    color: #9a3412 !important;
+    font-weight: 700;
+    line-height: 1.45;
+}
 .ctm-action-row {
     display: flex;
     gap: 12px;
@@ -5289,6 +5831,10 @@ export default {
 }
 .ctm-btn-full {
     width: 100%;
+}
+.ctm-receipt-btn {
+    text-decoration: none;
+    margin-top: 12px;
 }
 .ctm-btn-sm {
     font-size: 12px;
@@ -5525,6 +6071,14 @@ export default {
     outline: none;
     border-color: var(--or);
 }
+.ctm-quote-input-locked,
+.ctm-quote-input:disabled {
+    background: #eef0f3;
+    border-color: #d1d5db;
+    color: #6b7280;
+    cursor: not-allowed;
+    opacity: 1;
+}
 .ctm-quote-line-total {
     font-size: 13px;
     font-weight: 700;
@@ -5722,13 +6276,15 @@ export default {
 
 /* ── Workflow progress ── */
 .ctm-workflow {
-    padding: 12px 16px 14px;
+    padding: 12px 16px 30px;
     border-bottom: 1px solid #e5e7eb;
     background: #faf7f5;
     position: relative;
     z-index: 0;
     min-width: 0;
-    overflow: hidden;
+    min-height: 124px;
+    overflow: visible;
+    flex-shrink: 0;
 }
 .ctm-workflow-track {
     height: 5px; background: #e5e7eb; border-radius: 99px; overflow: hidden; margin-bottom: 12px;
@@ -5811,6 +6367,15 @@ export default {
 .ctm-qblock-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap }
 .ctm-qblock-title { font-size: 13px; font-weight: 800; color: var(--dk); display: flex; align-items: center; gap: 8px; flex-wrap: wrap }
 .ctm-commission-tag { font-size: 10px; font-weight: 700; background: #fff7ed; color: var(--or2); border: 1px solid #fed7aa; border-radius: 99px; padding: 1px 7px }
+.ctm-help-dot { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid #fed7aa; background: #fff; color: var(--or2); font-size: 11px; font-weight: 900; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0 }
+.ctm-help-dot:hover { background: #fff7ed }
+.ctm-help-overlay { z-index: 320 }
+.ctm-help-modal { width: min(420px, calc(100vw - 32px)); background: #fff; border-radius: 12px; border: 1px solid #fed7aa; padding: 18px; box-shadow: 0 18px 50px rgba(0,0,0,.18); animation: ctm-modal-in .2s ease }
+.ctm-help-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 10px }
+.ctm-help-kicker { color: var(--or2); font-size: 11px; font-weight: 800; text-transform: uppercase }
+.ctm-help-head h3 { margin: 2px 0 0; color: var(--dk); font-size: 18px }
+.ctm-help-modal p { margin: 0 0 12px; color: var(--gr); line-height: 1.55; font-size: 14px }
+.ctm-help-note { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; border-radius: 8px; padding: 10px 12px; font-size: 13px; font-weight: 700; margin-bottom: 14px }
 .ctm-add-line-btn { font-size: 12px; font-weight: 700; color: var(--or); background: var(--or3); border: 1.5px solid #fed7aa; border-radius: 8px; padding: 5px 12px; cursor: pointer; font-family: "Poppins", sans-serif; transition: all 0.15s; white-space: nowrap; flex-shrink: 0 }
 .ctm-add-line-btn:hover { background: #ffedd5 }
 
@@ -5851,9 +6416,30 @@ export default {
 .ctm-recap-total { display: flex; justify-content: space-between; font-size: 15px; font-weight: 800; color: var(--dk) }
 .ctm-recap-net-total { font-size: 12px; color: var(--gr); text-align: right }
 .ctm-recap-net-total strong { color: #16a34a; font-weight: 700 }
+.ctm-recap-grand-total { display: flex; justify-content: space-between; gap: 10px; padding-top: 8px; border-top: 1px solid #fdba74; font-size: 16px; font-weight: 900; color: var(--or2) }
+.ctm-recap-grand-total strong { color: var(--or) }
+.ctm-quote-summary { padding: 16px; border-radius: 12px }
+.ctm-quote-summary-title { display: flex; align-items: center; gap: 6px; margin-bottom: 14px }
+.ctm-quote-summary-line { height: 1px; background: #d8c6b8; margin-bottom: 10px }
+.ctm-quote-summary-line--soft { background: #f0e7df; margin: 10px 0 12px }
+.ctm-quote-summary-amount { display: grid; grid-template-columns: minmax(82px, 0.35fr) minmax(0, 1fr); align-items: start; gap: 14px; font-size: 13.5px }
+.ctm-quote-summary-amount span { color: var(--gr); line-height: 1.35 }
+.ctm-quote-summary-amount strong { color: var(--dk); font-size: 14px; font-weight: 900; line-height: 1.35 }
+.ctm-quote-summary-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap }
+.ctm-quote-status-badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 900; line-height: 1; background: #dcfce7; color: #16a34a }
+.ctm-quote-status-badge::before { content: "✓"; display: inline-flex; align-items: center; justify-content: center; width: 13px; height: 13px; border-radius: 2px; background: #22c55e; color: #fff; font-size: 10px; font-weight: 900 }
+.ctm-quote-status-badge.pending,
+.ctm-quote-status-badge.submitted { background: #fff7ed; color: #c2410c }
+.ctm-quote-status-badge.pending::before,
+.ctm-quote-status-badge.submitted::before { content: "!"; background: #f97316 }
+.ctm-quote-status-badge.rejected { background: #fee2e2; color: #dc2626 }
+.ctm-quote-status-badge.rejected::before { content: "×"; background: #ef4444 }
+.ctm-quote-pdf-btn { border: none; border-radius: 9px; background: linear-gradient(135deg, var(--or), var(--or2)); color: #fff; padding: 10px 16px; font-size: 12px; font-weight: 800; cursor: pointer; box-shadow: 0 8px 18px rgba(249, 115, 22, 0.22) }
+.ctm-quote-pdf-btn:hover { transform: translateY(-1px) }
 
 .ctm-quote-error { background: #fee2e2; border-radius: 10px; padding: 10px 14px; font-size: 13px; color: #dc2626; font-weight: 600 }
-.ctm-btn-draft { border: 1.5px solid var(--grl) !important; color: var(--gr) !important }
+.ctm-btn-draft { border: 1.5px solid var(--grl) !important; color: #fff !important }
+.ctm-btn-draft span { color: #fff !important }
 .ctm-spinner-dark { border-color: rgba(0,0,0,.15); border-top-color: var(--gr) }
 
 /* ══ Computed styles partagés ══ */

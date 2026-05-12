@@ -9,7 +9,8 @@ class Client extends Model
 {
     protected $fillable = [
         'user_id', 'first_name', 'last_name', 'phone',
-        'address', 'city', 'profile_picture',
+        'address', 'preferred_place', 'preferred_place_latitude',
+        'preferred_place_longitude', 'city', 'profile_picture',
         'account_type', 'company_name', 'business_sector',
         'min_distance_m', 'total_missions', 'completed_missions',
         'saved_addresses',

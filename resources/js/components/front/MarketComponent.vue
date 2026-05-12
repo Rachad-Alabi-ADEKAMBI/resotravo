@@ -8,54 +8,65 @@
             <div class="mk-hero-glow2"></div>
             <div class="mk-hero-dots"></div>
 
-            <div class="mk-hero-inner">
-                <div class="mk-badge au">
-                    <span class="bdot"></span>
-                    📋 Entreprises & Prestataires · Validation admin avant
-                    publication
+            <div class="mk-hero-wrap">
+                <div class="mk-hero-inner">
+                    <div class="mk-badge au">
+                        <span class="bdot"></span>
+                        📋 Entreprises & Prestataires · Validation admin avant
+                        publication
+                    </div>
+                    <h1 class="au1">
+                        Appels d'Offres<br />
+                        <span class="hl">trouvez la mission</span><br />
+                        qu'il vous faut
+                    </h1>
+                    <p class="mk-hero-desc au2">
+                        Les entreprises publient leurs besoins. Les prestataires
+                        et Talents y répondent.<br />
+                        Chaque offre est validée par l'équipe Mesotravo avant
+                        publication.
+                    </p>
+                    <div class="mk-hero-btns au3">
+                        <button
+                            class="btn btn-primary btn-lg"
+                            @click="activeTab = 'list'"
+                        >
+                            🔍 Voir les appels d'offres
+                        </button>
+                        <button
+                            class="btn btn-ghost btn-lg"
+                            @click="activeTab = 'publish'"
+                        >
+                            📝 Publier un appel d'offres
+                        </button>
+                    </div>
+                    <div class="mk-hero-stats au4">
+                        <div class="hstat">
+                            <span class="num">{{ stats.active }}</span
+                            ><span class="lbl">📋 AO actifs</span>
+                        </div>
+                        <div class="hstat">
+                            <span class="num">{{ stats.domains }}</span
+                            ><span class="lbl">🔧 Domaines couverts</span>
+                        </div>
+                        <div class="hstat">
+                            <span class="num">{{ stats.companies }}</span
+                            ><span class="lbl">🏢 Entreprises</span>
+                        </div>
+                        <div class="hstat">
+                            <span class="num">{{ stats.talents }}</span
+                            ><span class="lbl">⭐ Talents disponibles</span>
+                        </div>
+                    </div>
                 </div>
-                <h1 class="au1">
-                    Appels d'Offres<br />
-                    <span class="hl">trouvez la mission</span><br />
-                    qu'il vous faut
-                </h1>
-                <p class="mk-hero-desc au2">
-                    Les entreprises publient leurs besoins. Les prestataires et
-                    Talents y répondent.<br />
-                    Chaque offre est validée par l'équipe Mesotravo avant
-                    publication.
-                </p>
-                <div class="mk-hero-btns au3">
-                    <button
-                        class="btn btn-primary btn-lg"
-                        @click="activeTab = 'list'"
-                    >
-                        🔍 Voir les appels d'offres
-                    </button>
-                    <button
-                        class="btn btn-ghost btn-lg"
-                        @click="activeTab = 'publish'"
-                    >
-                        📝 Publier un appel d'offres
-                    </button>
-                </div>
-                <div class="mk-hero-stats au4">
-                    <div class="hstat">
-                        <span class="num">{{ stats.active }}</span
-                        ><span class="lbl">📋 AO actifs</span>
-                    </div>
-                    <div class="hstat">
-                        <span class="num">{{ stats.domains }}</span
-                        ><span class="lbl">🔧 Domaines couverts</span>
-                    </div>
-                    <div class="hstat">
-                        <span class="num">{{ stats.companies }}</span
-                        ><span class="lbl">🏢 Entreprises</span>
-                    </div>
-                    <div class="hstat">
-                        <span class="num">{{ stats.talents }}</span
-                        ><span class="lbl">⭐ Talents disponibles</span>
-                    </div>
+
+                <div class="mk-hero-visual" aria-hidden="true">
+                    <img
+                        :src="'/images/appels_d_offes.png'"
+                        alt=""
+                        class="mk-hero-img"
+                        loading="eager"
+                    />
                 </div>
             </div>
         </section>
@@ -710,10 +721,11 @@
                 </p>
                 <div class="cta-btns">
                     <a class="btn btn-dark btn-lg" :href="routes.register"
-                        >Créer un compte entreprise →</a
+                        ><span aria-hidden="true">🏢</span> Créer un compte
+                        entreprise →</a
                     >
                     <a class="btn btn-ghost btn-lg" :href="routes.login"
-                        >Se connecter</a
+                        ><span aria-hidden="true">🔐</span> Se connecter</a
                     >
                 </div>
             </div>
@@ -1327,6 +1339,26 @@ export default {
     z-index: 2;
     max-width: 760px;
 }
+.mk-hero-wrap {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(300px, 0.72fr);
+    align-items: center;
+    gap: 34px;
+    max-width: 1180px;
+    margin: 0 auto;
+}
+.mk-hero-visual {
+    display: flex;
+    justify-content: flex-end;
+}
+.mk-hero-img {
+    width: min(100%, 520px);
+    max-height: 460px;
+    object-fit: contain;
+    filter: drop-shadow(0 24px 38px rgba(0, 0, 0, 0.34));
+}
 .mk-badge {
     display: inline-flex;
     align-items: center;
@@ -1474,6 +1506,20 @@ export default {
     border-color: var(--or);
 }
 @media (max-width: 600px) {
+    .mk-hero {
+        padding-top: 34px;
+    }
+    .mk-hero-wrap {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+    .mk-hero-visual {
+        justify-content: center;
+    }
+    .mk-hero-img {
+        width: min(94vw, 380px);
+        max-height: 330px;
+    }
     .mk-select {
         width: 100%;
     }

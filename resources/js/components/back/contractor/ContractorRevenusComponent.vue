@@ -196,15 +196,15 @@
                                 <td data-label="Net prestataire">
                                     <span class="rv-net">{{ formatPrice(m.net_amount) }}</span>
                                 </td>
-                                <td data-label="Facture">
+                                <td data-label="Reçu">
                                     <a
-                                        v-if="m.invoice_url"
+                                        v-if="m.receipt_url"
                                         class="rv-invoice-link"
-                                        :href="m.invoice_url"
+                                        :href="m.receipt_url"
                                         target="_blank"
                                         rel="noopener"
                                     >
-                                        Télécharger
+                                        🧾 Télécharger
                                     </a>
                                     <span v-else>—</span>
                                 </td>

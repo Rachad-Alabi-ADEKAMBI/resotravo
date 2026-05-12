@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\AdminTemplateMailService;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -43,6 +44,11 @@ class User extends Authenticatable
     }
 
     // ── Relations ────────────────────────────────────────────────────────
+
+    public function sendPasswordResetNotification($token): void
+    {
+        app(AdminTemplateMailService::class)->sendPasswordResetMail($this, $token);
+    }
 
     public function client(): HasOne
     {

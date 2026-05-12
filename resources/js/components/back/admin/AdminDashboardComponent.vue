@@ -787,6 +787,35 @@
                             <div class="adb-modal-field-label">📍 Adresse</div>
                             <div class="adb-modal-field-val">
                                 {{ selectedMission.address }}
+                                <a
+                                    v-if="hasMissionLocation(selectedMission)"
+                                    class="adb-map-view-btn"
+                                    :href="missionMapUrl(selectedMission)"
+                                    target="_blank"
+                                    rel="noopener"
+                                >
+                                    🗺️ Voir le lieu
+                                </a>
+                                <a
+                                    v-if="hasMissionLocation(selectedMission)"
+                                    class="adb-map-view-btn adb-map-route-btn"
+                                    :href="missionDirectionsUrl(selectedMission)"
+                                    target="_blank"
+                                    rel="noopener"
+                                >
+                                    🧭 Itinéraire
+                                </a>
+                            </div>
+                        </div>
+                        <div
+                            class="adb-modal-field"
+                            v-if="selectedMission.reservation"
+                        >
+                            <div class="adb-modal-field-label">
+                                📅 Date prévue de réalisation
+                            </div>
+                            <div class="adb-modal-field-val">
+                                {{ formatReservationSlot(selectedMission) }}
                             </div>
                         </div>
                         <div
@@ -937,11 +966,91 @@
 
                     <!-- Actions admin -->
                     <div class="adb-modal-actions">
+                        <button
+                            class="adb-btn adb-btn-primary"
+                            :disabled="!hasMissionMessages(selectedMission)"
+                            :title="hasMissionMessages(selectedMission) ? 'Voir les messages de la mission' : 'Aucun message pour cette mission'"
+                            @click="openMessagesModal(selectedMission)"
+                        >
+                            💬 Accéder aux messages
+                            <span v-if="selectedMission.messages_count">
+                                ({{ selectedMission.messages_count }})
+                            </span>
+                        </button>
                         <a
                             class="adb-btn adb-btn-primary"
                             :href="routes.missions_page"
                             >Voir dans les missions →</a
                         >
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div
+            class="adb-modal-overlay"
+            v-if="messagesModal.visible"
+            @click.self="closeMessagesModal"
+        >
+            <div class="adb-modal adb-messages-modal">
+                <div class="adb-modal-header">
+                    <div>
+                        <h3>💬 Messages de la mission</h3>
+                        <div class="adb-modal-sub">
+                            Mission #{{ messagesModal.mission?.id }} ·
+                            {{ messagesModal.mission?.service }}
+                        </div>
+                    </div>
+                    <button class="adb-modal-close" @click="closeMessagesModal">
+                        &#215;
+                    </button>
+                </div>
+                <div class="adb-modal-body adb-messages-modal-body">
+                    <div class="adb-empty" v-if="messagesModal.loading">
+                        Chargement des messages...
+                    </div>
+                    <div class="adb-empty" v-else-if="messagesModal.error">
+                        {{ messagesModal.error }}
+                    </div>
+                    <div class="adb-empty" v-else-if="messagesModal.messages.length === 0">
+                        Aucun message pour cette mission
+                    </div>
+                    <div class="adb-messages" v-else>
+                        <div
+                            class="adb-message"
+                            v-for="msg in messagesModal.messages"
+                            :key="msg.id"
+                            :class="
+                                msg.sender_role === 'client'
+                                    ? 'adb-msg-client'
+                                    : msg.sender_role === 'contractor'
+                                    ? 'adb-msg-contractor'
+                                    : 'adb-msg-admin'
+                            "
+                        >
+                            <div class="adb-msg-avatar">
+                                {{ initials(msg.sender_name ?? "?") }}
+                            </div>
+                            <div class="adb-msg-bubble">
+                                <div class="adb-msg-meta">
+                                    <strong>{{ msg.sender_name }}</strong>
+                                    <span class="adb-msg-role-badge" :class="'role-' + msg.sender_role">
+                                        {{ messageRoleLabel(msg.sender_role) }}
+                                    </span>
+                                    <span class="adb-msg-time">{{ formatMessageDate(msg.created_at) }}</span>
+                                </div>
+                                <div class="adb-msg-text" v-if="msg.body">
+                                    {{ msg.body }}
+                                </div>
+                                <div class="adb-msg-img-wrap" v-if="msg.type === 'image' && msg.attachment_url">
+                                    <img :src="msg.attachment_url" :alt="msg.attachment_name" class="adb-msg-img" @click="windowOpen(msg.attachment_url)" />
+                                </div>
+                                <audio v-else-if="msg.type === 'audio' && msg.attachment_url" controls :src="msg.attachment_url" preload="metadata"></audio>
+                                <a v-else-if="msg.attachment_url" :href="msg.attachment_url" target="_blank" rel="noopener" class="adb-message-file">
+                                    📎 {{ msg.attachment_name || "Pièce jointe" }}
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1023,6 +1132,13 @@ export default {
             selectedMission: null,
             missionMessages: [],
             missionModalLoading: false,
+            messagesModal: {
+                visible: false,
+                mission: null,
+                messages: [],
+                loading: false,
+                error: "",
+            },
         };
     },
 
@@ -1127,10 +1243,7 @@ export default {
                     (m) => m.status === "cancelled"
                 ).length;
                 this.stats.revenue_total = missionsArr.reduce((s, m) => {
-                    const commission =
-                        parseFloat(m.commission) ||
-                        parseFloat(m.total_amount) * 0.1 ||
-                        0;
+                    const commission = parseFloat(m.commission) || 0;
                     return s + commission;
                 }, 0);
                 this.recentMissions = missionsArr.slice(0, 6);
@@ -1272,6 +1385,43 @@ export default {
             );
         },
 
+        missionMapUrl(mission) {
+            const lat = mission?.latitude;
+            const lng = mission?.longitude;
+            const target =
+                lat && lng ? `${lat},${lng}` : mission?.address ?? "";
+            return `https://www.google.com/maps?q=${encodeURIComponent(target)}`;
+        },
+        missionDirectionsUrl(mission) {
+            const lat = mission?.latitude;
+            const lng = mission?.longitude;
+            const target =
+                lat && lng ? `${lat},${lng}` : mission?.address ?? "";
+            return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(target)}&travelmode=driving`;
+        },
+        hasMissionLocation(mission) {
+            return Boolean(
+                (mission?.latitude && mission?.longitude) ||
+                    String(mission?.address ?? "").trim()
+            );
+        },
+        formatReservationSlot(mission) {
+            const day = mission?.reservation?.day;
+            if (!day) return "—";
+            const time = String(mission?.reservation?.time || "").slice(0, 5);
+            const [year, month, date] = String(day).slice(0, 10).split("-");
+            const formattedDate = new Date(Number(year), Number(month) - 1, Number(date))
+                .toLocaleDateString("fr-FR", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                });
+            return time ? `${formattedDate} à ${time}` : formattedDate;
+        },
+        hasMissionMessages(mission) {
+            return Number(mission?.messages_count ?? 0) > 0;
+        },
+
         avatarColor(id) {
             const colors = [
                 "linear-gradient(135deg,#F97316,#EA580C)",
@@ -1291,6 +1441,28 @@ export default {
                     .toUpperCase()
                     .slice(0, 2) ?? "??"
             );
+        },
+
+        messageRoleLabel(role) {
+            if (role === "client") return "Client";
+            if (role === "contractor") return "Prestataire";
+            if (role === "admin") return "Admin";
+            return "Utilisateur";
+        },
+
+        formatMessageDate(iso) {
+            if (!iso) return "—";
+            return new Date(iso).toLocaleString("fr-FR", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+            });
+        },
+
+        windowOpen(url) {
+            window.open(url, "_blank", "noopener");
         },
 
         // ── Notifications ────────────────────────────────────────────
@@ -1379,6 +1551,46 @@ export default {
             this.missionModal = false;
             this.selectedMission = null;
             this.missionMessages = [];
+        },
+
+        async openMessagesModal(mission) {
+            if (!mission || !this.hasMissionMessages(mission)) return;
+            this.messagesModal = {
+                visible: true,
+                mission,
+                messages: [],
+                loading: true,
+                error: "",
+            };
+
+            try {
+                const url = (this.routes.missions_messages || "/admin/missions/:id/messages")
+                    .replace(":id", mission.id)
+                    .replace("{id}", mission.id);
+                const res = await fetch(url, {
+                    headers: { Accept: "application/json" },
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.message || "Impossible de charger les messages.");
+                }
+                this.messagesModal.messages = data.messages ?? [];
+            } catch (error) {
+                this.messagesModal.error =
+                    error.message || "Impossible de charger les messages.";
+            } finally {
+                this.messagesModal.loading = false;
+            }
+        },
+
+        closeMessagesModal() {
+            this.messagesModal = {
+                visible: false,
+                mission: null,
+                messages: [],
+                loading: false,
+                error: "",
+            };
         },
 
         emitToggleSidebar() {
@@ -2314,8 +2526,67 @@ export default {
     font-weight: 700;
     color: var(--dk);
 }
+.adb-map-view-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    margin-top: 6px;
+    padding: 5px 12px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--or), var(--or2));
+    color: #fff;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+.adb-map-view-btn span,
+.adb-map-view-btn {
+    color: #fff;
+}
+.adb-map-route-btn {
+    background: linear-gradient(135deg, #16a34a, #15803d);
+}
 .adb-modal-price {
     color: var(--or);
+}
+.adb-modal-review {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid #fde68a;
+    border-radius: 12px;
+    background: #fffbeb;
+}
+.adb-modal-review-icon {
+    color: #f59e0b;
+    font-size: 26px;
+    line-height: 1;
+}
+.adb-modal-review-title {
+    color: #92400e;
+    font-size: 13px;
+    font-weight: 800;
+}
+.adb-modal-review-score {
+    color: var(--dk);
+    font-size: 13px;
+    font-weight: 700;
+    margin-top: 2px;
+}
+.adb-modal-review-score span {
+    color: var(--gr);
+    font-weight: 600;
+}
+.adb-modal-review-stars {
+    margin-top: 5px;
+    color: #d1d5db;
+    font-size: 16px;
+    letter-spacing: 1px;
+}
+.adb-modal-review-stars span.active {
+    color: #f59e0b;
 }
 .adb-modal-desc {
     background: #f9fafb;
@@ -2515,6 +2786,34 @@ export default {
     object-fit: cover;
     border-radius: 8px;
     cursor: pointer;
+}
+.adb-messages-modal {
+    max-width: 820px;
+}
+.adb-messages-modal-body {
+    max-height: min(68vh, 620px);
+    overflow-y: auto;
+}
+.adb-messages-modal .adb-messages {
+    max-height: none;
+}
+.adb-message-file {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 8px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: #fff;
+    border: 1px solid var(--grl);
+    color: var(--dk);
+    text-decoration: none;
+    font-weight: 800;
+    font-size: 12.5px;
+}
+.adb-message audio {
+    width: min(320px, 100%);
+    margin-top: 8px;
 }
 .adb-modal-actions {
     display: flex;

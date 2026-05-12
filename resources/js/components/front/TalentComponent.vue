@@ -6,53 +6,64 @@
             <div class="tl-hero-glow2"></div>
             <div class="tl-hero-dots"></div>
 
-            <div class="tl-hero-inner">
-                <div class="tl-badge au">
-                    <span class="bdot"></span>
-                    Experts BAC+3 minimum - Valides par Mesotravo
+            <div class="tl-hero-wrap">
+                <div class="tl-hero-inner">
+                    <div class="tl-badge au">
+                        <span class="bdot"></span>
+                        Experts BAC+3 minimum - Valides par Mesotravo
+                    </div>
+                    <h1 class="au1">
+                        Espace Talents<br />
+                        <span class="hl">les experts qu'il</span><br />
+                        vous faut
+                    </h1>
+                    <p class="tl-hero-desc au2">
+                        Ingénieurs, experts techniques et professionnels
+                        qualifies.<br />
+                        Chaque profil est verifie et valide manuellement par
+                        l'equipe Mesotravo.
+                    </p>
+                    <div class="tl-hero-btns au3">
+                        <button
+                            class="btn btn-primary btn-lg"
+                            @click="activeTab = 'search'"
+                        >
+                            Trouver un Talent &rarr;
+                        </button>
+                        <button
+                            class="btn btn-ghost btn-lg"
+                            @click="activeTab = 'register'"
+                        >
+                            Devenir Talent
+                        </button>
+                    </div>
+                    <div class="tl-hero-stats au4">
+                        <div class="hstat">
+                            <span class="num">120+</span>
+                            <span class="lbl">Talents valides</span>
+                        </div>
+                        <div class="hstat">
+                            <span class="num">18</span>
+                            <span class="lbl">Domaines couverts</span>
+                        </div>
+                        <div class="hstat">
+                            <span class="num">BAC+3</span>
+                            <span class="lbl">Niveau minimum</span>
+                        </div>
+                        <div class="hstat">
+                            <span class="num">100%</span>
+                            <span class="lbl">Profils verifies</span>
+                        </div>
+                    </div>
                 </div>
-                <h1 class="au1">
-                    Espace Talents<br />
-                    <span class="hl">les experts qu'il</span><br />
-                    vous faut
-                </h1>
-                <p class="tl-hero-desc au2">
-                    Ingénieurs, experts techniques et professionnels
-                    qualifies.<br />
-                    Chaque profil est verifie et valide manuellement par
-                    l'equipe Mesotravo.
-                </p>
-                <div class="tl-hero-btns au3">
-                    <button
-                        class="btn btn-primary btn-lg"
-                        @click="activeTab = 'search'"
-                    >
-                        Trouver un Talent &rarr;
-                    </button>
-                    <button
-                        class="btn btn-ghost btn-lg"
-                        @click="activeTab = 'register'"
-                    >
-                        Devenir Talent
-                    </button>
-                </div>
-                <div class="tl-hero-stats au4">
-                    <div class="hstat">
-                        <span class="num">120+</span>
-                        <span class="lbl">Talents valides</span>
-                    </div>
-                    <div class="hstat">
-                        <span class="num">18</span>
-                        <span class="lbl">Domaines couverts</span>
-                    </div>
-                    <div class="hstat">
-                        <span class="num">BAC+3</span>
-                        <span class="lbl">Niveau minimum</span>
-                    </div>
-                    <div class="hstat">
-                        <span class="num">100%</span>
-                        <span class="lbl">Profils verifies</span>
-                    </div>
+
+                <div class="tl-hero-visual" aria-hidden="true">
+                    <img
+                        :src="'/images/talent_resotravo.png'"
+                        alt=""
+                        class="tl-hero-img"
+                        loading="eager"
+                    />
                 </div>
             </div>
         </section>
@@ -1513,6 +1524,26 @@ export default {
     z-index: 2;
     max-width: 760px;
 }
+.tl-hero-wrap {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(300px, 0.72fr);
+    align-items: center;
+    gap: 34px;
+    max-width: 1180px;
+    margin: 0 auto;
+}
+.tl-hero-visual {
+    display: flex;
+    justify-content: flex-end;
+}
+.tl-hero-img {
+    width: min(100%, 520px);
+    max-height: 460px;
+    object-fit: contain;
+    filter: drop-shadow(0 24px 38px rgba(0, 0, 0, 0.34));
+}
 .tl-badge {
     display: inline-flex;
     align-items: center;
@@ -2154,6 +2185,20 @@ export default {
     padding: 18px;
 }
 @media (max-width: 600px) {
+    .tl-hero {
+        padding-top: 34px;
+    }
+    .tl-hero-wrap {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+    .tl-hero-visual {
+        justify-content: center;
+    }
+    .tl-hero-img {
+        width: min(94vw, 380px);
+        max-height: 330px;
+    }
     .tl-form-grid {
         grid-template-columns: 1fr;
     }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Mission;
 use App\Models\MissionQuote;
 use App\Notifications\AppNotification;
+use App\Services\AdminTemplateMailService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -83,10 +84,27 @@ class MissionQuoteController extends Controller
             ]);
             $quote->save();
 
+            $itemsToCreate = collect($data['items'])
+                ->map(function ($item) {
+                    if ($item['type'] === 'labor') {
+                        $item['description'] = 'Main d’œuvre';
+                        $item['quantity'] = 1;
+                    }
+
+                    return $item;
+                })
+                ->values();
+
+            if ($itemsToCreate->isEmpty()) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'items' => 'Ajoutez au moins une ligne de devis modifiable.',
+                ]);
+            }
+
             // Remplace toutes les lignes
             $quote->items()->delete();
 
-            foreach ($data['items'] as $item) {
+            foreach ($itemsToCreate as $item) {
                 $quote->items()->create([
                     'type'        => $item['type'],
                     'description' => $item['description'],
@@ -120,6 +138,12 @@ class MissionQuoteController extends Controller
 
         $mission->load(['client', 'contractor', 'quote.items']);
 
+        if ($data['action'] === 'submit') {
+            app(AdminTemplateMailService::class)->sendQuoteSubmissionMail(
+                $mission->load(['client.user', 'contractor.user', 'quote.items', 'reservation'])
+            );
+        }
+
         return response()->json([
             'message' => $data['action'] === 'submit' ? 'Devis soumis au client.' : 'Brouillon enregistré.',
             'mission' => $this->formatMission($mission),
@@ -145,6 +169,7 @@ class MissionQuoteController extends Controller
             'location_type'    => $mission->location_type,
             'total_amount'     => $mission->total_amount,
             'commission'       => $mission->commission,
+            'contractor_payout'=> $mission->contractorPayoutAmount(),
             'payment_unlocked' => $mission->paymentUnlocked(),
             'dispute_open'     => $mission->dispute_open,
             'created_at'       => $mission->created_at->toISOString(),

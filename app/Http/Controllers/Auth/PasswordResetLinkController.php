@@ -28,18 +28,37 @@ class PasswordResetLinkController extends Controller
     {
         $request->validate([
             'email' => ['required', 'email'],
+        ], [
+            'email.required' => "Veuillez renseigner votre adresse email.",
+            'email.email' => "Veuillez saisir une adresse email valide.",
         ]);
 
         // We will send the password reset link to this user. Once we have attempted
         // to send the link, we will examine the response then see the message we
         // need to show to the user. Finally, we'll send out a proper response.
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
+        try {
+            $status = Password::sendResetLink(
+                $request->only('email')
+            );
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->withInput($request->only('email'))
+                ->withErrors(['email' => "Impossible d'envoyer l'email de réinitialisation pour le moment. Vérifiez la configuration SMTP puis réessayez."]);
+        }
 
         return $status == Password::RESET_LINK_SENT
-                    ? back()->with('status', __($status))
+                    ? back()->with('status', "Un email de réinitialisation vient d'être envoyé si cette adresse correspond à un compte Mesotravo.")
                     : back()->withInput($request->only('email'))
-                        ->withErrors(['email' => __($status)]);
+                        ->withErrors(['email' => $this->statusMessage($status)]);
+    }
+
+    private function statusMessage(string $status): string
+    {
+        return match ($status) {
+            Password::INVALID_USER => "Aucun compte Mesotravo n'est associé à cette adresse email.",
+            Password::RESET_THROTTLED => "Veuillez patienter avant de demander un nouveau lien.",
+            default => "Impossible d'envoyer le lien pour le moment. Veuillez réessayer.",
+        };
     }
 }

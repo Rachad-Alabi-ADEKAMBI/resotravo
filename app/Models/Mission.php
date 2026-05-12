@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Support\Facades\Storage;
 
 class Mission extends Model
 {
@@ -148,11 +147,24 @@ class Mission extends Model
     {
         return Attribute::make(
             get: fn ($value) => collect(json_decode($value, true) ?? [])
-                ->map(fn ($p) => Storage::disk('public')->url($p))
+                ->map(fn ($p) => $this->publicStorageUrl($p))
                 ->values()
                 ->toArray(),
             set: fn ($value) => is_array($value) ? json_encode($value) : $value,
         );
+    }
+
+    private function publicStorageUrl(?string $path): ?string
+    {
+        if (!$path) {
+            return null;
+        }
+
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://') || str_starts_with($path, '/storage/')) {
+            return $path;
+        }
+
+        return '/storage/' . ltrim($path, '/');
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -173,6 +185,11 @@ class Mission extends Model
     public function contractor(): BelongsTo
     {
         return $this->belongsTo(Contractor::class, 'contractor_id');
+    }
+
+    public function conversation(): HasOne
+    {
+        return $this->hasOne(Conversation::class)->where('type', 'mission');
     }
 
     /**
@@ -368,8 +385,8 @@ class Mission extends Model
     }
 
     /**
-     * Calculate and store the Mesotravo commission from quote line items.
-     * Uses configurable rates per item type (diagnostic vs main d'oeuvre/other).
+     * Calculate and store the Mesotravo commission from billable service lines.
+     * Parts and materials are included in the client total but not in the contractor payout.
      */
     public function calculateCommission(): void
     {
@@ -385,10 +402,9 @@ class Mission extends Model
         if ($quote) {
             $diagTotal  = $quote->items()->where('type', 'diagnostic')->sum(\DB::raw('quantity * unit_price'));
             $laborTotal = $quote->items()->where('type', 'labor')->sum(\DB::raw('quantity * unit_price'));
-            $otherTotal = $this->total_amount - $diagTotal - $laborTotal;
 
             $this->commission = round(
-                ($diagTotal * $rateDiag) + ($laborTotal * $rateLabor) + ($otherTotal * $rateLabor),
+                ($diagTotal * $rateDiag) + ($laborTotal * $rateLabor),
                 2
             );
         } else {
@@ -396,6 +412,25 @@ class Mission extends Model
         }
 
         $this->save();
+    }
+
+    public function contractorPayoutAmount(): float
+    {
+        $rateDiag = ((float) Setting::get('commission_diagnostic', 10)) / 100;
+        $rateLabor = ((float) Setting::get('commission_main_oeuvre', 10)) / 100;
+        $quote = $this->quote;
+
+        if ($quote) {
+            $diagTotal = $quote->items()->where('type', 'diagnostic')->sum(\DB::raw('quantity * unit_price'));
+            $laborTotal = $quote->items()->where('type', 'labor')->sum(\DB::raw('quantity * unit_price'));
+
+            return max(0, round(
+                ($diagTotal * (1 - $rateDiag)) + ($laborTotal * (1 - $rateLabor)),
+                2
+            ));
+        }
+
+        return max(0, round((float) $this->total_amount - (float) ($this->commission ?? 0), 2));
     }
 
     /**

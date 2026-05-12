@@ -19,6 +19,9 @@
             'last_name'           => $user->client?->last_name,
             'phone'               => $user->client?->phone,
             'address'             => $user->client?->address,
+            'preferred_place'      => $user->client?->preferred_place,
+            'preferred_place_latitude'  => $user->client?->preferred_place_latitude,
+            'preferred_place_longitude' => $user->client?->preferred_place_longitude,
             'city'                => $user->client?->city ?? 'Cotonou',
             'profile_picture'     => $user->client?->profile_picture
                 ? \Illuminate\Support\Facades\Storage::disk('public')->url($user->client->profile_picture)

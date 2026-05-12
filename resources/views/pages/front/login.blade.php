@@ -11,7 +11,7 @@
     registerClient:     '{{ route('register.client') }}',
     registerContractor: '{{ route('register.contractor') }}',
     googleAuth:         '{{ route('auth.google.redirect') }}?role=client&intent=login'
-}"></login-component>
+}" session-status="{{ session('status') }}"></login-component>
 
 
 @endsection

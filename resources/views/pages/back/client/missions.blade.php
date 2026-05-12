@@ -26,6 +26,10 @@
             'first_name'   => $client?->first_name,
             'last_name'    => $client?->last_name,
             'phone'        => $client?->phone,
+            'address'      => $client?->address,
+            'preferred_place' => $client?->preferred_place,
+            'preferred_place_latitude' => $client?->preferred_place_latitude,
+            'preferred_place_longitude' => $client?->preferred_place_longitude,
             'city'         => $client?->city,
             'profile_picture' => $client?->profile_picture
                 ? \Illuminate\Support\Facades\Storage::disk('public')->url($client->profile_picture)

@@ -56,6 +56,14 @@ Route::get('/momo-apikey', function () {
     ];
 });
 
+Route::get('/storage/{path}', function (string $path) {
+    if (str_contains($path, '..') || !\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+        abort(404);
+    }
+
+    return \Illuminate\Support\Facades\Storage::disk('public')->response($path);
+})->where('path', '.*');
+
 Route::get('/factures/{mission}/verification', function (\Illuminate\Http\Request $request, \App\Models\Mission $mission) {
     if (! $request->hasValidSignature()) {
         abort(403, 'Lien de vérification invalide.');
@@ -323,6 +331,8 @@ Route::middleware('auth')->group(function () {
                 'routes' => [
                     // Données
                     'missions_index'     => route('admin.missions.index'),
+                    'mission_detail'      => url('/admin/missions/:id'),
+                    'missions_messages'   => url('/admin/missions/:id/messages'),
                     'contractors_index'  => route('admin.contractors.index'),
                     'clients_index'      => route('admin.clients.index'),
                     'talents_index'      => route('admin.talents.index'),
@@ -462,9 +472,12 @@ Route::middleware('auth')->group(function () {
                 default   => now()->startOfMonth(),
             };
 
+            $commissionDiagnostic = ((float) \App\Models\Setting::get('commission_diagnostic', 10)) / 100;
+            $commissionMainOeuvre = ((float) \App\Models\Setting::get('commission_main_oeuvre', 10)) / 100;
+
             $missions = \App\Models\Mission::whereIn('status', ['completed', 'closed'])
                 ->where('updated_at', '>=', $dateFrom)
-                ->with(['client.user', 'contractor.user'])
+                ->with(['client.user', 'contractor.user', 'quote.items'])
                 ->latest()
                 ->get()
                 ->map(fn($m) => [
@@ -473,6 +486,8 @@ Route::middleware('auth')->group(function () {
                     'client_name'     => $m->client?->user?->name     ?? '—',
                     'contractor_name' => $m->contractor?->user?->name ?? '—',
                     'total_amount'    => $m->total_amount,
+                    'commission'      => $m->commission,
+                    'net_amount'      => $m->contractorPayoutAmount(),
                     'status'          => $m->status,
                     'completed_at'    => $m->updated_at,
                     'created_at'      => $m->created_at,
@@ -480,8 +495,8 @@ Route::middleware('auth')->group(function () {
 
             $volumeTotal        = $missions->sum('total_amount');
             $count              = $missions->count();
-            $commissionsPercues = round($volumeTotal * 0.10);
-            $versesPrestataires = round($volumeTotal * 0.90);
+            $commissionsPercues = round($missions->sum('commission'));
+            $versesPrestataires = round($missions->sum('net_amount'));
             $enAttente          = \App\Models\Mission::where('status', 'active')->sum('total_amount');
 
             return response()->json([
@@ -550,6 +565,7 @@ Route::middleware('auth')->group(function () {
         // ── Missions ─────────────────────────────────────────────
         Route::get  ('/missions/list',              [MissionController::class, 'adminIndex'])   ->name('missions.index');
         Route::get  ('/missions/{mission}',         [MissionController::class, 'adminShow'])    ->name('missions.show');
+        Route::get  ('/missions/{mission}/messages',[MissionController::class, 'adminMessages'])->name('missions.messages');
         Route::patch('/missions/{mission}/status',  [MissionController::class, 'adminStatus'])  ->name('missions.status');
         Route::post ('/missions/{mission}/propose', [MissionController::class, 'adminPropose']) ->name('missions.propose');
 
@@ -769,7 +785,9 @@ Route::middleware('auth')->group(function () {
                     'missions_status'          => '/client/missions/{id}/status',
                     'payment_initiate'         => '/client/missions/{id}/payment',
                     'payment_status'           => '/client/missions/{id}/payment/status',
+                    'invoice'                  => '/client/missions/{id}/invoice',
                     'receipt'                  => '/client/missions/{id}/receipt',
+                    'reviews_store'            => '/client/missions',
                     'documents_upload'         => route('documents.upload'),
                     'documents_index'          => route('documents.index'),
                     'dossier_page'             => route('client.dossier'),
@@ -1010,7 +1028,7 @@ Route::middleware('auth')->group(function () {
                     'revenus_index'     => route('contractor.revenus.index'),
                     'notifications'     => route('notifications.index'),
                     'notifications_all' => route('notifications.read-all'),
-                    'mission_invoice'   => url('/contractor/missions/{id}/invoice'),
+                    'mission_receipt'   => url('/contractor/missions/{id}/receipt'),
                 ],
             ]);
         })->name('revenus');
@@ -1084,7 +1102,7 @@ Route::middleware('auth')->group(function () {
                         'commission_total'              => $commissionTotal,
                         'net_amount'                    => $netAmount,
                         'is_paid'                       => (bool) $m->paid_at || $m->status === 'closed',
-                        'invoice_url'                   => route('contractor.missions.invoice', $m),
+                        'receipt_url'                   => route('contractor.missions.receipt', $m),
                         'status'                        => $m->status,
                         'status_label'                  => $m->status_label,
                         'completed_at'                  => $m->completed_at ?? $m->updated_at,
@@ -1258,6 +1276,7 @@ Route::middleware('auth')->group(function () {
         Route::get  ('/missions',                  [MissionController::class, 'index'])        ->name('missions.index');
         Route::get  ('/missions/{mission}',        [MissionController::class, 'show'])         ->name('missions.show');
         Route::get  ('/missions/{mission}/invoice', [PaymentController::class, 'invoice'])     ->name('missions.invoice');
+        Route::get  ('/missions/{mission}/receipt', [PaymentController::class, 'receipt'])     ->name('missions.receipt');
         Route::post ('/missions/{mission}/proposal-expire', [MissionController::class, 'expireProposal'])->name('missions.proposal-expire');
         Route::patch('/missions/{mission}/status', [MissionController::class, 'updateStatus']) ->name('missions.status');
 

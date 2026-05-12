@@ -13,6 +13,10 @@
 
             <!-- ── FORMULAIRE ── -->
             <div v-if="step === 'login'">
+                <div class="lc-alert lc-alert-success" v-if="sessionStatus">
+                    ✓ {{ sessionStatus }}
+                </div>
+
                 <div class="lc-alert lc-alert-error" v-if="loginError">
                     ⚠️ {{ loginError }}
                 </div>
@@ -113,12 +117,15 @@
                     </div>
 
                     <button
-                        class="lc-btn lc-btn-primary"
+                        class="lc-btn lc-btn-primary lc-btn-login"
                         type="submit"
                         :disabled="loading"
                     >
                         <div class="lc-spinner" v-if="loading"></div>
-                        <span v-else>Se connecter →</span>
+                        <span v-else class="lc-btn-content">
+                            <span aria-hidden="true">🔐</span>
+                            Se connecter →
+                        </span>
                     </button>
 
                     <button
@@ -213,6 +220,10 @@ export default {
                 registerContractor: "/register/contractor",
                 googleAuth: "/auth/google/redirect?role=client",
             }),
+        },
+        sessionStatus: {
+            type: String,
+            default: "",
         },
     },
 
@@ -477,6 +488,12 @@ export default {
     border: 1px solid #fecaca;
     color: #dc2626;
 }
+.lc-alert-success {
+    background: #ecfdf5;
+    border: 1px solid #bbf7d0;
+    color: #15803d;
+    font-weight: 700;
+}
 
 /* CHAMPS */
 .lc-field {
@@ -629,14 +646,27 @@ export default {
     color: #fff;
     box-shadow: 0 4px 14px rgba(249, 115, 22, 0.3);
 }
+.lc-btn-login {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    box-shadow: 0 4px 14px rgba(34, 197, 94, 0.28);
+}
 .lc-btn-primary:hover:not(:disabled) {
     transform: translateY(-1px);
     box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4);
+}
+.lc-btn-login:hover:not(:disabled) {
+    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.38);
 }
 .lc-btn-primary:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
+}
+.lc-btn-content {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
 .lc-btn-google {

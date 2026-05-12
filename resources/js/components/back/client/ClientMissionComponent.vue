@@ -195,9 +195,20 @@
                                     ? "Prestataire assigné"
                                     : "Attribution en cours..."
                             }}
-                            - {{ formatDateTime(m.created_at) }}
                         </div>
                         <div class="clm-item-addr">{{ m.address }}</div>
+                        <div class="clm-item-details">
+                            <span>Publiée le {{ formatDateTime(m.created_at) }}</span>
+                            <span>
+                                💰
+                                {{ missionQuoteAmountLabel(m) }}
+                            </span>
+                            <span v-if="m.images && m.images.length">
+                                🖼 {{ m.images.length }} image{{
+                                    m.images.length > 1 ? "s" : ""
+                                }}
+                            </span>
+                        </div>
                         <div class="clm-item-reservation" v-if="m.reservation">
                             &#128197; Planifi&eacute; le
                             {{
@@ -228,6 +239,7 @@
                             class="clm-msg-unread"
                             v-if="unreadByMission[m.id]"
                         >
+                            <span aria-hidden="true">&#128172;</span>
                             {{ unreadByMission[m.id] }} message{{
                                 unreadByMission[m.id] > 1 ? "s" : ""
                             }}
@@ -238,8 +250,8 @@
                         <span class="clm-badge" :class="badgeClass(m.status)">{{
                             labelOf(m)
                         }}</span>
-                        <div class="clm-item-price" v-if="m.total_amount">
-                            {{ formatPrice(m.total_amount) }}
+                        <div class="clm-item-price">
+                            {{ missionQuoteAmountLabel(m) }}
                         </div>
                         <!-- Bouton Lire message ouvre direct le chat sans ouvrir le panel -->
                         <button
@@ -335,6 +347,7 @@
                     </svg>
                 </button>
 
+                <div class="clm-panel-top">
                 <div class="clm-panel-header">
                     <div>
                         <h2>{{ activeMission.service }}</h2>
@@ -387,6 +400,8 @@
                     </div>
                 </div>
 
+                </div>
+
                 <div class="clm-panel-body">
                     <div class="clm-panel-cols">
                         <!-- Infos -->
@@ -404,9 +419,18 @@
                                 </div>
                                 <div class="clm-row">
                                     <span>Adresse</span
-                                    ><strong>{{
-                                        activeMission.address
-                                    }}</strong>
+                                    ><strong class="clm-address-actions">
+                                        {{ activeMission.address }}
+                                        <a
+                                            v-if="activeMission.latitude && activeMission.longitude"
+                                            class="clm-map-view-btn"
+                                            :href="missionMapUrl(activeMission)"
+                                            target="_blank"
+                                            rel="noopener"
+                                        >
+                                            Voir adresse
+                                        </a>
+                                    </strong>
                                 </div>
                                 <div class="clm-row">
                                     <span>Mode</span
@@ -416,6 +440,13 @@
                                             ? "Géolocalisation"
                                             : "Saisie manuelle"
                                     }}</strong>
+                                </div>
+                                <div class="clm-row" v-if="activeMission.reservation">
+                                    <span>Date prévue de réalisation</span>
+                                    <strong>
+                                        {{ formatReservationDate(activeMission.reservation.day) }}
+                                        à {{ activeMission.reservation.time?.substring(0, 5) }}
+                                    </strong>
                                 </div>
                                 <div class="clm-row">
                                     <span>Description</span
@@ -465,9 +496,18 @@
                                     class="clm-row"
                                     v-if="activeMission.on_the_way_at"
                                 >
-                                    <span>Départ pris le</span>
+                                    <span>Prestataire Départ pris le</span>
                                     <strong>{{
                                         formatDateTime(activeMission.on_the_way_at)
+                                    }}</strong>
+                                </div>
+                                <div
+                                    class="clm-row"
+                                    v-if="activeMission.arrived_at"
+                                >
+                                    <span>Prestataire arrivé le</span>
+                                    <strong>{{
+                                        formatDateTime(activeMission.arrived_at)
                                     }}</strong>
                                 </div>
                             </div>
@@ -555,15 +595,28 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <button
-                                        class="clm-btn-download"
-                                        @click="downloadQuotePdf(activeMission)"
-                                        title="Télécharger PDF"
-                                    >
-                                        PDF
-                                    </button>
+                                    <div class="clm-quote-actions">
+                                        <button
+                                            class="clm-btn-consult"
+                                            @click="quoteDetailsOpen = !quoteDetailsOpen"
+                                            type="button"
+                                        >
+                                            <span>👁</span>
+                                            {{ quoteDetailsOpen ? "Masquer" : "Consulter le devis" }}
+                                        </button>
+                                        <button
+                                            class="clm-btn-download clm-btn-download-orange"
+                                            @click="downloadQuotePdf(activeMission)"
+                                            title="Télécharger PDF"
+                                            type="button"
+                                        >
+                                            <span>⬇</span>
+                                            Télécharger
+                                        </button>
+                                    </div>
                                 </div>
 
+                                <div v-if="quoteDetailsOpen" class="clm-quote-details">
                                 <!-- Diagnostic -->
                                 <div
                                     class="clm-quote-diag"
@@ -633,6 +686,8 @@
                                     }}</strong>
                                 </div>
 
+                                </div>
+
                                 <!-- Boutons -->
                                 <div
                                     class="clm-action-row"
@@ -645,6 +700,7 @@
                                         "
                                         :disabled="actionLoading"
                                     >
+                                        <span>✕</span>
                                         Refuser
                                     </button>
                                     <button
@@ -656,7 +712,7 @@
                                             class="clm-spinner"
                                             v-if="actionLoading"
                                         ></div>
-                                        <span v-else>Approuver</span>
+                                        <span v-else>✓ Approuver</span>
                                     </button>
                                 </div>
                             </div>
@@ -711,6 +767,7 @@
                                         class="clm-btn clm-btn-ghost"
                                         @click="openSignalProblem"
                                     >
+                                        <span>⚠</span>
                                         Signaler un problème
                                     </button>
                                     <button
@@ -724,35 +781,74 @@
                                             class="clm-spinner"
                                             v-if="actionLoading"
                                         ></div>
-                                        <span v-else>Confirmer la fin</span>
+                                        <span v-else>✓ Confirmer la fin</span>
                                     </button>
                                 </div>
                             </div>
 
-                            <!-- Paiement MoMo -->
+                            <!-- Facture disponible dès que le devis est approuvé -->
                             <div
-                                class="clm-action-block clm-action-pay"
+                                class="clm-action-block clm-action-quote-approved"
                                 v-if="
-                                    activeMission.status !== 'closed' &&
-                                    !activeMission.paid_at &&
-                                    (activeMission.payment_unlocked ||
-                                        activeMission.status === 'completed')
+                                    activeMission.quote &&
+                                    activeMission.quote.status !== 'draft' &&
+                                    activeMission.status !== 'quote_submitted'
                                 "
                             >
-                                <div class="clm-action-pay-icon"></div>
-                                <div class="clm-action-pay-title">
-                                    Paiement requis
+                                <div class="clm-qa-header">
+                                    <div class="clm-qa-left">
+                                        <span class="clm-qa-icon"></span>
+                                        <div>
+                                            <div class="clm-qa-title">
+                                                Devis
+                                                <span
+                                                    v-if="
+                                                        activeMission.quote
+                                                            .version > 1
+                                                    "
+                                                    >v{{
+                                                        activeMission.quote
+                                                            .version
+                                                    }}</span
+                                                >
+                                            </div>
+                                            <div class="clm-qa-amount">
+                                                {{
+                                                    formatPrice(
+                                                        activeMission.quote
+                                                            .amount_incl_tax
+                                                    )
+                                                }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button
+                                        class="clm-btn-download clm-btn-download-orange"
+                                        @click="downloadQuotePdf(activeMission)"
+                                        title="Consulter / Télécharger PDF"
+                                    >
+                                        <span>⬇</span>
+                                        Télécharger
+                                    </button>
                                 </div>
-                                <div class="clm-action-pay-sub">
-                                    Choisissez votre réseau et procédez au
-                                    paiement mobile pour clôturer la mission.
-                                </div>
-                                <button
+                            </div>
+
+                            <div
+                                class="clm-action-block clm-action-invoice"
+                                v-if="invoiceAvailable(activeMission)"
+                            >
+                                <div class="clm-invoice-icon"></div>
+                                <div class="clm-invoice-title">Facture disponible</div>
+                                <div class="clm-invoice-sub">Vous pouvez consulter et télécharger votre facture.</div>
+                                <a
+                                    :href="invoiceUrl(activeMission)"
+                                    target="_blank"
                                     class="clm-btn clm-btn-orange clm-btn-full"
-                                    @click="openMomoModal(activeMission)"
+                                    style="text-decoration:none;display:block;text-align:center"
                                 >
-                                    Payer via Mobile Money
-                                </button>
+                                    <span>📄</span>
+                                    Télécharger la facture
+                                </a>
                             </div>
 
                             <!-- Reçu - mission payée -->
@@ -767,38 +863,21 @@
                                 <div class="clm-action-pay-sub">
                                     Le paiement a été confirmé.
                                 </div>
-                                <a
-                                    :href="routes.receipt.replace('{id}', activeMission.id)"
-                                    target="_blank"
+                                <button
+                                    type="button"
+                                    @click="downloadReceiptForMission(activeMission)"
                                     class="clm-btn clm-btn-green clm-btn-full"
-                                    style="text-decoration:none;display:block;text-align:center"
+                                    style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px"
                                 >
+                                    <span aria-hidden="true">&#129534;</span>
                                     Télécharger le reçu
-                                </a>
-                            </div>
-
-                            <!-- Facture disponible dès que le devis est approuvé -->
-                            <div
-                                class="clm-action-block clm-action-invoice"
-                                v-if="['order_placed','awaiting_confirm','completed','closed'].includes(activeMission.status)"
-                            >
-                                <div class="clm-invoice-icon"></div>
-                                <div class="clm-invoice-title">Facture disponible</div>
-                                <div class="clm-invoice-sub">Votre devis a été approuvé. Téléchargez votre facture.</div>
-                                <a
-                                    :href="routes.invoice.replace('{id}', activeMission.id)"
-                                    target="_blank"
-                                    class="clm-btn clm-btn-green clm-btn-full"
-                                    style="text-decoration:none;display:block;text-align:center"
-                                >
-                                    Télécharger la facture
-                                </a>
+                                </button>
                             </div>
 
                             <!-- Avis prestataire -->
                             <div
                                 class="clm-action-block clm-action-review"
-                                v-if="activeMission.status === 'completed'"
+                                v-if="shouldShowReview(activeMission)"
                             >
                                 <div class="clm-review-header">
                                     <span class="clm-review-icon">&#9733;</span>
@@ -848,17 +927,44 @@
                                         class="clm-spinner"
                                         v-if="reviewModal.loading"
                                     ></div>
-                                    <span v-else>Soumettre l'avis et clôturer la mission</span>
+                                    <span v-else>Soumettre l'avis</span>
                                 </button>
-                                <div class="clm-review-skip">
+                                <div class="clm-review-skip" v-if="activeMission.paid_at">
                                     <button
                                         class="clm-link"
                                         @click="closeMissionOnly(activeMission)"
                                         :disabled="reviewModal.loading"
                                     >
-                                        Passer et clôturer sans avis ?
+                                        Clôturer sans avis ?
                                     </button>
                                 </div>
+                            </div>
+
+                            <!-- Paiement MoMo -->
+                            <div
+                                class="clm-action-block clm-action-pay"
+                                v-if="
+                                    activeMission.status !== 'closed' &&
+                                    !activeMission.paid_at &&
+                                    (activeMission.payment_unlocked ||
+                                        activeMission.status === 'completed')
+                                "
+                            >
+                                <div class="clm-action-pay-icon"></div>
+                                <div class="clm-action-pay-title">
+                                    Paiement requis
+                                </div>
+                                <div class="clm-action-pay-sub">
+                                    Choisissez votre réseau et procédez au
+                                    paiement mobile pour clôturer la mission.
+                                </div>
+                                <button
+                                    class="clm-btn clm-btn-green clm-btn-full"
+                                    @click="openMomoModal(activeMission)"
+                                >
+                                    <span>💳</span>
+                                    Payer via Mobile Money
+                                </button>
                             </div>
 
                             <!-- Statuts informatifs -->
@@ -926,52 +1032,6 @@
                                 </div>
                             </div>
 
-                            <!-- -- Devis approuvé à consulter après approbation -- -->
-                            <div
-                                class="clm-action-block clm-action-quote-approved"
-                                v-if="
-                                    activeMission.quote &&
-                                    activeMission.quote.status !== 'draft' &&
-                                    activeMission.status !== 'quote_submitted'
-                                "
-                            >
-                                <div class="clm-qa-header">
-                                    <div class="clm-qa-left">
-                                        <span class="clm-qa-icon"></span>
-                                        <div>
-                                            <div class="clm-qa-title">
-                                                Devis
-                                                <span
-                                                    v-if="
-                                                        activeMission.quote
-                                                            .version > 1
-                                                    "
-                                                    >v{{
-                                                        activeMission.quote
-                                                            .version
-                                                    }}</span
-                                                >
-                                            </div>
-                                            <div class="clm-qa-amount">
-                                                {{
-                                                    formatPrice(
-                                                        activeMission.quote
-                                                            .amount_incl_tax
-                                                    )
-                                                }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <button
-                                        class="clm-btn-download"
-                                        @click="downloadQuotePdf(activeMission)"
-                                        title="Consulter / Télécharger PDF"
-                                    >
-                                        PDF
-                                    </button>
-                                </div>
-                            </div>
-
                             <!-- Chat -->
                             <button
                                 class="clm-btn clm-btn-chat clm-btn-full"
@@ -989,6 +1049,7 @@
                                     ].includes(activeMission.status)
                                 "
                             >
+                                <span>💬</span>
                                 Contacter le prestataire
                                 <span
                                     class="clm-chat-badge"
@@ -1124,7 +1185,7 @@
                                     v-model="address_mode"
                                     value="default"
                                 />
-                                Adresse par défaut
+                                Adresse préférée
                             </label>
                             <label
                                 class="clm-addr-mode-label"
@@ -1206,7 +1267,7 @@
                             type="checkbox"
                             v-model="form.save_as_default_address"
                         />
-                        Définir cette adresse comme adresse par défaut
+                        Définir comme adresse préférée
                     </label>
                     <!-- Images optionnelles -->
                     <div class="clm-field">
@@ -1287,7 +1348,7 @@
                     </p>
                     <div style="display:flex;gap:12px;justify-content:center">
                         <button class="clm-btn clm-btn-ghost" @click="showPublishConfirm = false">Annuler</button>
-                        <button class="clm-btn clm-btn-green" @click="showPublishConfirm = false; submitMission()" :disabled="submitting">
+                        <button class="clm-btn clm-btn-green" @click="acceptPublishConfirm" :disabled="submitting">
                             <div class="clm-spinner" v-if="submitting"></div>
                             <span v-else>J'ai compris, publier ?</span>
                         </button>
@@ -1411,8 +1472,8 @@
                             line-height: 1.6;
                         "
                     >
-                        Décrivez le problème rencontré. Un agent Mesotravo vous
-                        contactera sous 24h.
+                        Décrivez le problème rencontré. Un litige sera ouvert
+                        automatiquement et traité par l'équipe Mesotravo.
                     </p>
                     <label class="clm-form-label"
                         >Motif <span class="clm-req">*</span></label
@@ -1588,7 +1649,7 @@
                     <button
                         class="clm-modal-close"
                         @click="momoModal.visible = false"
-                        v-if="momoModal.step !== 'polling'"
+                        v-if="momoModal.step !== 'polling' && !isMomoReviewPending"
                     >
                         &#215;
                     </button>
@@ -1604,7 +1665,11 @@
                             <label class="clm-form-label">
                                 1. Réseau Mobile Money <span class="clm-req">*</span>
                             </label>
-                            <select class="clm-input" v-model="momoModal.network">
+                            <select
+                                class="clm-input"
+                                v-model="momoModal.network"
+                                @change="handleMomoNetworkChange"
+                            >
                                 <option value="" disabled>-- Sélectionnez votre réseau --</option>
                                 <option v-for="net in momoNetworks" :key="net.value" :value="net.value">
                                     {{ net.label }}
@@ -1615,47 +1680,35 @@
                             <label class="clm-form-label">
                                 2. Numéro de téléphone <span class="clm-req">*</span>
                             </label>
-                            <input
-                                class="clm-input"
-                                type="tel"
-                                v-model="momoModal.phone"
-                                placeholder="Ex : 97 12 34 56"
-                                maxlength="20"
-                                :disabled="!momoModal.network"
-                            />
-                            <div class="clm-momo-hint" v-if="momoModal.network">
-                                Entrez le numéro associé à votre compte {{ momoNetworks.find(n => n.value === momoModal.network)?.label }}.
-                            </div>
-                            <div class="clm-momo-hint" v-else>
-                                Sélectionnez d'abord votre réseau ci-dessus.
-                            </div>
-                        </div>
-                        <div
-                            class="clm-momo-recap"
-                            v-if="momoModal.network && momoModal.phone"
-                        >
-                            <div class="clm-momo-recap-row">
-                                <span>Réseau</span>
-                                <strong>{{
-                                    momoNetworks.find(
-                                        (n) => n.value === momoModal.network
-                                    )?.label
-                                }}</strong>
-                            </div>
-                            <div class="clm-momo-recap-row">
-                                <span>Numéro</span>
-                                <strong>{{ momoModal.phone }}</strong>
-                            </div>
-                            <div class="clm-momo-recap-row">
-                                <span>Montant</span>
-                                <strong class="clm-momo-amount">{{
-                                    formatPrice(momoModal.mission?.total_amount)
-                                }}</strong>
+                            <div class="clm-momo-phone-field">
+                                <span class="clm-momo-phone-prefix">01</span>
+                                <input
+                                    class="clm-input clm-momo-phone-input"
+                                    type="tel"
+                                    v-model="momoModal.phoneBody"
+                                    placeholder="96 XX XX XX"
+                                    inputmode="numeric"
+                                    maxlength="8"
+                                    @input="sanitizeMomoPhoneInput"
+                                    :disabled="!momoModal.network"
+                                />
                             </div>
                         </div>
                         <div class="clm-momo-warning">
                             Vous recevrez une demande de paiement sur votre
                             téléphone. Confirmez avec votre code PIN.
+                        </div>
+                        <div class="clm-momo-unavailable-popup" v-if="momoModal.networkNotice">
+                            <div class="clm-momo-unavailable-card">
+                                <div class="clm-momo-unavailable-title">Réseau indisponible</div>
+                                <p>
+                                    Les paiements via ce réseau ne sont pas disponibles pour le moment.
+                                    Seuls les paiements via MTN sont disponibles actuellement.
+                                </p>
+                                <button class="clm-btn clm-btn-orange" type="button" @click="closeMomoNetworkNotice">
+                                    OK
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div class="clm-modal-footer">
@@ -1669,8 +1722,7 @@
                             class="clm-btn clm-btn-orange"
                             @click="submitMomo"
                             :disabled="
-                                !momoModal.network ||
-                                !momoModal.phone.trim() ||
+                                !isMomoFormValid ||
                                 momoModal.loading
                             "
                         >
@@ -1691,6 +1743,7 @@
                             Confirmez sur votre téléphone
                         </div>
                         <p
+                            v-if="!isMomoReviewPending"
                             style="
                                 color: #6b7280;
                                 font-size: 13.5px;
@@ -1719,9 +1772,11 @@
                         <button
                             class="clm-btn clm-btn-orange"
                             style="margin-top: 12px; width: 100%"
-                            @click="momoModal.step = 'manual_pending'"
+                            @click="confirmMomoSuccess"
+                            :disabled="momoModal.loading"
                         >
-                            Paiement effectué
+                            <div class="clm-spinner" v-if="momoModal.loading"></div>
+                            <span v-else>OK</span>
                         </button>
                     </div>
                 </template>
@@ -1772,20 +1827,61 @@
                             La mission est clôturée avec succès. Merci pour
                             votre confiance !
                         </p>
-                        <a
+                        <div class="clm-post-payment-review" v-if="isMomoReviewPending">
+                            <strong>Évaluez le prestataire</strong>
+                            <span>Votre paiement est confirmé. Notez le prestataire avant de clôturer la mission, ou clôturez sans noter.</span>
+                            <div class="clm-stars-wrap">
+                                <button
+                                    class="clm-star"
+                                    v-for="n in 5"
+                                    :key="n"
+                                    :class="{ active: n <= reviewModal.rating }"
+                                    @click="reviewModal.rating = n"
+                                    type="button"
+                                >
+                                    &#9733;
+                                </button>
+                                <span class="clm-star-label" v-if="reviewModal.rating">
+                                    {{ starLabel(reviewModal.rating) }}
+                                </span>
+                            </div>
+                            <textarea
+                                class="clm-review-textarea"
+                                v-model="reviewModal.comment"
+                                placeholder="Décrivez votre expérience (optionnel)..."
+                                rows="3"
+                                maxlength="500"
+                            ></textarea>
+                            <div class="clm-post-payment-actions">
+                                <button
+                                    class="clm-btn clm-btn-green"
+                                    @click="submitReviewAndClose(momoModal.mission)"
+                                    :disabled="!reviewModal.rating || reviewModal.loading"
+                                >
+                                    <div class="clm-spinner" v-if="reviewModal.loading"></div>
+                                    <span v-else>Envoyer l'avis</span>
+                                </button>
+                                <button class="clm-btn clm-btn-ghost" @click="closeMissionOnly(momoModal.mission)">
+                                    Clôturer la mission sans noter le prestataire
+                                </button>
+                            </div>
+                        </div>
+                        <button
                             v-if="momoModal.receiptUrl"
-                            :href="momoModal.receiptUrl"
-                            target="_blank"
+                            type="button"
+                            @click="downloadReceipt"
                             class="clm-btn clm-btn-orange"
-                            style="text-decoration: none; display: inline-block"
+                            style="display:inline-flex;align-items:center;justify-content:center;gap:8px"
                         >
+                            <span aria-hidden="true">&#129534;</span>
                             Télécharger le reçu
-                        </a>
+                        </button>
                     </div>
                     <div class="clm-modal-footer">
                         <button
                             class="clm-btn clm-btn-ghost"
                             @click="momoModal.visible = false"
+                            v-if="!isMomoReviewPending"
                         >
                             Fermer
                         </button>
@@ -1947,6 +2043,7 @@ export default {
             activeTab: "all",
             search: "",
             activeMission: null,
+            quoteDetailsOpen: false,
             actionLoading: false,
 
             chatMissionId: null,
@@ -1991,6 +2088,7 @@ export default {
             },
 
             showPublishConfirm: false,
+            publishConfirmAccepted: false,
 
             // Signalement
             signalModal: { visible: false, reason: "", loading: false },
@@ -2004,12 +2102,14 @@ export default {
                 mission: null,
                 network: "",
                 phone: "",
+                phoneBody: "",
                 loading: false,
                 polling: false,
                 step: "form",
                 pollSecondsLeft: 120,
                 receiptUrl: null,
                 errorMessage: "",
+                networkNotice: false,
                 _pollInterval: null,
             },
             momoNetworks: [
@@ -2077,6 +2177,7 @@ export default {
             tabs: [
                 { key: "all", label: "Toutes" },
                 { key: "active", label: "En cours" },
+                { key: "reservations", label: "Réservations" },
                 { key: "pending", label: "En attente" },
                 { key: "closed", label: "Terminées" },
                 { key: "cancelled", label: "Annulées" },
@@ -2140,8 +2241,33 @@ export default {
         todayDate() {
             return new Date().toISOString().split("T")[0];
         },
+        isMomoFormValid() {
+            return (
+                this.momoModal.network === "mtn" &&
+                /^\d{8}$/.test(this.momoModal.phoneBody)
+            );
+        },
+        isMomoReviewPending() {
+            return (
+                this.momoModal.step === "success" &&
+                this.shouldShowReview(this.momoModal.mission)
+            );
+        },
+        momoPaymentPhone() {
+            return `01${this.momoModal.phoneBody || ""}`;
+        },
         defaultAddress() {
-            return (this.clientProfile?.address ?? "").trim();
+            return (
+                this.clientProfile?.preferred_place ??
+                this.clientProfile?.address ??
+                ""
+            ).trim();
+        },
+        defaultPlaceLatitude() {
+            return this.clientProfile?.preferred_place_latitude ?? null;
+        },
+        defaultPlaceLongitude() {
+            return this.clientProfile?.preferred_place_longitude ?? null;
         },
         activeStatuses() {
             return [
@@ -2164,6 +2290,8 @@ export default {
                 );
             else if (this.activeTab === "pending")
                 list = list.filter((m) => m.status === "pending");
+            else if (this.activeTab === "reservations")
+                list = list.filter((m) => this.hasFutureReservation(m));
             else if (this.activeTab === "closed")
                 list = list.filter((m) =>
                     ["completed", "closed"].includes(m.status)
@@ -2265,6 +2393,7 @@ export default {
 
         openMission(m) {
             this.activeMission = { ...m };
+            this.quoteDetailsOpen = false;
             this.showScrollBtn = false;
             // Après rendu, vérifier si le panel est scrollable
             this.$nextTick(() => {
@@ -2321,17 +2450,10 @@ export default {
             const updated = await this.updateMissionStatus(m, "completed");
             if (!updated) return;
             this.reviewModal = { rating: 0, comment: "", loading: false };
-            this.completionPopup = {
-                visible: true,
-                mission: updated,
-                rating: 0,
-                comment: "",
-                suggestionText: "",
-                loadingReview: false,
-                loadingSuggestion: false,
-                suggestionSent: false,
-                reviewDone: false,
-            };
+            this.showToast(
+                "Fin des travaux confirmée. Vous pouvez maintenant procéder au paiement.",
+                "success"
+            );
         },
 
         async submitReviewFromPopup() {
@@ -2404,7 +2526,12 @@ export default {
                         comment: this.reviewModal.comment.trim(),
                     }),
                 });
-                await this.closeMissionOnly(m);
+                localStorage.setItem(`meso_client_review_${m.id}`, "1");
+                this.reviewModal = { rating: 0, comment: "", loading: false };
+                this.showToast("Avis envoyé, merci !", "success");
+                if (this.momoModal.visible && this.momoModal.mission?.id === m.id) {
+                    this.momoModal.mission = { ...this.momoModal.mission };
+                }
             } catch {
                 this.showToast(
                     "Erreur lors de la soumission de l'avis.",
@@ -2415,13 +2542,25 @@ export default {
         },
 
         async closeMissionOnly(m) {
-            this.reviewModal.loading = true;
-            await this.updateMissionStatus(m, "closed");
+            if (!m?.paid_at) {
+                this.showToast("La facture doit être payée avant de clôturer la mission.", "error");
+                return;
+            }
+            localStorage.setItem(`meso_client_review_${m.id}`, "1");
             this.reviewModal = { rating: 0, comment: "", loading: false };
+            if (this.momoModal.visible && this.momoModal.mission?.id === m.id) {
+                this.momoModal.mission = { ...this.momoModal.mission };
+            }
             this.showToast(
-                "Mission clôturée. Merci de votre confiance !",
+                "Mission clôturée sans avis.",
                 "success"
             );
+        },
+
+        shouldShowReview(mission) {
+            if (!mission || !mission.contractor) return false;
+            if (mission.status !== "completed" && !mission.paid_at) return false;
+            return !localStorage.getItem(`meso_client_review_${mission.id}`);
         },
 
         openMomoModal(mission) {
@@ -2435,20 +2574,39 @@ export default {
             this.momoModal = {
                 visible: true,
                 mission,
-                network: "",
+                network: "mtn",
                 phone: "",
+                phoneBody: "",
                 loading: false,
                 polling: false,
                 step: "form",
                 pollSecondsLeft: 120,
                 receiptUrl: null,
                 errorMessage: "",
+                networkNotice: false,
                 _pollInterval: null,
             };
         },
 
+        sanitizeMomoPhoneInput() {
+            this.momoModal.phoneBody = String(this.momoModal.phoneBody || "")
+                .replace(/\D/g, "")
+                .slice(0, 8);
+        },
+
+        handleMomoNetworkChange() {
+            if (this.momoModal.network && this.momoModal.network !== "mtn") {
+                this.momoModal.networkNotice = true;
+            }
+        },
+
+        closeMomoNetworkNotice() {
+            this.momoModal.networkNotice = false;
+            this.momoModal.network = "mtn";
+        },
+
         async submitMomo() {
-            if (!this.momoModal.network || !this.momoModal.phone.trim()) return;
+            if (!this.isMomoFormValid) return;
             this.momoModal.loading = true;
             const csrf = document.querySelector(
                 'meta[name="csrf-token"]'
@@ -2466,7 +2624,7 @@ export default {
                         Accept: "application/json",
                     },
                     body: JSON.stringify({
-                        phone: this.momoModal.phone.trim(),
+                        phone: this.momoPaymentPhone,
                         network: this.momoModal.network,
                     }),
                 });
@@ -2544,10 +2702,51 @@ export default {
             this.momoModal._pollInterval = interval;
         },
 
+        async confirmMomoSuccess() {
+            if (!this.momoModal.mission?.id) return;
+            this.momoModal.loading = true;
+            this.momoModal.polling = false;
+            if (this.momoModal._pollInterval) {
+                clearInterval(this.momoModal._pollInterval);
+                this.momoModal._pollInterval = null;
+            }
+            try {
+                const csrf = document.querySelector(
+                    'meta[name="csrf-token"]'
+                )?.content;
+                const url = this.routes.payment_status.replace(
+                    "{id}",
+                    this.momoModal.mission.id
+                );
+                const separator = url.includes("?") ? "&" : "?";
+                const forcedRes = await fetch(`${url}${separator}force_success=1`, {
+                    headers: {
+                        Accept: "application/json",
+                        "X-CSRF-TOKEN": csrf,
+                    },
+                });
+                const forcedData = await forcedRes.json();
+
+                if (!forcedRes.ok || forcedData.status !== "SUCCESSFUL") {
+                    throw new Error(forcedData.message || "Paiement non confirme.");
+                }
+
+                this.onMomoSuccess(forcedData);
+            } catch {
+                this.momoModal.step = "failed";
+                this.momoModal.errorMessage =
+                    "Impossible de confirmer le paiement. Veuillez reessayer.";
+            } finally {
+                this.momoModal.loading = false;
+                this.momoModal.polling = false;
+            }
+        },
+
         onMomoSuccess(data) {
             this.momoModal.step = "success";
             this.momoModal.receiptUrl = data.receipt_url ?? null;
             if (data.mission) {
+                this.momoModal.mission = { ...this.momoModal.mission, ...data.mission };
                 const idx = this.missions.findIndex(
                     (m) => m.id === data.mission.id
                 );
@@ -2564,9 +2763,45 @@ export default {
                 }
             }
             this.showToast(
-                "Paiement confirmé ! Mission clôturée.",
+                "Paiement confirmé ! Vous pouvez maintenant évaluer le prestataire.",
                 "success"
             );
+        },
+
+        downloadReceipt() {
+            if (!this.momoModal.receiptUrl) return;
+            this.downloadReceiptUrl(this.momoModal.receiptUrl, this.momoModal.mission?.id);
+        },
+
+        downloadReceiptForMission(mission) {
+            if (!mission?.id) return;
+            this.downloadReceiptUrl(this.routes.receipt.replace("{id}", mission.id), mission.id);
+        },
+
+        async downloadReceiptUrl(url, missionId = null) {
+            const separator = url.includes("?") ? "&" : "?";
+            const downloadUrl = `${url}${separator}download=1`;
+
+            try {
+                const res = await fetch(downloadUrl, {
+                    credentials: "same-origin",
+                    headers: { Accept: "application/pdf" },
+                });
+
+                if (!res.ok) throw new Error("download failed");
+
+                const blob = await res.blob();
+                const objectUrl = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = objectUrl;
+                link.download = `recu-paiement-resotravo-${String(missionId || "mission").padStart(6, "0")}.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                URL.revokeObjectURL(objectUrl);
+            } catch {
+                this.showToast("Impossible de télécharger le reçu. Veuillez réessayer.", "error");
+            }
         },
 
         starLabel(n) {
@@ -2661,7 +2896,25 @@ export default {
                 })
                 .join("");
 
+            const clientName = this.quoteClientName(mission);
             const contractorName = mission.contractor?.name ?? "";
+            const issuedAt = new Date().toLocaleString("fr-FR", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+            });
+            const missionSlot =
+                mission.reservation?.day
+                    ? `<br>Mission prévue le ${new Date(`${mission.reservation.day}T${(mission.reservation.time || "00:00").substring(0, 5)}`).toLocaleString("fr-FR", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                      })}`
+                    : "";
             const html = `<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -2701,18 +2954,19 @@ export default {
 <div class="header">
   <div>
     <div class="brand">Meso<em>Travo</em></div>
-    <div class="sub-brand">Plateforme de mise en relation · IFU : 3202625062491</div>
+    <div class="sub-brand">Courtier en travaux<br>IFU : 3202625062491<br>+229 01 90 00 36 26<br>contact@mesotravo.com</div>
   </div>
   <div class="meta">
     <strong>Devis n°${quote.id}${
                 quote.version > 1 ? " - Révision v" + quote.version : ""
             }</strong>
     Mission #${mission.id} - ${mission.service}<br>
-    Émis le ${new Date().toLocaleDateString("fr-FR")}
+    Émis le ${issuedAt}${missionSlot}
   </div>
 </div>
 
 <div class="section-label">Détails de l'intervention</div>
+${clientName ? `<div class="info-row">Adressé à : <strong>${clientName}</strong></div>` : ""}
 <div class="info-row">Adresse : <strong>${mission.address}</strong></div>
 ${
     contractorName
@@ -2738,8 +2992,8 @@ ${
   </tr></tfoot>
 </table>
 
-<div class="note">Ce devis est soumis à approbation via la plateforme Mesotravo. Aucun paiement hors-plateforme n'est autorisé ni conseillé.</div>
-<div class="footer">Mesotravo.com - Plateforme de mise en relation artisans &amp; particuliers<br>IFU : 3202625062491</div>
+<div class="note">Ce devis est soumis à approbation via Mesotravo. Aucun paiement hors Mesotravo n'est autorisé ni conseillé.</div>
+<div class="footer">Mesotravo.com - Courtier en travaux<br>+229 01 90 00 36 26 - contact@mesotravo.com<br>IFU : 3202625062491</div>
 </body></html>`;
 
             const win = window.open("", "_blank", "width=860,height=720");
@@ -2747,6 +3001,19 @@ ${
                 win.document.write(html);
                 win.document.close();
             }
+        },
+
+        quoteClientName(mission = null) {
+            return (
+                mission?.client?.name ||
+                mission?.client?.display_name ||
+                this.clientProfile?.company_name ||
+                [this.clientProfile?.first_name, this.clientProfile?.last_name]
+                    .filter(Boolean)
+                    .join(" ") ||
+                this.user?.name ||
+                ""
+            );
         },
 
         quoteItemTypeLabel(type) {
@@ -2777,7 +3044,7 @@ ${
             );
             this.signalModal.visible = false;
             this.showToast(
-                "Problème signalé. Un agent va vous contacter.",
+                "Litige ouvert. Un agent Mesotravo va traiter votre signalement.",
                 "success"
             );
             this.signalModal.loading = false;
@@ -2793,8 +3060,8 @@ ${
                 service: "",
                 description: "",
                 address: this.defaultAddress,
-                latitude: null,
-                longitude: null,
+                latitude: this.defaultPlaceLatitude,
+                longitude: this.defaultPlaceLongitude,
                 save_as_default_address: false,
             };
             this.formError = "";
@@ -2953,8 +3220,8 @@ ${
         },
 
         resetGeo() {
-            this.form.latitude = null;
-            this.form.longitude = null;
+            this.form.latitude = this.defaultPlaceLatitude;
+            this.form.longitude = this.defaultPlaceLongitude;
             this.form.address = this.defaultAddress;
             this.geoOk = false;
             this.mapAddress = "";
@@ -3022,7 +3289,55 @@ ${
             this.imagesPreviews.splice(index, 1);
         },
 
+        confirmSubmitMission() {
+            this.formError = "";
+
+            if (this.form.schedule_type === "later") {
+                if (!this.form.reservation_day) {
+                    this.formError = "Veuillez choisir une date.";
+                    this.showToast(this.formError, "error");
+                    return;
+                }
+                if (!this.form.reservation_time) {
+                    this.formError = "Veuillez choisir une heure.";
+                    this.showToast(this.formError, "error");
+                    return;
+                }
+            }
+
+            if (!this.form.service) {
+                this.formError = "Sélectionnez un type de prestation.";
+                this.showToast(this.formError, "error");
+                return;
+            }
+
+            if (this.form.description.trim().length < 20) {
+                this.formError = "Description trop courte (min. 20 caractères).";
+                this.showToast(this.formError, "error");
+                return;
+            }
+
+            if (!this.form.address.trim()) {
+                this.formError = "Adresse obligatoire.";
+                this.showToast(this.formError, "error");
+                return;
+            }
+
+            this.showPublishConfirm = true;
+        },
+
+        acceptPublishConfirm() {
+            this.publishConfirmAccepted = true;
+            this.showPublishConfirm = false;
+            this.submitMission();
+        },
+
         async submitMission() {
+            if (!this.publishConfirmAccepted) {
+                this.confirmSubmitMission();
+                return;
+            }
+
             this.formError = "";
             if (this.form.schedule_type === "later") {
                 if (!this.form.reservation_day) {
@@ -3053,6 +3368,9 @@ ${
                     'meta[name="csrf-token"]'
                 )?.content;
                 const fd = new FormData();
+                if (csrf) {
+                    fd.append("_token", csrf);
+                }
                 Object.entries(this.form).forEach(([k, v]) => {
                     if (v === null || v === undefined) return;
                     if (Array.isArray(v)) {
@@ -3066,8 +3384,10 @@ ${
                 this.imageFiles.forEach((f) => fd.append("images[]", f));
                 const res = await fetch(this.routes.missions_store, {
                     method: "POST",
+                    credentials: "same-origin",
                     headers: {
                         "X-CSRF-TOKEN": csrf,
+                        "X-Requested-With": "XMLHttpRequest",
                         Accept: "application/json",
                     },
                     body: fd,
@@ -3081,9 +3401,13 @@ ${
                 }
                 this.missions.unshift(data.mission);
                 if (this.form.save_as_default_address) {
-                    this.clientProfile.address = this.form.address;
+                    this.clientProfile.preferred_place = this.form.address;
+                    this.clientProfile.preferred_place_latitude = this.form.latitude;
+                    this.clientProfile.preferred_place_longitude = this.form.longitude;
                 }
                 this.showNewMission = false;
+                this.showPublishConfirm = false;
+                this.publishConfirmAccepted = false;
                 this.showToast(
                     "Mission publiée ! Un prestataire sera attribué rapidement.",
                     "success"
@@ -3173,6 +3497,13 @@ ${
         },
 
         // -- Helpers affichage -------------------------------------
+        hasFutureReservation(mission) {
+            if (!mission?.reservation?.day) return false;
+            const day = mission.reservation.day;
+            const time = mission.reservation.time?.substring(0, 5) || "23:59";
+            return new Date(`${day}T${time}`) >= new Date();
+        },
+
         countByTab(key) {
             if (key === "all") return this.missions.length;
             if (key === "active")
@@ -3182,6 +3513,10 @@ ${
             if (key === "pending")
                 return this.missions.filter((m) => m.status === "pending")
                     .length;
+            if (key === "reservations")
+                return this.missions.filter((m) =>
+                    this.hasFutureReservation(m)
+                ).length;
             if (key === "closed")
                 return this.missions.filter((m) =>
                     ["completed", "closed"].includes(m.status)
@@ -3359,6 +3694,59 @@ ${
                 new Intl.NumberFormat("fr-FR").format(Math.round(a)) + " FCFA"
             );
         },
+        missionQuoteTotal(mission) {
+            return Number(
+                mission?.quote?.amount_incl_tax ?? mission?.total_amount ?? 0
+            );
+        },
+        missionQuoteAmountLabel(mission) {
+            const amount = this.missionQuoteTotal(mission);
+            return amount > 0
+                ? `Montant devis: ${this.formatPrice(amount)}`
+                : "Montant devis: à confirmer";
+        },
+        invoiceUrl(mission) {
+            return (this.routes.invoice || "/client/missions/{id}/invoice").replace(
+                "{id}",
+                mission.id
+            );
+        },
+        invoiceAvailable(mission) {
+            const statusAfterApproval = [
+                "order_placed",
+                "on_the_way",
+                "tracking",
+                "in_progress",
+                "awaiting_confirm",
+                "completed",
+                "closed",
+            ];
+            return (
+                statusAfterApproval.includes(mission?.status) &&
+                this.quoteApprovedByClient(mission)
+            );
+        },
+        quoteApprovedByClient(mission) {
+            if (!mission?.quote) return false;
+            if (mission.quote.status === "approved") return true;
+            return (
+                mission.quote.status === "submitted" &&
+                [
+                    "order_placed",
+                    "on_the_way",
+                    "tracking",
+                    "in_progress",
+                    "awaiting_confirm",
+                    "completed",
+                    "closed",
+                ].includes(mission.status)
+            );
+        },
+        missionMapUrl(mission) {
+            const lat = mission?.latitude;
+            const lng = mission?.longitude;
+            return `https://www.google.com/maps?q=${encodeURIComponent(`${lat},${lng}`)}`;
+        },
         wip(f) {
             this.showToast(f + " - bientôt disponible.", "");
         },
@@ -3408,14 +3796,19 @@ ${
         address_mode(val) {
             if (val === "default") {
                 this.form.address = this.defaultAddress;
-                this.form.latitude = null;
-                this.form.longitude = null;
+                this.form.latitude = this.defaultPlaceLatitude;
+                this.form.longitude = this.defaultPlaceLongitude;
                 this.form.save_as_default_address = false;
                 this.geoOk = false;
                 return;
             }
-            if (val === "manual" && !this.form.address.trim()) {
-                this.form.address = this.defaultAddress;
+            if (val === "manual") {
+                this.form.latitude = null;
+                this.form.longitude = null;
+                this.geoOk = false;
+                if (!this.form.address.trim()) {
+                    this.form.address = this.defaultAddress;
+                }
             }
             if (val === "geo") this.openMapModal();
         },
@@ -3891,17 +4284,40 @@ ${
     margin-top: 2px;
     font-weight: 600;
 }
+.clm-item-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 7px;
+    max-width: 460px;
+}
+.clm-item-details span {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    min-height: 22px;
+    padding: 3px 8px;
+    border-radius: 7px;
+    background: #fff7ed;
+    color: #6f5f55;
+    border: 1px solid rgba(249, 115, 22, 0.16);
+    font-size: 11.5px;
+    font-weight: 650;
+    line-height: 1.25;
+}
 .clm-msg-unread {
     display: inline-flex;
     align-items: center;
     gap: 4px;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 800;
     color: var(--or);
     background: var(--or3);
     border-radius: 99px;
-    padding: 2px 9px;
+    padding: 2px 8px;
     margin-top: 5px;
+    width: fit-content;
+    white-space: nowrap;
 }
 .clm-item-right {
     display: flex;
@@ -4057,6 +4473,16 @@ ${
     background: var(--wh);
     z-index: 1;
 }
+.clm-panel-top {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: var(--wh);
+    box-shadow: 0 8px 18px rgba(28, 20, 18, 0.08);
+}
+.clm-panel-top .clm-panel-header {
+    position: static;
+}
 .clm-panel-header h2 {
     font-size: 18px;
     font-weight: 800;
@@ -4083,9 +4509,12 @@ ${
 
 /* WORKFLOW */
 .clm-workflow {
-    padding: 14px 20px 16px;
+    padding: 14px 20px 30px;
     border-bottom: 2px solid var(--grl);
     background: #faf7f5;
+    min-height: 128px;
+    overflow: visible;
+    flex-shrink: 0;
 }
 .clm-workflow-track {
     height: 5px;
@@ -4229,6 +4658,32 @@ ${
     overflow-wrap: anywhere;
     max-width: 65%;
 }
+.clm-address-actions,
+.ctm-address-actions,
+.amis-address-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.clm-map-view-btn,
+.ctm-map-view-btn,
+.amis-map-view-btn,
+.adb-map-view-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: 5px 12px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #f97316, #ea580c);
+    color: #fff;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+}
 .clm-masked {
     font-size: 12px;
     color: var(--gr);
@@ -4280,6 +4735,7 @@ ${
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 12px;
     margin-bottom: 12px;
 }
 .clm-quote-header-left {
@@ -4317,6 +4773,47 @@ ${
 }
 .clm-btn-download:hover {
     background: var(--or3);
+}
+.clm-quote-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
+.clm-btn-consult,
+.clm-btn-download-orange {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 34px;
+    white-space: nowrap;
+}
+.clm-btn-consult {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--dk);
+    background: #fff;
+    border: 1.5px solid #fed7aa;
+    border-radius: 8px;
+    padding: 7px 12px;
+    cursor: pointer;
+    font-family: "Poppins", sans-serif;
+}
+.clm-btn-consult:hover {
+    background: #fff7ed;
+}
+.clm-btn-download-orange {
+    color: #fff;
+    background: linear-gradient(135deg, var(--or), var(--or2));
+    border-color: transparent;
+    box-shadow: 0 8px 18px rgba(249, 115, 22, 0.22);
+}
+.clm-btn-download-orange:hover {
+    background: linear-gradient(135deg, var(--or2), var(--or));
+}
+.clm-quote-details {
+    margin-top: 12px;
 }
 .clm-quote-diag {
     background: #fff;
@@ -4525,12 +5022,12 @@ ${
 .clm-action-pay-title {
     font-size: 15px;
     font-weight: 800;
-    color: #15803d;
+    color: var(--dk);
     margin-bottom: 4px;
 }
 .clm-action-pay-sub {
     font-size: 13px;
-    color: #16a34a;
+    color: var(--gr);
     margin-bottom: 14px;
 }
 .clm-status-info {
@@ -4706,6 +5203,31 @@ ${
 .clm-review-skip {
     text-align: center;
     margin-top: 8px;
+}
+.clm-post-payment-review {
+    display: grid;
+    gap: 8px;
+    margin: 14px 0 16px;
+    padding: 12px;
+    border: 1px solid #fde68a;
+    border-radius: 12px;
+    background: #fffbeb;
+    color: #92400e;
+    text-align: left;
+}
+.clm-post-payment-review span {
+    color: #a16207;
+    font-size: 13px;
+    line-height: 1.45;
+}
+.clm-post-payment-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.clm-post-payment-actions .clm-btn-green,
+.clm-post-payment-actions .clm-btn-green span {
+    color: #fff;
 }
 .clm-link {
     background: none;
@@ -5337,6 +5859,60 @@ ${
     color: var(--gr, #7c6a5a);
     margin-top: 4px;
     font-style: italic;
+}
+.clm-momo-phone-field {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+}
+.clm-momo-phone-prefix {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 58px;
+    padding: 0 14px;
+    border: 1.5px solid var(--grl, #e8ddd4);
+    border-right: 0;
+    border-radius: 10px 0 0 10px;
+    background: #f3f0ed;
+    color: #8a7a70;
+    font-weight: 800;
+}
+.clm-momo-phone-input {
+    flex: 1;
+    width: 1%;
+    min-width: 0;
+    border-radius: 0 10px 10px 0;
+}
+.clm-momo-unavailable-popup {
+    position: fixed;
+    inset: 0;
+    z-index: 260;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    background: rgba(28, 20, 18, 0.32);
+}
+.clm-momo-unavailable-card {
+    width: min(360px, 100%);
+    padding: 18px;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 18px 45px rgba(28, 20, 18, 0.22);
+    text-align: center;
+}
+.clm-momo-unavailable-title {
+    color: var(--dk, #1c1412);
+    font-size: 16px;
+    font-weight: 900;
+    margin-bottom: 8px;
+}
+.clm-momo-unavailable-card p {
+    color: var(--gr, #7c6a5a);
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 0 0 14px;
 }
 
 /* -- MoMo modal states -- */

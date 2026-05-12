@@ -40,7 +40,7 @@
         .type-chip { font-size: 10.5px; padding: 2px 7px; border-radius: 99px; font-weight: 600 }
         .type-chip.diagnostic { background: #fef3c7; color: #92400e }
         .type-chip.labor       { background: #dbeafe; color: #1e40af }
-        .type-chip.other, .type-chip.material { background: #f3f4f6; color: #374151 }
+        .type-chip.other, .type-chip.material, .type-chip.part { background: #f3f4f6; color: #374151 }
         /* Totals */
         .totals-block { margin-top: 16px; border-top: 2px solid #E8DDD4; padding-top: 16px }
         .totals-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; font-size: 13.5px }
@@ -117,18 +117,23 @@
             <div class="doc-brand">
                 <img src="{{ $logoSrc }}" alt="Mesotravo">
             </div>
-            <div class="doc-subtitle">Facture payée · IFU : 3202625062491</div>
+            <div class="doc-subtitle">
+                Courtier en travaux<br>
+                IFU : 3202625062491<br>
+                Tél : +229 01 90 00 36 26<br>
+                Email : contact@mesotravo.com
+            </div>
         </div>
         <div class="doc-badge">
             <div class="doc-badge-num">N° {{ str_pad($mission->id, 6, '0', STR_PAD_LEFT) }}</div>
-            <div class="doc-badge-label">{{ now()->format('d/m/Y') }}</div>
+            <div class="doc-badge-label">{{ now()->format('d/m/Y à H:i') }}</div>
         </div>
     </div>
 
     <div class="doc-body">
 
-        {{-- Parties --}}
-        <div class="section-title">Parties</div>
+        {{-- Intervenants --}}
+        <div class="section-title">Intervenants</div>
         <div class="info-grid">
             <div class="info-item">
                 <label>Client</label>
@@ -199,7 +204,7 @@
                             {{ match($item->type) {
                                 'diagnostic' => 'Diagnostic',
                                 'labor'      => 'Main d’œuvre',
-                                'material'   => 'Matériel',
+                                'material', 'part' => 'Pièces et matériaux',
                                 default      => ucfirst($item->type),
                             } }}
                         </span>
@@ -216,7 +221,7 @@
         {{-- Totaux --}}
         <div class="totals-block">
             <div class="totals-row total-final">
-                <span>{{ $isContractorInvoice ? 'Montant reçu par le prestataire' : 'Montant payé' }}</span>
+                <span>{{ $isContractorInvoice ? 'Montant reçu par le prestataire' : 'Montant à payer' }}</span>
                 <span>{{ number_format($isContractorInvoice ? $contractorAmount : $mission->total_amount, 0, ',', ' ') }} FCFA</span>
             </div>
         </div>
@@ -237,7 +242,10 @@
     <div class="doc-footer">
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
             <img src="{{ $logoSrc }}" alt="Mesotravo" style="height:28px;width:auto;opacity:.7">
-            <span>Plateforme de mise en relation artisans &amp; particuliers<br>IFU : 3202625062491</span>
+            <span>Courtier en travaux<br>
+            IFU : 3202625062491<br>
+            Tél : +229 01 90 00 36 26<br>
+            Email : contact@mesotravo.com</span>
         </div>
         <div style="text-align:right">
             <a href="https://mesotravo.com">mesotravo.com</a>

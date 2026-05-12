@@ -5,35 +5,46 @@
             <div class="ac-hero-glow"></div>
             <div class="ac-hero-glow2"></div>
             <div class="ac-hero-dots"></div>
-            <div class="ac-hero-inner">
-                <div class="ac-badge au">
-                    <span class="bdot"></span>
-                    Gratuit pour tous les inscrits · Disponible 24h/24
+            <div class="ac-hero-wrap">
+                <div class="ac-hero-inner">
+                    <div class="ac-badge au">
+                        <span class="bdot"></span>
+                        Gratuit pour tous les inscrits · Disponible 24h/24
+                    </div>
+                    <h1 class="au1">
+                        Allô Conseils<br />
+                        <span class="hl">votre assistant</span><br />
+                        Mesotravo
+                    </h1>
+                    <p class="ac-hero-desc au2">
+                        Posez vos questions et obtenez une orientation immédiate.<br />
+                        En cas de besoin, un agent humain Mesotravo prend le relais.
+                    </p>
+                    <div class="ac-hero-steps au3">
+                        <div class="ac-step-pill">
+                            <span class="ac-step-num">1</span>
+                            <span>Agent IA répond (3 premiers messages)</span>
+                        </div>
+                        <div class="ac-step-arrow">&rarr;</div>
+                        <div class="ac-step-pill">
+                            <span class="ac-step-num">2</span>
+                            <span>Transfert agent humain si besoin</span>
+                        </div>
+                        <div class="ac-step-arrow">&rarr;</div>
+                        <div class="ac-step-pill">
+                            <span class="ac-step-num">3</span>
+                            <span>Historique conservé dans votre espace</span>
+                        </div>
+                    </div>
                 </div>
-                <h1 class="au1">
-                    Allô Conseils<br />
-                    <span class="hl">votre assistant</span><br />
-                    Mesotravo
-                </h1>
-                <p class="ac-hero-desc au2">
-                    Posez vos questions et obtenez une orientation immédiate.<br />
-                    En cas de besoin, un agent humain Mesotravo prend le relais.
-                </p>
-                <div class="ac-hero-steps au3">
-                    <div class="ac-step-pill">
-                        <span class="ac-step-num">1</span>
-                        <span>Agent IA répond (3 premiers messages)</span>
-                    </div>
-                    <div class="ac-step-arrow">&rarr;</div>
-                    <div class="ac-step-pill">
-                        <span class="ac-step-num">2</span>
-                        <span>Transfert agent humain si besoin</span>
-                    </div>
-                    <div class="ac-step-arrow">&rarr;</div>
-                    <div class="ac-step-pill">
-                        <span class="ac-step-num">3</span>
-                        <span>Historique conservé dans votre espace</span>
-                    </div>
+
+                <div class="ac-hero-visual" aria-hidden="true">
+                    <img
+                        :src="'/images/allo_conseils.png'"
+                        alt=""
+                        class="ac-hero-img"
+                        loading="eager"
+                    />
                 </div>
             </div>
         </section>
@@ -1087,6 +1098,26 @@ export default {
     z-index: 2;
     max-width: 760px;
 }
+.ac-hero-wrap {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(300px, 0.7fr);
+    align-items: center;
+    gap: 34px;
+    max-width: 1180px;
+    margin: 0 auto;
+}
+.ac-hero-visual {
+    display: flex;
+    justify-content: flex-end;
+}
+.ac-hero-img {
+    width: min(100%, 520px);
+    max-height: 460px;
+    object-fit: contain;
+    filter: drop-shadow(0 24px 38px rgba(0, 0, 0, 0.34));
+}
 .ac-badge {
     display: inline-flex;
     align-items: center;
@@ -1170,6 +1201,20 @@ export default {
     color: var(--or);
 }
 @media (max-width: 600px) {
+    .ac-hero {
+        padding-top: 34px;
+    }
+    .ac-hero-wrap {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+    .ac-hero-visual {
+        justify-content: center;
+    }
+    .ac-hero-img {
+        width: min(94vw, 380px);
+        max-height: 330px;
+    }
     .ac-step-arrow {
         display: none;
     }

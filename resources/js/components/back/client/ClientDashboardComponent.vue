@@ -315,18 +315,47 @@
                                                 ? m.contractor.name
                                                 : "Attribution en cours..."
                                         }}
-                                        · {{ formatDate(m.created_at) }}
                                     </div>
                                     <!-- Miniatures images -->
                                     <div class="cd-mission-imgs" v-if="m.images && m.images.length">
                                         <img v-for="(url, i) in m.images.slice(0, 4)" :key="i" :src="url" class="cd-mission-img-thumb" @click.stop="dashLightbox = url" />
                                         <span class="cd-mission-imgs-more" v-if="m.images.length > 4">+{{ m.images.length - 4 }}</span>
                                     </div>
+                                    <div class="cd-mission-details">
+                                        <span class="cd-mission-detail-pill">
+                                            Publiée le {{ formatDateTime(m.created_at) }}
+                                        </span>
+                                        <span class="cd-mission-detail-pill">
+                                            💰
+                                            {{ missionQuoteAmountLabel(m) }}
+                                        </span>
+                                        <span class="cd-mission-detail-pill" v-if="m.address">
+                                            📍 {{ m.address }}
+                                        </span>
+                                        <span class="cd-mission-detail-pill" v-if="m.reservation">
+                                            📅
+                                            {{
+                                                formatReservationDate(
+                                                    m.reservation.day
+                                                )
+                                            }}
+                                            à {{ m.reservation.time?.substring(0, 5) }}
+                                        </span>
+                                        <span
+                                            class="cd-mission-detail-pill"
+                                            v-if="m.images && m.images.length"
+                                        >
+                                            🖼 {{ m.images.length }} image{{
+                                                m.images.length > 1 ? "s" : ""
+                                            }}
+                                        </span>
+                                    </div>
                                     <!-- Badge non lu inline sous le titre -->
                                     <div
                                         class="cd-msg-unread"
                                         v-if="unreadByMission[m.id]"
                                     >
+                                        <span aria-hidden="true">&#128172;</span>
                                         {{ unreadByMission[m.id] }} message{{
                                             unreadByMission[m.id] > 1 ? "s" : ""
                                         }}
@@ -343,11 +372,8 @@
                                 >
                                     {{ labelOf(m) }}
                                 </span>
-                                <div
-                                    class="cd-mission-price"
-                                    v-if="m.total_amount"
-                                >
-                                    {{ formatPrice(m.total_amount) }}
+                                <div class="cd-mission-price">
+                                    {{ missionQuoteAmountLabel(m) }}
                                 </div>
                                 <!-- Bouton Lire message — stoppe la propagation pour ouvrir direct le chat -->
                                 <button
@@ -375,16 +401,16 @@
                     <!-- Profil rapide -->
                     <div class="cd-card">
                         <div class="cd-card-header">
-                            <h3>Mon profil</h3>
-                            <a
-                                class="cd-btn cd-btn-ghost cd-btn-sm"
-                                :href="routes.parameters_page"
-                            >
-                                Modifier
-                            </a>
+                            <h3>👤 Mon profil</h3>
                         </div>
                         <div class="cd-profile-info">
-                            <div class="cd-profile-av" :class="{ 'has-photo': client.profile_picture }">
+                            <div
+                                class="cd-profile-av"
+                                :class="{
+                                    certified: isIdentityVerified,
+                                    'has-photo': client.profile_picture,
+                                }"
+                            >
                                 <img
                                     v-if="client.profile_picture"
                                     :src="client.profile_picture"
@@ -394,19 +420,24 @@
                                 <span v-else>
                                 {{ client.initials }}
                                 </span>
+                                <span
+                                    class="cd-certified-dot"
+                                    v-if="isIdentityVerified"
+                                    >✓</span
+                                >
                             </div>
                             <div>
                                 <div class="cd-profile-name">
                                     {{ client.display_name }}
                                 </div>
-                                <div class="cd-profile-meta">
-                                    {{ client.email }}
+                                <div class="cd-profile-spec">
+                                    Client
                                 </div>
                                 <div class="cd-profile-meta">
-                                    {{ formatPhone(client.phone) }}
+                                    📞 {{ formatPhone(client.phone) }}
                                 </div>
                                 <div class="cd-profile-meta">
-                                    {{ client.city }}
+                                    📍 {{ client.city || "Ville non renseignée" }}
                                 </div>
                             </div>
                         </div>
@@ -586,7 +617,7 @@
                         <h3>{{ activeMission.service }}</h3>
                         <div class="cd-modal-sub">
                             Mission #{{ activeMission.id }} ·
-                            {{ formatDate(activeMission.created_at) }}
+                            publiée le {{ formatDateTime(activeMission.created_at) }}
                         </div>
                     </div>
                     <button
@@ -597,6 +628,30 @@
                     </button>
                 </div>
                 <div class="cd-modal-body">
+                    <div class="cd-workflow">
+                        <div class="cd-workflow-track">
+                            <div
+                                class="cd-workflow-fill"
+                                :style="{ width: (stepOf(activeMission) / 12) * 100 + '%' }"
+                            ></div>
+                        </div>
+                        <div class="cd-wf-steps">
+                            <div
+                                class="cd-wf-step"
+                                v-for="s in workflowSteps"
+                                :key="s.step"
+                                :class="{
+                                    'wf-done': stepOf(activeMission) > s.step,
+                                    'wf-current': stepOf(activeMission) === s.step,
+                                    'wf-pending': stepOf(activeMission) < s.step,
+                                }"
+                            >
+                                <div class="cd-wf-dot"></div>
+                                <div class="cd-wf-label">{{ s.label }}</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="cd-detail-row">
                         <span>Statut</span>
                         <span
@@ -626,20 +681,38 @@
                     </div>
                     <div class="cd-detail-row">
                         <span>Mode adresse</span>
-                        <strong>{{ activeMission.latitude && activeMission.longitude ? 'Géolocalisation' : 'Saisie manuelle' }}</strong>
+                        <strong class="cd-mode-address">
+                            {{ activeMission.latitude && activeMission.longitude ? 'Géolocalisation' : 'Saisie manuelle' }}
+                            <a
+                                v-if="activeMission.latitude && activeMission.longitude"
+                                class="cd-map-view-btn"
+                                :href="missionMapUrl(activeMission)"
+                                target="_blank"
+                                rel="noopener"
+                            >
+                                Voir adresse
+                            </a>
+                        </strong>
+                    </div>
+                    <div class="cd-detail-row" v-if="activeMission.reservation">
+                        <span>Date prévue de réalisation</span>
+                        <strong>
+                            {{ formatReservationDate(activeMission.reservation.day) }}
+                            à {{ activeMission.reservation.time?.substring(0, 5) }}
+                        </strong>
                     </div>
                     <div class="cd-detail-row">
                         <span>Description</span>
                         <strong>{{ activeMission.description }}</strong>
                     </div>
-                    <!-- Photos de la mission -->
+                    <!-- Images de la mission -->
                     <div
                         class="cd-detail-row cd-detail-photos"
                         v-if="
                             activeMission.images && activeMission.images.length
                         "
                     >
-                        <span>Photos</span>
+                        <span>Images</span>
                         <div class="cd-dash-images">
                             <img
                                 v-for="(url, i) in activeMission.images"
@@ -668,9 +741,15 @@
 
                     <!-- Action : confirmer fin des travaux (étape 11) -->
                     <div class="cd-detail-row" v-if="activeMission.on_the_way_at">
-                        <span>Départ pris le</span>
+                        <span>Prestataire Départ pris le</span>
                         <strong>{{
                             formatDateTime(activeMission.on_the_way_at)
+                        }}</strong>
+                    </div>
+                    <div class="cd-detail-row" v-if="activeMission.arrived_at">
+                        <span>Prestataire arrivé le</span>
+                        <strong>{{
+                            formatDateTime(activeMission.arrived_at)
                         }}</strong>
                     </div>
 
@@ -687,6 +766,7 @@
                                 class="cd-btn cd-btn-ghost"
                                 @click="signalProblem"
                             >
+                                <span>⚠</span>
                                 Signaler un problème
                             </button>
                             <button
@@ -698,7 +778,7 @@
                                     class="cd-spinner"
                                     v-if="actionLoading"
                                 ></div>
-                                <span v-else>Confirmer la fin ?</span>
+                                <span v-else>✓ Confirmer la fin</span>
                             </button>
                         </div>
                     </div>
@@ -708,22 +788,78 @@
                         class="cd-action-block cd-action-quote"
                         v-if="
                             activeMission.status === 'quote_submitted' &&
-                            activeMission.quote
+                            activeMission.quote &&
+                            activeMission.quote.status !== 'rejected'
                         "
                     >
-                        <p>
-                            Le prestataire a soumis un devis de
-                            <strong>{{
-                                formatPrice(activeMission.quote.amount_incl_tax)
-                            }}</strong
-                            >.
-                        </p>
+                        <div class="cd-quote-head">
+                            <div>
+                                <div class="cd-quote-title">Devis soumis</div>
+                                <p>
+                                    Le prestataire a soumis un devis de
+                                    <strong>{{
+                                        formatPrice(activeMission.quote.amount_incl_tax)
+                                    }}</strong
+                                    >.
+                                </p>
+                            </div>
+                            <div class="cd-quote-actions">
+                                <button
+                                    class="cd-btn cd-btn-light"
+                                    @click="quoteDetailsOpen = !quoteDetailsOpen"
+                                    type="button"
+                                >
+                                    <span>👁</span>
+                                    {{ quoteDetailsOpen ? "Masquer" : "Consulter le devis" }}
+                                </button>
+                                <button
+                                    class="cd-btn cd-btn-orange"
+                                    @click="downloadQuotePdf(activeMission)"
+                                    type="button"
+                                >
+                                    <span>⬇</span>
+                                    Télécharger
+                                </button>
+                            </div>
+                        </div>
+                        <div class="cd-quote-details" v-if="quoteDetailsOpen">
+                            <div class="cd-quote-diag" v-if="activeMission.quote.diagnosis">
+                                <strong>Diagnostic</strong>
+                                <span>{{ activeMission.quote.diagnosis }}</span>
+                            </div>
+                            <div class="cd-quote-lines" v-if="activeMission.quote.items && activeMission.quote.items.length">
+                                <div class="cd-quote-line cd-quote-line-head">
+                                    <span>Désignation</span>
+                                    <span>Qté</span>
+                                    <span>P.U.</span>
+                                    <span>Total</span>
+                                </div>
+                                <div
+                                    class="cd-quote-line"
+                                    v-for="item in activeMission.quote.items"
+                                    :key="item.id"
+                                >
+                                    <span>
+                                        <b class="cd-quote-type">{{ quoteItemTypeLabel(item.type) }}</b>
+                                        {{ item.description }}
+                                    </span>
+                                    <span>{{ item.quantity }}</span>
+                                    <span>{{ formatPrice(item.unit_price) }}</span>
+                                    <span>{{ formatPrice(item.quantity * item.unit_price) }}</span>
+                                </div>
+                            </div>
+                            <div class="cd-quote-total">
+                                <span>Total devis</span>
+                                <strong>{{ formatPrice(activeMission.quote.amount_incl_tax) }}</strong>
+                            </div>
+                        </div>
                         <div class="cd-action-row">
                             <button
                                 class="cd-btn cd-btn-red"
                                 @click="rejectQuote(activeMission)"
                                 :disabled="actionLoading"
                             >
+                                <span>✕</span>
                                 Refuser
                             </button>
                             <button
@@ -735,12 +871,139 @@
                                     class="cd-spinner"
                                     v-if="actionLoading"
                                 ></div>
-                                <span v-else>Approuver le devis ?</span>
+                                <span v-else>✓ Approuver le devis</span>
                             </button>
                         </div>
                     </div>
 
                     <!-- Paiement débloqué (étape 11 ? 12) -->
+                    <div
+                        class="cd-action-block cd-action-quote-approved"
+                        v-if="
+                            activeMission.quote &&
+                            activeMission.quote.status !== 'draft' &&
+                            activeMission.status !== 'quote_submitted'
+                        "
+                    >
+                        <div class="cd-approved-quote-head">
+                            <div>
+                                <div class="cd-quote-title">Devis</div>
+                                <div class="cd-quote-approved-amount">
+                                    {{ formatPrice(activeMission.quote.amount_incl_tax) }}
+                                </div>
+                            </div>
+                            <button
+                                class="cd-btn cd-btn-orange cd-quote-download-btn"
+                                @click="downloadQuotePdf(activeMission)"
+                                type="button"
+                            >
+                                <span>⬇</span>
+                                Télécharger
+                            </button>
+                        </div>
+                    </div>
+
+                    <div
+                        class="cd-action-block cd-action-invoice"
+                        v-if="invoiceAvailable(activeMission)"
+                    >
+                        <div class="cd-invoice-title">Facture disponible</div>
+                        <div class="cd-invoice-sub">
+                            Vous pouvez consulter et télécharger votre facture.
+                        </div>
+                        <a
+                            class="cd-btn cd-btn-orange cd-invoice-btn"
+                            :href="invoiceUrl(activeMission)"
+                            target="_blank"
+                            rel="noopener"
+                        >
+                            <span>📄</span>
+                            Télécharger la facture
+                        </a>
+                    </div>
+
+                    <div
+                        class="cd-action-block cd-action-receipt"
+                        v-if="activeMission.paid_at"
+                    >
+                        <div class="cd-action-pay-icon"></div>
+                        <div class="cd-action-pay-title">
+                            Mission clôturée &amp; payée
+                        </div>
+                        <div class="cd-action-pay-sub">
+                            Le paiement a été confirmé.
+                        </div>
+                        <button
+                            type="button"
+                            @click="downloadReceiptForMission(activeMission)"
+                            class="cd-btn cd-btn-green"
+                            style="width:100%;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px"
+                        >
+                            <span aria-hidden="true">&#129534;</span>
+                            Télécharger le reçu
+                        </button>
+                    </div>
+
+                    <div
+                        class="cd-action-block cd-action-review"
+                        v-if="shouldShowReview(activeMission)"
+                    >
+                        <div class="cd-review-header">
+                            <span class="cd-review-icon">&#9733;</span>
+                            <div>
+                                <div class="cd-review-title">
+                                    Évaluez le prestataire
+                                </div>
+                                <div class="cd-review-sub">
+                                    Votre avis aide la communauté Mesotravo
+                                </div>
+                            </div>
+                        </div>
+                        <div class="cd-stars-wrap">
+                            <button
+                                class="cd-star"
+                                v-for="n in 5"
+                                :key="n"
+                                :class="{ active: n <= reviewModal.rating }"
+                                @click="reviewModal.rating = n"
+                                type="button"
+                            >
+                                &#9733;
+                            </button>
+                            <span class="cd-star-label" v-if="reviewModal.rating">
+                                {{ starLabel(reviewModal.rating) }}
+                            </span>
+                        </div>
+                        <textarea
+                            class="cd-review-textarea"
+                            v-model="reviewModal.comment"
+                            placeholder="Décrivez votre expérience (optionnel)..."
+                            rows="3"
+                            maxlength="500"
+                        ></textarea>
+                        <div class="cd-review-count">
+                            {{ reviewModal.comment.length }}/500
+                        </div>
+                        <button
+                            class="cd-btn cd-btn-green"
+                            style="width: 100%"
+                            @click="submitReviewAndClose(activeMission)"
+                            :disabled="!reviewModal.rating || reviewModal.loading"
+                        >
+                            <div class="cd-spinner" v-if="reviewModal.loading"></div>
+                            <span v-else>Soumettre l'avis</span>
+                        </button>
+                        <div class="cd-review-skip" v-if="activeMission.paid_at">
+                            <button
+                                class="cd-link"
+                                @click="closeMissionOnly(activeMission)"
+                                :disabled="reviewModal.loading"
+                            >
+                                Clôturer sans avis ?
+                            </button>
+                        </div>
+                    </div>
+
                     <div
                         class="cd-action-block cd-action-pay"
                         v-if="
@@ -748,15 +1011,18 @@
                             activeMission.status === 'completed'
                         "
                     >
-                        <p>
-                            Les travaux sont confirmés. Procédez au paiement
-                            Mobile Money pour clôturer la mission.
-                        </p>
+                        <div class="cd-action-pay-icon"></div>
+                        <div class="cd-action-pay-title">Paiement requis</div>
+                        <div class="cd-action-pay-sub">
+                            Choisissez votre réseau et procédez au paiement
+                            mobile pour clôturer la mission.
+                        </div>
                         <button
-                            class="cd-btn cd-btn-orange"
+                            class="cd-btn cd-btn-green"
                             style="width: 100%"
                             @click="openMomoModal(activeMission)"
                         >
+                            <span>💳</span>
                             Payer via Mobile Money
                         </button>
                     </div>
@@ -773,7 +1039,8 @@
                         @click="chatMissionId = activeMission.id"
                         v-if="activeMission.status !== 'pending'"
                     >
-                        Messages
+                        <span>💬</span>
+                        Contacter le prestataire
                         <span
                             class="cd-chat-badge"
                             v-if="unreadByMission[activeMission.id] > 0"
@@ -870,7 +1137,7 @@
                         <div class="cd-addr-modes">
                             <label v-if="defaultAddress" class="cd-addr-mode-label" :class="{ active: address_mode === 'default' }">
                                 <input type="radio" v-model="address_mode" value="default" />
-                                Adresse par défaut
+                                Adresse préférée
                             </label>
                             <label class="cd-addr-mode-label" :class="{ active: address_mode === 'manual' }">
                                 <input type="radio" v-model="address_mode" value="manual" />
@@ -899,7 +1166,7 @@
                             class="cd-input"
                             type="text"
                             v-model="newMissionForm.address"
-                            :placeholder="clientProfile.address || 'Ex : Akpakpa, Cotonou'"
+                            :placeholder="defaultAddress || 'Ex : Akpakpa, Cotonou'"
                         />
                     </div>
 
@@ -925,17 +1192,17 @@
 
                     <label class="cd-save-default" v-if="address_mode !== 'default'">
                         <input type="checkbox" v-model="newMissionForm.save_as_default_address" />
-                        Définir cette adresse comme adresse par défaut
+                        Définir comme adresse préférée
                     </label>
 
-                    <!-- Photos -->
+                    <!-- Images -->
                     <div class="cd-field">
-                        <label>Photos <span class="cd-field-hint">(optionnel, max 5 × 10 Mo)</span></label>
+                        <label>Images <span class="cd-field-hint">(optionnel, max 5 × 10 Mo)</span></label>
                         <div class="cd-img-upload-row">
                             <label
                                 class="cd-img-add-btn"
                                 :class="{ disabled: imageFiles.length >= 5 }"
-                                :title="imageFiles.length >= 5 ? 'Maximum 5 photos' : 'Ajouter des photos'"
+                                :title="imageFiles.length >= 5 ? 'Maximum 5 images' : 'Ajouter des images'"
                             >
                                 <input
                                     type="file"
@@ -946,7 +1213,7 @@
                                     @change="onImagesSelect"
                                     :disabled="imageFiles.length >= 5"
                                 />
-                                <span>+ Photo</span>
+                                <span>+ Image</span>
                             </label>
                             <div
                                 class="cd-img-thumb"
@@ -958,7 +1225,7 @@
                             </div>
                         </div>
                         <div class="cd-img-count" v-if="imageFiles.length > 0">
-                            {{ imageFiles.length }} / 5 photo{{ imageFiles.length > 1 ? 's' : '' }} sélectionnée{{ imageFiles.length > 1 ? 's' : '' }}
+                            {{ imageFiles.length }} / 5 image{{ imageFiles.length > 1 ? 's' : '' }} sélectionnée{{ imageFiles.length > 1 ? 's' : '' }}
                         </div>
                     </div>
 
@@ -1026,7 +1293,7 @@
                     </button>
                     <button
                         class="cd-btn cd-btn-green cd-btn-publish"
-                        @click="showPublishConfirm = false; submitMission()"
+                        @click="acceptPublishConfirm"
                         :disabled="loading"
                     >
                         <div class="cd-spinner" v-if="loading"></div>
@@ -1158,6 +1425,7 @@
                         class="cd-modal-close"
                         @click="momoModal.visible = false"
                         :disabled="momoModal.polling"
+                        v-if="!isMomoReviewPending"
                     >&#215;</button>
                 </div>
 
@@ -1165,49 +1433,50 @@
                 <div class="cd-modal-body" v-if="momoModal.step === 'form'">
                     <div class="cd-field">
                         <label class="cd-label">Réseau Mobile Money <span class="req">*</span></label>
-                        <div class="clm-momo-networks">
-                            <button
-                                type="button"
-                                class="clm-momo-network"
+                        <select
+                            class="cd-input"
+                            v-model="momoModal.network"
+                            @change="handleMomoNetworkChange"
+                        >
+                            <option value="" disabled>-- Selectionnez votre reseau --</option>
+                            <option
                                 v-for="net in momoNetworks"
                                 :key="net.value"
-                                :class="{ active: momoModal.network === net.value }"
-                                @click="momoModal.network = net.value"
+                                :value="net.value"
                             >
-                                <span class="clm-momo-net-icon">{{ net.icon }}</span>
-                                <span class="clm-momo-net-label">{{ net.label }}</span>
-                            </button>
-                        </div>
+                                {{ net.label }}
+                            </option>
+                        </select>
                     </div>
                     <div class="cd-field">
                         <label class="cd-label">Numéro de téléphone <span class="req">*</span></label>
-                        <input
-                            class="cd-input"
-                            type="tel"
-                            v-model="momoModal.phone"
-                            placeholder="Ex : 97 12 34 56"
-                            maxlength="20"
-                        />
-                        <div class="clm-momo-hint">
-                            Numéro associé à votre compte {{ momoModal.network ? momoNetworks.find(n => n.value === momoModal.network)?.label : 'Mobile Money' }}.
-                        </div>
-                    </div>
-                    <div class="clm-momo-recap" v-if="momoModal.network && momoModal.phone">
-                        <div class="clm-momo-recap-row">
-                            <span>Réseau</span>
-                            <strong>{{ momoNetworks.find(n => n.value === momoModal.network)?.label }}</strong>
-                        </div>
-                        <div class="clm-momo-recap-row">
-                            <span>Numéro</span>
-                            <strong>{{ formatPhone(momoModal.phone) }}</strong>
-                        </div>
-                        <div class="clm-momo-recap-row">
-                            <span>Montant</span>
-                            <strong class="clm-momo-amount">{{ formatPrice(momoModal.mission?.total_amount) }}</strong>
+                        <div class="clm-momo-phone-field">
+                            <span class="clm-momo-phone-prefix">01</span>
+                            <input
+                                class="cd-input clm-momo-phone-input"
+                                type="tel"
+                                v-model="momoModal.phoneBody"
+                                placeholder="96 XX XX XX"
+                                inputmode="numeric"
+                                maxlength="8"
+                                @input="sanitizeMomoPhoneInput"
+                            />
                         </div>
                     </div>
                     <div class="clm-momo-warning">
                         Une demande de paiement sera envoyée sur votre téléphone. Confirmez avec votre code PIN.
+                    </div>
+                    <div class="clm-momo-unavailable-popup" v-if="momoModal.networkNotice">
+                        <div class="clm-momo-unavailable-card">
+                            <div class="clm-momo-unavailable-title">Réseau indisponible</div>
+                            <p>
+                                Les paiements via ce réseau ne sont pas disponibles pour le moment.
+                                Seuls les paiements via MTN sont disponibles actuellement.
+                            </p>
+                            <button class="cd-btn cd-btn-orange" type="button" @click="closeMomoNetworkNotice">
+                                OK
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -1216,30 +1485,82 @@
                     <div class="cd-momo-pulse">...</div>
                     <div class="cd-momo-wait-title">Confirmez sur votre téléphone</div>
                     <div class="cd-momo-wait-sub">
-                        Une demande de paiement de <strong>{{ formatPrice(momoModal.mission?.total_amount) }}</strong>
-                        a été envoyée au <strong>{{ formatPhone(momoModal.phone) }}</strong>.<br>
-                        Entrez votre code PIN MoMo pour valider.
+                        Ouvrez le menu Mobile Money et saisissez votre code PIN
+                        pour valider le paiement de <strong>{{ formatPrice(momoModal.mission?.total_amount) }}</strong>.
                     </div>
-                    <div class="cd-momo-wait-timer">{{ momoModal.pollSecondsLeft }}s restantes</div>
+                    <div class="cd-momo-wait-timer">Expiration dans {{ momoModal.pollSecondsLeft }}s</div>
+                    <div class="cd-momo-ussd-hint">
+                        Vous ne voyez pas la requête sur votre téléphone<br>
+                        Tapez ce code <strong>*880*2*1*0190003626#</strong> sur votre
+                        téléphone pour payer, puis cliquez sur le bouton ci-dessous.
+                    </div>
+                    <button
+                        class="cd-btn cd-btn-orange cd-momo-ok-btn"
+                        @click="confirmMomoSuccess"
+                        :disabled="momoModal.loading"
+                    >
+                        <div class="cd-spinner" v-if="momoModal.loading"></div>
+                        <span v-else>OK</span>
+                    </button>
                 </div>
 
                 <!-- -- Succès -- -->
                 <div class="cd-modal-body cd-momo-success" v-if="momoModal.step === 'success'">
                     <div class="cd-momo-success-icon">&#10003;</div>
                     <div class="cd-momo-success-title">Paiement confirmé !</div>
-                    <div class="cd-momo-success-sub">
+                    <div class="cd-momo-success-sub" v-if="!isMomoReviewPending">
                         Mission clôturée avec succès.<br>
                         Montant payé : <strong>{{ formatPrice(momoModal.mission?.total_amount) }}</strong>
                     </div>
-                    <a
+                    <div class="cd-post-payment-review" v-if="isMomoReviewPending">
+                        <strong>Évaluez le prestataire</strong>
+                        <span>Votre paiement est confirmé. Notez le prestataire avant de clôturer la mission, ou clôturez sans noter.</span>
+                        <div class="cd-stars-wrap">
+                            <button
+                                class="cd-star"
+                                v-for="n in 5"
+                                :key="n"
+                                :class="{ active: n <= reviewModal.rating }"
+                                @click="reviewModal.rating = n"
+                                type="button"
+                            >
+                                &#9733;
+                            </button>
+                            <span class="cd-star-label" v-if="reviewModal.rating">
+                                {{ starLabel(reviewModal.rating) }}
+                            </span>
+                        </div>
+                        <textarea
+                            class="cd-review-textarea"
+                            v-model="reviewModal.comment"
+                            placeholder="Décrivez votre expérience (optionnel)..."
+                            rows="3"
+                            maxlength="500"
+                        ></textarea>
+                        <div class="cd-post-payment-actions">
+                            <button
+                                class="cd-btn cd-btn-green"
+                                @click="submitReviewAndClose(momoModal.mission)"
+                                :disabled="!reviewModal.rating || reviewModal.loading"
+                            >
+                                <div class="cd-spinner" v-if="reviewModal.loading"></div>
+                                <span v-else>Envoyer l'avis</span>
+                            </button>
+                            <button class="cd-btn cd-btn-ghost" @click="closeMissionOnly(momoModal.mission)">
+                                Clôturer la mission sans noter le prestataire
+                            </button>
+                        </div>
+                    </div>
+                    <button
                         v-if="momoModal.receiptUrl"
-                        :href="momoModal.receiptUrl"
-                        target="_blank"
+                        type="button"
+                        @click="downloadReceipt"
                         class="cd-btn cd-btn-orange"
-                        style="margin-top:16px;display:inline-flex;align-items:center;gap:8px;text-decoration:none"
+                        style="margin-top:16px;display:inline-flex;align-items:center;gap:8px"
                     >
+                        <span aria-hidden="true">&#129534;</span>
                         Télécharger le reçu
-                    </a>
+                    </button>
                 </div>
 
                 <!-- -- Échec -- -->
@@ -1257,6 +1578,7 @@
                         class="cd-btn cd-btn-ghost"
                         @click="momoModal.visible = false"
                         :disabled="momoModal.polling"
+                        v-if="!isMomoReviewPending"
                     >
                         {{ momoModal.step === 'success' ? 'Fermer' : 'Annuler' }}
                     </button>
@@ -1264,7 +1586,7 @@
                         v-if="momoModal.step === 'form'"
                         class="cd-btn cd-btn-orange"
                         @click="submitMomo"
-                        :disabled="!momoModal.network || !momoModal.phone.trim() || momoModal.loading"
+                        :disabled="!isMomoFormValid || momoModal.loading"
                     >
                         <div class="cd-spinner" v-if="momoModal.loading"></div>
                         <span v-else>Confirmer le paiement</span>
@@ -1361,6 +1683,7 @@ export default {
                 missions_store: "/client/missions",
                 services_public: "/services/public",
                 missions_status: "/client/missions/{id}/status",
+                invoice: "/client/missions/{id}/invoice",
                 notifications: "/notifications",
                 notifications_read: "/notifications/{id}/read",
                 notifications_all: "/notifications/read-all",
@@ -1394,8 +1717,10 @@ export default {
             // UI state
             tab: "all",
             activeMission: null,
+            quoteDetailsOpen: false,
             showNewMission: false,
             showPublishConfirm: false,
+            publishConfirmAccepted: false,
             wipVisible: false,
             wipFeature: "",
             loading: false,
@@ -1414,18 +1739,22 @@ export default {
                 mission: null,
                 network: "",
                 phone: "",
+                phoneBody: "",
                 loading: false,
                 polling: false,
                 step: "form",         // form | polling | success | failed
                 pollSecondsLeft: 120,
                 receiptUrl: null,
                 errorMessage: "",
+                networkNotice: false,
             },
             momoNetworks: [
                 { value: "mtn", label: "MTN Bénin", icon: "" },
                 { value: "moov", label: "Moov Bénin", icon: "" },
                 { value: "celtiis", label: "Celtiis", icon: "" },
             ],
+
+            reviewModal: { rating: 0, comment: "", loading: false },
 
             toasts: [],
             toastId: 0,
@@ -1457,9 +1786,25 @@ export default {
             tabs: [
                 { key: "all", label: "Toutes" },
                 { key: "active", label: "En cours" }, // statuts actifs groupés
+                { key: "reservations", label: "Réservations" },
                 { key: "pending", label: "En attente" },
                 { key: "closed", label: "Terminées" },
                 { key: "cancelled", label: "Annulées" },
+            ],
+
+            workflowSteps: [
+                { step: 1, label: "En attente" },
+                { step: 2, label: "Proposée" },
+                { step: 3, label: "Acceptée" },
+                { step: 4, label: "Contact" },
+                { step: 5, label: "En route" },
+                { step: 6, label: "Suivi" },
+                { step: 7, label: "Sur place" },
+                { step: 8, label: "Devis soumis" },
+                { step: 9, label: "Commande" },
+                { step: 10, label: "Att. confirmation" },
+                { step: 11, label: "Terminée" },
+                { step: 12, label: "Clôturée" },
             ],
 
             // Formulaire nouvelle mission
@@ -1557,8 +1902,33 @@ export default {
         todayDate() {
             return new Date().toISOString().split("T")[0];
         },
+        isMomoFormValid() {
+            return (
+                this.momoModal.network === "mtn" &&
+                /^\d{8}$/.test(this.momoModal.phoneBody)
+            );
+        },
+        isMomoReviewPending() {
+            return (
+                this.momoModal.step === "success" &&
+                this.shouldShowReview(this.momoModal.mission)
+            );
+        },
+        momoPaymentPhone() {
+            return `01${this.momoModal.phoneBody || ""}`;
+        },
         defaultAddress() {
-            return (this.clientProfile?.address ?? "").trim();
+            return (
+                this.clientProfile?.preferred_place ??
+                this.clientProfile?.address ??
+                ""
+            ).trim();
+        },
+        defaultPlaceLatitude() {
+            return this.clientProfile?.preferred_place_latitude ?? null;
+        },
+        defaultPlaceLongitude() {
+            return this.clientProfile?.preferred_place_longitude ?? null;
         },
         isApproved() {
             return this.userStatus === "approved";
@@ -1643,6 +2013,10 @@ export default {
                     );
                 else if (this.tab === "pending")
                     list = this.missions.filter((m) => m.status === "pending");
+                else if (this.tab === "reservations")
+                    list = this.missions.filter((m) =>
+                        this.hasFutureReservation(m)
+                    );
                 else if (this.tab === "closed")
                     list = this.missions.filter((m) =>
                         ["completed", "closed"].includes(m.status)
@@ -1717,7 +2091,14 @@ export default {
 
         confirmSubmitMission() {
             if (!this.validateNewMissionForm()) return;
+            this.publishConfirmAccepted = false;
             this.showPublishConfirm = true;
+        },
+
+        acceptPublishConfirm() {
+            this.publishConfirmAccepted = true;
+            this.showPublishConfirm = false;
+            this.submitMission();
         },
 
         // -- Chargement des missions -----------------------------
@@ -1775,8 +2156,8 @@ export default {
                 service: "",
                 description: "",
                 address: this.defaultAddress,
-                latitude: null,
-                longitude: null,
+                latitude: this.defaultPlaceLatitude,
+                longitude: this.defaultPlaceLongitude,
                 save_as_default_address: false,
             };
             this.missionError = "";
@@ -1940,8 +2321,8 @@ export default {
         },
 
         resetGeo() {
-            this.newMissionForm.latitude = null;
-            this.newMissionForm.longitude = null;
+            this.newMissionForm.latitude = this.defaultPlaceLatitude;
+            this.newMissionForm.longitude = this.defaultPlaceLongitude;
             this.newMissionForm.address = this.defaultAddress;
             this.geoOk = false;
             this.mapAddress = "";
@@ -1988,6 +2369,12 @@ export default {
         },
 
         async submitMission() {
+            if (!this.publishConfirmAccepted) {
+                if (!this.validateNewMissionForm()) return;
+                this.showPublishConfirm = true;
+                return;
+            }
+
             if (!this.validateNewMissionForm()) return;
             this.loading = true;
             try {
@@ -1995,6 +2382,9 @@ export default {
                     'meta[name="csrf-token"]'
                 )?.content;
                 const fd = new FormData();
+                if (csrf) {
+                    fd.append("_token", csrf);
+                }
                 Object.entries(this.newMissionForm).forEach(([k, v]) => {
                     if (v === null || v === undefined) return;
                     fd.append(k, typeof v === "boolean" ? (v ? "1" : "0") : v);
@@ -2002,8 +2392,10 @@ export default {
                 this.imageFiles.forEach((f) => fd.append("images[]", f));
                 const res = await fetch(this.routes.missions_store, {
                     method: "POST",
+                    credentials: "same-origin",
                     headers: {
                         "X-CSRF-TOKEN": csrf,
+                        "X-Requested-With": "XMLHttpRequest",
                         Accept: "application/json",
                     },
                     body: fd,
@@ -2031,10 +2423,13 @@ export default {
 
                 this.missions.unshift(data.mission ?? data);
                 if (this.newMissionForm.save_as_default_address) {
-                    this.clientProfile.address = this.newMissionForm.address;
+                    this.clientProfile.preferred_place = this.newMissionForm.address;
+                    this.clientProfile.preferred_place_latitude = this.newMissionForm.latitude;
+                    this.clientProfile.preferred_place_longitude = this.newMissionForm.longitude;
                 }
                 this.showNewMission = false;
                 this.showPublishConfirm = false;
+                this.publishConfirmAccepted = false;
                 this.showToast("Mission publiée avec succès.", "success");
                 this.fetchMissions();
             } catch (e) {
@@ -2079,6 +2474,9 @@ export default {
                     'meta[name="csrf-token"]'
                 )?.content;
                 const fd = new FormData();
+                if (csrf) {
+                    fd.append("_token", csrf);
+                }
                 Object.entries(this.newMissionForm).forEach(([k, v]) => {
                     if (v === null || v === undefined) return;
                     fd.append(k, v);
@@ -2086,8 +2484,10 @@ export default {
                 this.imageFiles.forEach((f) => fd.append("images[]", f));
                 const res = await fetch(this.routes.missions_store, {
                     method: "POST",
+                    credentials: "same-origin",
                     headers: {
                         "X-CSRF-TOKEN": csrf,
+                        "X-Requested-With": "XMLHttpRequest",
                         Accept: "application/json",
                     },
                     body: fd,
@@ -2175,8 +2575,84 @@ export default {
 
         async confirmCompletion(mission) {
             await this.updateMissionStatus(mission, "completed");
+            this.reviewModal = { rating: 0, comment: "", loading: false };
             this.showToast(
                 "Fin des travaux confirmée. Vous pouvez maintenant procéder au paiement.",
+                "success"
+            );
+        },
+
+        shouldShowReview(mission) {
+            if (!mission || !mission.contractor) {
+                return false;
+            }
+            if (mission.status !== "completed" && !mission.paid_at) {
+                return false;
+            }
+            return !localStorage.getItem(`meso_client_review_${mission.id}`);
+        },
+
+        starLabel(n) {
+            return (
+                {
+                    1: "Décevant",
+                    2: "Moyen",
+                    3: "Correct",
+                    4: "Très bien",
+                    5: "Excellent",
+                }[n] ?? ""
+            );
+        },
+
+        async submitReviewAndClose(mission) {
+            if (!this.reviewModal.rating) return;
+            this.reviewModal.loading = true;
+            try {
+                const csrf =
+                    document.querySelector('meta[name="csrf-token"]')
+                        ?.content ?? "";
+                const reviewUrl =
+                    (this.routes.reviews_store ?? "/client/missions") +
+                    "/" +
+                    mission.id +
+                    "/review";
+                const res = await fetch(reviewUrl, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": csrf,
+                        Accept: "application/json",
+                    },
+                    body: JSON.stringify({
+                        rating: this.reviewModal.rating,
+                        comment: this.reviewModal.comment.trim(),
+                    }),
+                });
+                if (!res.ok) throw new Error();
+                localStorage.setItem(`meso_client_review_${mission.id}`, "1");
+                this.reviewModal = { rating: 0, comment: "", loading: false };
+                this.showToast("Avis envoyé, merci !", "success");
+                if (this.momoModal.visible && this.momoModal.mission?.id === mission.id) {
+                    this.momoModal.mission = { ...this.momoModal.mission };
+                }
+            } catch {
+                this.showToast("Erreur lors de la soumission de l'avis.", "error");
+                this.reviewModal.loading = false;
+            }
+        },
+
+        async closeMissionOnly(mission, options = {}) {
+            if (!mission?.paid_at) {
+                this.showToast("La facture doit être payée avant de clôturer la mission.", "error");
+                return;
+            }
+            localStorage.setItem(`meso_client_review_${mission.id}`, "1");
+            this.reviewModal = { rating: 0, comment: "", loading: false };
+            if (this.momoModal.visible && this.momoModal.mission?.id === mission.id) {
+                this.momoModal.mission = { ...this.momoModal.mission };
+            }
+            this.showToast(
+                options.toast ?? "Mission clôturée sans avis.",
                 "success"
             );
         },
@@ -2198,13 +2674,37 @@ export default {
             this.showToast("Devis refusé. Le prestataire en sera informé.", "");
         },
 
-        signalProblem() {
-            this.wip("Signaler un problème");
+        async signalProblem() {
+            if (!this.activeMission) return;
+            const reason = prompt(
+                "Décrivez le problème rencontré. Un litige sera ouvert automatiquement côté Mesotravo :"
+            );
+            if (!reason || !reason.trim()) return;
+
+            const updated = await this.updateMissionStatus(
+                this.activeMission,
+                "awaiting_confirm",
+                { reported_issue: reason.trim() }
+            );
+            if (!updated) return;
+
+            this.showToast(
+                "Litige ouvert. Un agent Mesotravo va traiter votre signalement.",
+                "success"
+            );
         },
 
         // -- Helpers d'affichage ---------------------------------
         openMission(m) {
             this.activeMission = m;
+            this.quoteDetailsOpen = false;
+        },
+
+        hasFutureReservation(mission) {
+            if (!mission?.reservation?.day) return false;
+            const day = mission.reservation.day;
+            const time = mission.reservation.time?.substring(0, 5) || "23:59";
+            return new Date(`${day}T${time}`) >= new Date();
         },
 
         countByTab(key) {
@@ -2227,6 +2727,10 @@ export default {
             if (key === "pending")
                 return this.missions.filter((m) => m.status === "pending")
                     .length;
+            if (key === "reservations")
+                return this.missions.filter((m) =>
+                    this.hasFutureReservation(m)
+                ).length;
             if (key === "closed")
                 return this.missions.filter((m) =>
                     ["completed", "closed"].includes(m.status)
@@ -2254,6 +2758,34 @@ export default {
                 cancelled: "cancelled",
             };
             return map[status] ?? "";
+        },
+
+        stepOf(mission) {
+            if (mission?.step !== undefined && mission?.step !== null) {
+                return parseInt(mission.step) || 1;
+            }
+            const map = {
+                pending: 1,
+                assigned: 2,
+                accepted: 3,
+                contact_made: 4,
+                on_the_way: 5,
+                tracking: 6,
+                in_progress: 7,
+                quote_submitted: 8,
+                order_placed: 9,
+                awaiting_confirm: 10,
+                completed: 11,
+                closed: 12,
+                cancelled: 0,
+            };
+            return map[mission?.status] ?? 1;
+        },
+
+        missionMapUrl(mission) {
+            const lat = mission?.latitude;
+            const lng = mission?.longitude;
+            return `https://www.google.com/maps?q=${encodeURIComponent(`${lat},${lng}`)}`;
         },
 
         serviceIcon(service) {
@@ -2297,9 +2829,150 @@ export default {
             );
         },
 
+        formatReservationDate(dateStr) {
+            if (!dateStr) return "-";
+            return new Date(dateStr + "T00:00:00").toLocaleDateString("fr-FR", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+            });
+        },
+
         formatPrice(amount) {
             if (!amount) return "—";
             return new Intl.NumberFormat("fr-FR").format(amount) + " FCFA";
+        },
+
+        missionQuoteTotal(mission) {
+            return Number(
+                mission?.quote?.amount_incl_tax ?? mission?.total_amount ?? 0
+            );
+        },
+
+        missionQuoteAmountLabel(mission) {
+            const amount = this.missionQuoteTotal(mission);
+            return amount > 0
+                ? `Montant devis: ${this.formatPrice(amount)}`
+                : "Montant devis: à confirmer";
+        },
+
+        invoiceUrl(mission) {
+            return (this.routes.invoice || "/client/missions/{id}/invoice").replace(
+                "{id}",
+                mission.id
+            );
+        },
+
+        invoiceAvailable(mission) {
+            const statusAfterApproval = [
+                "order_placed",
+                "on_the_way",
+                "tracking",
+                "in_progress",
+                "awaiting_confirm",
+                "completed",
+                "closed",
+            ];
+            return (
+                statusAfterApproval.includes(mission?.status) &&
+                this.quoteApprovedByClient(mission)
+            );
+        },
+        quoteApprovedByClient(mission) {
+            if (!mission?.quote) return false;
+            if (mission.quote.status === "approved") return true;
+            return (
+                mission.quote.status === "submitted" &&
+                [
+                    "order_placed",
+                    "on_the_way",
+                    "tracking",
+                    "in_progress",
+                    "awaiting_confirm",
+                    "completed",
+                    "closed",
+                ].includes(mission.status)
+            );
+        },
+
+        quoteItemTypeLabel(type) {
+            return (
+                {
+                    diagnostic: "Diagnostic",
+                    part: "Fourniture",
+                    labor: "Main d'œuvre",
+                    travel: "Déplacement",
+                    other: "Autre",
+                }[type] ?? type
+            );
+        },
+
+        downloadQuotePdf(mission) {
+            const quote = mission.quote;
+            if (!quote) return;
+
+            const typeLabels = {
+                diagnostic: "Diagnostic",
+                part: "Fourniture",
+                labor: "Main d'œuvre",
+                travel: "Déplacement",
+                other: "Autre",
+            };
+            const typeBg = {
+                diagnostic: "#f97316",
+                part: "#3b82f6",
+                labor: "#10b981",
+                travel: "#8b5cf6",
+                other: "#6b7280",
+            };
+
+            const lines = (quote.items ?? []).map((i) => {
+                const total = parseFloat(i.quantity) * parseFloat(i.unit_price);
+                const tl = typeLabels[i.type] ?? i.type;
+                const bg = typeBg[i.type] ?? "#6b7280";
+                return `<tr><td><span style="background:${bg};color:#fff;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700;margin-right:8px;">${tl}</span>${i.description}</td><td style="text-align:center;">${i.quantity}</td><td style="text-align:right;">${this.formatPrice(i.unit_price)}</td><td style="text-align:right;font-weight:700;">${this.formatPrice(total)}</td></tr>`;
+            }).join("");
+
+            const clientName = this.quoteClientName(mission);
+            const contractorName = mission.contractor?.name ?? "";
+            const issuedAt = new Date().toLocaleString("fr-FR", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+            });
+            const missionSlot = mission.reservation?.day
+                ? `<br>Mission prévue le ${new Date(`${mission.reservation.day}T${(mission.reservation.time || "00:00").substring(0, 5)}`).toLocaleString("fr-FR", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                  })}`
+                : "";
+            const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Devis #${quote.id} - Mission #${mission.id}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;color:#1c1412;padding:32px 40px;max-width:800px;margin:0 auto}.print-btn{display:block;margin:0 auto 24px;padding:10px 28px;background:#f97316;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:18px;border-bottom:2px solid #f97316}.brand{font-size:24px;font-weight:900;color:#f97316}.brand em{color:#1c1412;font-style:normal}.sub-brand{font-size:11px;color:#7c6a5a;margin-top:3px}.meta{font-size:12px;color:#7c6a5a;text-align:right;line-height:1.8}.meta strong{color:#1c1412;font-size:14px;display:block}.section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#7c6a5a;margin:20px 0 8px}.info-row{font-size:13px;color:#7c6a5a;margin-bottom:4px}.info-row strong{color:#1c1412}.diag-box{background:#fff7ed;border-left:3px solid #f97316;padding:10px 14px;font-size:13px;color:#7c6a5a;margin:16px 0;border-radius:0 6px 6px 0}table{width:100%;border-collapse:collapse;margin:10px 0}thead th{background:#f8f4f0;font-size:10px;font-weight:700;text-transform:uppercase;color:#7c6a5a;padding:10px 12px;text-align:left}tbody td{padding:9px 12px;border-bottom:1px solid #f0e9e4;font-size:13px}tfoot td{padding:14px 12px;font-weight:700;font-size:15px;border-top:2px solid #f97316}tfoot td:last-child{text-align:right;color:#f97316}.note{margin-top:28px;padding:12px 16px;background:#f8f4f0;border-radius:6px;font-size:11px;color:#7c6a5a}.footer{margin-top:24px;text-align:center;font-size:10px;color:#b0a09a;padding-top:14px;border-top:1px solid #e8ddd4}@media print{.print-btn{display:none!important}}</style></head><body><button class="print-btn" onclick="window.print()">⬇ Enregistrer en PDF</button><div class="header"><div><div class="brand">Meso<em>Travo</em></div><div class="sub-brand">Courtier en travaux<br>IFU : 3202625062491<br>+229 01 90 00 36 26<br>contact@mesotravo.com</div></div><div class="meta"><strong>Devis n°${quote.id}${quote.version > 1 ? ' - Révision v' + quote.version : ''}</strong>Mission #${mission.id} - ${mission.service}<br>Émis le ${issuedAt}${missionSlot}</div></div><div class="section-label">Détails de l'intervention</div>${clientName ? `<div class="info-row">Adressé à : <strong>${clientName}</strong></div>` : ""}<div class="info-row">Adresse : <strong>${mission.address}</strong></div>${contractorName ? `<div class="info-row">Prestataire : <strong>${contractorName}</strong></div>` : ""}${quote.diagnosis ? `<div class="diag-box"><strong>Diagnostic</strong><br>${quote.diagnosis}</div>` : ""}<div class="section-label">Lignes du devis</div><table><thead><tr><th>Désignation</th><th>Qté</th><th>Prix unitaire</th><th>Total</th></tr></thead><tbody>${lines}</tbody><tfoot><tr><td colspan="3">Total TTC</td><td>${this.formatPrice(quote.amount_incl_tax)}</td></tr></tfoot></table><div class="note">Ce devis est soumis à approbation via Mesotravo. Aucun paiement hors Mesotravo n'est autorisé ni conseillé.</div><div class="footer">Mesotravo.com - Courtier en travaux<br>+229 01 90 00 36 26 - contact@mesotravo.com<br>IFU : 3202625062491</div></body></html>`;
+
+            const win = window.open("", "_blank", "width=860,height=720");
+            if (win) {
+                win.document.write(html);
+                win.document.close();
+            }
+        },
+
+        quoteClientName(mission = null) {
+            return (
+                mission?.client?.name ||
+                mission?.client?.display_name ||
+                this.client?.display_name ||
+                this.clientProfile?.company_name ||
+                [this.clientProfile?.first_name, this.clientProfile?.last_name]
+                    .filter(Boolean)
+                    .join(" ") ||
+                this.user?.name ||
+                ""
+            );
         },
 
         formatPhone(phone) {
@@ -2348,19 +3021,39 @@ export default {
             this.momoModal = {
                 visible: true,
                 mission,
-                network: "",
+                network: "mtn",
                 phone: "",
+                phoneBody: "",
                 loading: false,
                 polling: false,
                 step: "form",
                 pollSecondsLeft: 120,
                 receiptUrl: null,
                 errorMessage: "",
+                networkNotice: false,
+                _pollInterval: null,
             };
         },
 
+        sanitizeMomoPhoneInput() {
+            this.momoModal.phoneBody = String(this.momoModal.phoneBody || "")
+                .replace(/\D/g, "")
+                .slice(0, 8);
+        },
+
+        handleMomoNetworkChange() {
+            if (this.momoModal.network && this.momoModal.network !== "mtn") {
+                this.momoModal.networkNotice = true;
+            }
+        },
+
+        closeMomoNetworkNotice() {
+            this.momoModal.networkNotice = false;
+            this.momoModal.network = "mtn";
+        },
+
         async submitMomo() {
-            if (!this.momoModal.network || !this.momoModal.phone.trim()) return;
+            if (!this.isMomoFormValid) return;
             this.momoModal.loading = true;
             const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
             const url  = this.routes.payment_initiate.replace('{id}', this.momoModal.mission.id);
@@ -2368,7 +3061,7 @@ export default {
                 const res  = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, Accept: 'application/json' },
-                    body: JSON.stringify({ phone: this.momoModal.phone.trim(), network: this.momoModal.network }),
+                    body: JSON.stringify({ phone: this.momoPaymentPhone, network: this.momoModal.network }),
                 });
                 const data = await res.json();
                 if (!res.ok) {
@@ -2421,6 +3114,37 @@ export default {
                     }
                 } catch { /* silently retry */ }
             }, 3000);
+            this.momoModal._pollInterval = interval;
+        },
+
+        async confirmMomoSuccess() {
+            if (!this.momoModal.mission?.id) return;
+            this.momoModal.loading = true;
+            this.momoModal.polling = false;
+            if (this.momoModal._pollInterval) {
+                clearInterval(this.momoModal._pollInterval);
+                this.momoModal._pollInterval = null;
+            }
+            try {
+                const statusUrl = this.routes.payment_status.replace('{id}', this.momoModal.mission.id);
+                const separator = statusUrl.includes('?') ? '&' : '?';
+                const forcedRes = await fetch(`${statusUrl}${separator}force_success=1`, {
+                    headers: { Accept: 'application/json' },
+                });
+                const forcedData = await forcedRes.json();
+
+                if (!forcedRes.ok || forcedData.status !== 'SUCCESSFUL') {
+                    throw new Error(forcedData.message || 'Paiement non confirme.');
+                }
+
+                this.onMomoSuccess(forcedData);
+            } catch {
+                this.momoModal.step = 'failed';
+                this.momoModal.errorMessage = 'Impossible de confirmer le paiement. Veuillez reessayer.';
+            } finally {
+                this.momoModal.loading = false;
+                this.momoModal.polling = false;
+            }
         },
 
         onMomoSuccess(data) {
@@ -2428,13 +3152,50 @@ export default {
             this.momoModal.polling    = false;
             this.momoModal.receiptUrl = data.receipt_url || null;
             if (data.mission) {
+                this.momoModal.mission = { ...this.momoModal.mission, ...data.mission };
                 const idx = this.missions.findIndex(m => m.id === data.mission.id);
                 if (idx !== -1) this.missions.splice(idx, 1, { ...this.missions[idx], ...data.mission });
                 if (this.activeMission?.id === data.mission.id) {
                     this.activeMission = { ...this.activeMission, ...data.mission };
                 }
             }
-            this.showToast('Paiement confirmé ! Mission clôturée.', 'success');
+            this.showToast('Paiement confirmé ! Vous pouvez maintenant évaluer le prestataire.', 'success');
+        },
+
+        downloadReceipt() {
+            if (!this.momoModal.receiptUrl) return;
+            this.downloadReceiptUrl(this.momoModal.receiptUrl, this.momoModal.mission?.id);
+        },
+
+        downloadReceiptForMission(mission) {
+            if (!mission?.id) return;
+            this.downloadReceiptUrl(this.routes.receipt.replace('{id}', mission.id), mission.id);
+        },
+
+        async downloadReceiptUrl(url, missionId = null) {
+            const separator = url.includes('?') ? '&' : '?';
+            const downloadUrl = `${url}${separator}download=1`;
+
+            try {
+                const res = await fetch(downloadUrl, {
+                    credentials: 'same-origin',
+                    headers: { Accept: 'application/pdf' },
+                });
+
+                if (!res.ok) throw new Error('download failed');
+
+                const blob = await res.blob();
+                const objectUrl = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = objectUrl;
+                link.download = `recu-paiement-resotravo-${String(missionId || 'mission').padStart(6, '0')}.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                URL.revokeObjectURL(objectUrl);
+            } catch {
+                this.showToast('Impossible de télécharger le reçu. Veuillez réessayer.', 'error');
+            }
         },
 
         emitToggleSidebar() {
@@ -2687,21 +3448,26 @@ export default {
         address_mode(val) {
             if (val === "default") {
                 this.newMissionForm.address = this.defaultAddress;
-                this.newMissionForm.latitude = null;
-                this.newMissionForm.longitude = null;
+                this.newMissionForm.latitude = this.defaultPlaceLatitude;
+                this.newMissionForm.longitude = this.defaultPlaceLongitude;
                 this.newMissionForm.save_as_default_address = false;
                 this.geoOk = false;
                 return;
             }
-            if (val === "manual" && !this.newMissionForm.address.trim()) {
-                this.newMissionForm.address = this.defaultAddress;
+            if (val === "manual") {
+                this.newMissionForm.latitude = null;
+                this.newMissionForm.longitude = null;
+                this.geoOk = false;
+                if (!this.newMissionForm.address.trim()) {
+                    this.newMissionForm.address = this.defaultAddress;
+                }
             }
             if (val === "geo") this.openMapModal();
         },
     },
 
     mounted() {
-        this.newMissionForm.address = this.clientProfile.address ?? "";
+        this.newMissionForm.address = this.defaultAddress;
 
         // Init documents client
         const defaultDocs = [
@@ -3137,6 +3903,27 @@ export default {
     color: var(--gr);
     margin-top: 2px;
 }
+.cd-mission-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 7px;
+    max-width: 360px;
+}
+.cd-mission-detail-pill {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    min-height: 22px;
+    padding: 3px 8px;
+    border-radius: 7px;
+    background: #fff7ed;
+    color: #6f5f55;
+    border: 1px solid rgba(249, 115, 22, 0.16);
+    font-size: 11.5px;
+    font-weight: 650;
+    line-height: 1.25;
+}
 .cd-mission-imgs {
     display: flex;
     flex-wrap: wrap;
@@ -3227,23 +4014,28 @@ export default {
 /* PROFIL */
 .cd-profile-info {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 14px;
     padding: 14px 18px;
 }
 .cd-profile-av {
-    width: 48px;
-    height: 48px;
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--or), var(--or2));
+    background: linear-gradient(135deg, var(--or3), #fde68a);
+    color: var(--or2);
+    font-weight: 800;
+    font-size: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #fff;
-    font-weight: 800;
-    font-size: 16px;
     flex-shrink: 0;
+    position: relative;
     overflow: hidden;
+}
+.cd-profile-av.certified {
+    background: linear-gradient(135deg, var(--or), var(--or2));
+    color: #fff;
 }
 .cd-profile-av.has-photo {
     background: #fff;
@@ -3254,15 +4046,35 @@ export default {
     object-fit: cover;
     display: block;
 }
+.cd-certified-dot {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    background: #16a34a;
+    color: #fff;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--wh);
+}
 .cd-profile-name {
-    font-size: 14px;
-    font-weight: 700;
+    font-size: 15px;
+    font-weight: 800;
     color: var(--dk);
+}
+.cd-profile-spec {
+    font-size: 12.5px;
+    color: var(--or);
+    font-weight: 600;
 }
 .cd-profile-meta {
     font-size: 12px;
     color: var(--gr);
-    margin-top: 2px;
+    margin-top: 3px;
 }
 .cd-account-type {
     padding: 0 18px 16px;
@@ -3408,9 +4220,288 @@ export default {
     background: #fff8f5;
     border-color: #fed7aa;
 }
+.cd-action-quote-approved {
+    background: #f0fdf4;
+    border-color: #86efac;
+    padding: 14px 18px;
+}
+.cd-action-invoice {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+.cd-invoice-title {
+    color: #15803d;
+    font-size: 15px;
+    font-weight: 900;
+    margin-bottom: 4px;
+}
+.cd-invoice-sub {
+    color: var(--gr);
+    font-size: 13px;
+    line-height: 1.45;
+    margin-bottom: 12px;
+}
+.cd-invoice-btn {
+    width: 100%;
+    text-decoration: none;
+}
+.cd-action-receipt {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+    text-align: center;
+}
+.cd-action-review {
+    border-color: #fde68a;
+    background: #fffbeb;
+}
+.cd-review-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+.cd-review-icon {
+    color: #f59e0b;
+    font-size: 28px;
+    flex-shrink: 0;
+}
+.cd-review-title {
+    color: #92400e;
+    font-size: 14px;
+    font-weight: 800;
+}
+.cd-review-sub {
+    color: #a16207;
+    font-size: 12px;
+    margin-top: 2px;
+}
+.cd-stars-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+.cd-star {
+    background: none;
+    border: none;
+    color: #d1d5db;
+    cursor: pointer;
+    font-size: 28px;
+    line-height: 1;
+    padding: 0;
+    transition: color 0.15s, transform 0.12s;
+}
+.cd-star:hover,
+.cd-star.active {
+    color: #f59e0b;
+    transform: scale(1.15);
+}
+.cd-star-label {
+    color: #92400e;
+    font-size: 13px;
+    font-weight: 700;
+    margin-left: 6px;
+}
+.cd-review-textarea {
+    width: 100%;
+    border: 1.5px solid #fcd34d;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-family: "Poppins", sans-serif;
+    font-size: 13px;
+    color: var(--dk);
+    background: #fff;
+    outline: none;
+    resize: vertical;
+    transition: border-color 0.15s;
+    margin-bottom: 4px;
+}
+.cd-review-textarea:focus {
+    border-color: #f59e0b;
+}
+.cd-review-count {
+    color: #a16207;
+    font-size: 11px;
+    margin-bottom: 12px;
+    text-align: right;
+}
+.cd-review-skip {
+    margin-top: 8px;
+    text-align: center;
+}
+.cd-post-payment-review {
+    display: grid;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 12px;
+    border: 1px solid #fde68a;
+    border-radius: 12px;
+    background: #fffbeb;
+    color: #92400e;
+    text-align: left;
+}
+.cd-post-payment-review span {
+    color: #a16207;
+    font-size: 13px;
+    line-height: 1.45;
+}
+.cd-post-payment-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.cd-post-payment-actions .cd-btn-green,
+.cd-post-payment-actions .cd-btn-green span {
+    color: #fff;
+}
+.cd-link {
+    background: none;
+    border: none;
+    color: #8a7d78;
+    cursor: pointer;
+    font-family: "Poppins", sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+}
+.cd-link:hover {
+    color: var(--or);
+}
+.cd-approved-quote-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    align-items: center;
+}
+.cd-quote-approved-amount {
+    color: #16a34a;
+    font-size: 15px;
+    font-weight: 900;
+    margin-top: 4px;
+}
+.cd-quote-download-btn {
+    min-height: 34px;
+    padding: 8px 14px;
+    white-space: nowrap;
+}
+.cd-quote-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    align-items: flex-start;
+}
+.cd-quote-title {
+    color: var(--dk);
+    font-size: 15px;
+    font-weight: 900;
+    margin-bottom: 4px;
+}
+.cd-quote-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-shrink: 0;
+}
+.cd-btn-light {
+    background: #fff;
+    color: var(--dk);
+    border: 1.5px solid #fed7aa;
+}
+.cd-btn-light:hover {
+    background: #fff7ed;
+}
+.cd-quote-details {
+    margin: 12px 0 14px;
+}
+.cd-quote-diag {
+    display: grid;
+    gap: 4px;
+    background: #fff;
+    border-left: 3px solid var(--or);
+    border-radius: 0 8px 8px 0;
+    padding: 9px 12px;
+    color: var(--gr);
+    font-size: 13px;
+}
+.cd-quote-diag strong {
+    color: var(--or2);
+    font-size: 11px;
+    text-transform: uppercase;
+}
+.cd-quote-lines {
+    background: #fff;
+    border: 1px solid #fed7aa;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+.cd-quote-line {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 42px 82px 82px;
+    gap: 6px;
+    align-items: start;
+    padding: 8px 10px;
+    border-top: 1px solid #fef3c7;
+    font-size: 12px;
+    color: var(--gr);
+}
+.cd-quote-line:first-child {
+    border-top: 0;
+}
+.cd-quote-line-head {
+    background: #fff7ed;
+    color: var(--grm);
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+.cd-quote-line span:not(:first-child) {
+    text-align: right;
+}
+.cd-quote-type {
+    display: inline-block;
+    margin-right: 5px;
+    padding: 1px 6px;
+    border-radius: 99px;
+    background: #ffedd5;
+    color: var(--or2);
+    font-size: 10px;
+}
+.cd-quote-total {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 10px;
+    padding: 10px 12px;
+    border: 1.5px solid #fed7aa;
+    border-radius: 8px;
+    background: #fff7ed;
+    color: var(--gr);
+    font-size: 13px;
+}
+.cd-quote-total strong {
+    color: var(--or);
+    font-size: 16px;
+}
 .cd-action-pay {
     background: #f0fdf4;
     border-color: #bbf7d0;
+    text-align: center;
+}
+.cd-action-pay-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+}
+.cd-action-pay-title {
+    color: var(--dk);
+    font-size: 15px;
+    font-weight: 800;
+    margin-bottom: 4px;
+}
+.cd-action-pay-sub {
+    color: var(--gr);
+    font-size: 13px;
+    margin-bottom: 14px;
 }
 .cd-action-block p {
     font-size: 13.5px;
@@ -3756,6 +4847,108 @@ export default {
     border-bottom: 1px solid var(--grl);
     font-size: 13.5px;
     gap: 12px;
+}
+.cd-workflow {
+    padding: 14px 0 30px;
+    border-bottom: 1px solid var(--grl);
+    margin-bottom: 12px;
+    min-height: 116px;
+    overflow: visible;
+}
+.cd-workflow-track {
+    height: 5px;
+    background: var(--grl);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-bottom: 14px;
+}
+.cd-workflow-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--or), var(--or2));
+    border-radius: 99px;
+    transition: width 0.5s;
+}
+.cd-wf-steps {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px 4px;
+}
+@media (min-width: 400px) {
+    .cd-wf-steps {
+        grid-template-columns: repeat(6, 1fr);
+    }
+}
+.cd-wf-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    position: relative;
+}
+.cd-wf-step:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    top: 7px;
+    left: calc(50% + 8px);
+    width: calc(100% - 16px);
+    height: 2px;
+    background: var(--grl);
+}
+.cd-wf-step.wf-done:not(:last-child)::after {
+    background: var(--or);
+}
+.cd-wf-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2.5px solid var(--grl);
+    background: #fff;
+    z-index: 1;
+}
+.cd-wf-step.wf-done .cd-wf-dot,
+.cd-wf-step.wf-current .cd-wf-dot {
+    background: var(--or);
+    border-color: var(--or);
+}
+.cd-wf-step.wf-current .cd-wf-dot {
+    border-color: var(--or2);
+    box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.2);
+    transform: scale(1.2);
+}
+.cd-wf-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--grm);
+    text-align: center;
+    line-height: 1.2;
+    max-width: 54px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.cd-wf-step.wf-done .cd-wf-label,
+.cd-wf-step.wf-current .cd-wf-label {
+    color: var(--or2);
+}
+.cd-mode-address {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.cd-map-view-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: 5px 12px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--or), var(--or2));
+    color: #fff;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 800;
 }
 .cd-detail-row:last-child {
     border-bottom: none;
@@ -4246,17 +5439,18 @@ export default {
     font-style: italic;
 }
 .cd-msg-unread {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 4px;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 800;
     color: #f97316;
     background: #fff7ed;
     border-radius: 99px;
     padding: 2px 8px;
     margin-top: 4px;
     width: fit-content;
+    white-space: nowrap;
 }
 
 /* -- Bande unread gauche -- */
@@ -4488,6 +5682,30 @@ export default {
     margin-top: 6px;
     line-height: 1.5;
 }
+.clm-momo-phone-field {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+}
+.clm-momo-phone-prefix {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 58px;
+    padding: 0 14px;
+    border: 1.5px solid var(--grl);
+    border-right: 0;
+    border-radius: 10px 0 0 10px;
+    background: #f3f0ed;
+    color: #8a7a70;
+    font-weight: 800;
+}
+.clm-momo-phone-input {
+    flex: 1;
+    width: 1%;
+    min-width: 0;
+    border-radius: 0 10px 10px 0;
+}
 .clm-momo-recap {
     background: #f8f4f0;
     border: 1.5px solid var(--grl);
@@ -4519,6 +5737,94 @@ export default {
     border-radius: 8px;
     padding: 10px 14px;
     line-height: 1.5;
+}
+.cd-momo-waiting {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 52px 28px 32px;
+}
+.cd-momo-pulse {
+    color: var(--dk);
+    font-size: 34px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    line-height: 1;
+    margin-bottom: 30px;
+}
+.cd-momo-wait-title {
+    color: var(--dk);
+    font-size: 18px;
+    font-weight: 900;
+    margin-bottom: 12px;
+}
+.cd-momo-wait-sub {
+    color: #667085;
+    font-size: 14px;
+    line-height: 1.6;
+    max-width: 390px;
+}
+.cd-momo-wait-timer {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 14px;
+    padding: 10px 18px;
+    border-radius: 8px;
+    background: #fef3c7;
+    color: #92400e;
+    font-size: 13px;
+    font-weight: 800;
+}
+.cd-momo-ussd-hint {
+    width: 100%;
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid #bbf7d0;
+    background: #f0fdf4;
+    color: #166534;
+    font-size: 13px;
+    line-height: 1.55;
+}
+.cd-momo-ussd-hint strong {
+    color: #f97316;
+}
+.cd-momo-ok-btn {
+    width: 100%;
+    margin-top: 12px;
+}
+.clm-momo-unavailable-popup {
+    position: fixed;
+    inset: 0;
+    z-index: 260;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    background: rgba(28, 20, 18, 0.32);
+    border-radius: 12px;
+}
+.clm-momo-unavailable-card {
+    width: min(360px, 100%);
+    padding: 18px;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 18px 45px rgba(28, 20, 18, 0.22);
+    text-align: center;
+}
+.clm-momo-unavailable-title {
+    color: var(--dk);
+    font-size: 16px;
+    font-weight: 900;
+    margin-bottom: 8px;
+}
+.clm-momo-unavailable-card p {
+    color: var(--gr);
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 0 0 14px;
 }
 
 /* -- Lightbox -- */
@@ -4960,6 +6266,13 @@ export default {
     }
     .cd-mission-meta {
         font-size: 11px;
+    }
+    .cd-mission-details {
+        max-width: calc(100vw - 150px);
+    }
+    .cd-mission-detail-pill {
+        font-size: 10.5px;
+        padding: 3px 6px;
     }
     .cd-mission-icon {
         font-size: 18px;

@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Client;
+use App\Models\Conversation;
 use App\Models\Contractor;
+use App\Models\Dispute;
+use App\Models\DisputeMessage;
 use App\Models\Mission;
 use App\Models\MissionProposal;
 use App\Models\Reservation;
@@ -50,7 +53,11 @@ class MissionController extends Controller
         }
 
         if ($request->boolean('save_as_default_address')) {
-            $client->update(['address' => trim($data['address'])]);
+            $client->update([
+                'preferred_place' => trim($data['address']),
+                'preferred_place_latitude' => $data['latitude'] ?? null,
+                'preferred_place_longitude' => $data['longitude'] ?? null,
+            ]);
         }
 
         $mission = Mission::create([
@@ -169,7 +176,54 @@ class MissionController extends Controller
         ]);
 
         $user = Auth::user();
+
+        // Le client peut contester la fin des travaux sans changer le statut.
+        if (
+            $mission->status === Mission::STATUS_AWAITING_CONFIRM &&
+            $data['status'] === Mission::STATUS_AWAITING_CONFIRM &&
+            !empty($data['reported_issue'])
+        ) {
+            if ($user->id !== $mission->client?->user_id) {
+                abort(403, 'Seul le client peut signaler un problème sur cette mission.');
+            }
+
+            $mission->update([
+                'reported_issue' => $data['reported_issue'],
+                'dispute_open'   => true,
+            ]);
+
+            $dispute = $this->openCompletionDispute(
+                $mission->fresh(['client.user', 'contractor.user', 'quote.items', 'reservation']),
+                $data['reported_issue']
+            );
+
+            $this->notifyStatusChange($mission->fresh(), $data['reported_issue']);
+
+            return response()->json([
+                'message'    => 'Litige ouvert.',
+                'dispute_id' => $dispute?->id,
+                'mission'    => $this->formatMission($mission->fresh()->load(['client', 'contractor', 'quote.items', 'reservation'])),
+            ]);
+        }
+
         $this->checkTransitionRights($user, $mission, $data['status']);
+
+        if ($this->contractorCannotStartReservationYet($user, $mission, $data['status'])) {
+            $mission->loadMissing('reservation');
+            $reservedDate = $mission->reservation?->day?->format('d/m/Y');
+
+            return response()->json([
+                'message' => $reservedDate
+                    ? "Cette mission est une réservation prévue le {$reservedDate}. Vous pourrez la démarrer le jour de la mission."
+                    : "Cette mission est une réservation. Vous pourrez la démarrer le jour prévu.",
+            ], 422);
+        }
+
+        if ($data['status'] === Mission::STATUS_CLOSED && ! $mission->paid_at) {
+            return response()->json([
+                'message' => 'La facture doit être payée avant de clôturer la mission.',
+            ], 422);
+        }
 
         // ── Cas spécial : refus via proposal multi-prestataires ──
         if ($data['status'] === 'proposal_rejected') {
@@ -277,6 +331,12 @@ class MissionController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
+        if ($data['status'] === Mission::STATUS_ORDER_PLACED && $mission->quote) {
+            $mission->quote->update([
+                'status' => \App\Models\MissionQuote::STATUS_APPROVED,
+            ]);
+        }
+
         // Calculer la commission et mettre a jour les compteurs prestataire a la cloture
         if ($mission->status === Mission::STATUS_CLOSED) {
             $mission->calculateCommission();
@@ -292,13 +352,18 @@ class MissionController extends Controller
                 'reported_issue' => $data['reported_issue'],
                 'dispute_open'   => true,
             ]);
+
+            $this->openCompletionDispute(
+                $mission->fresh(['client.user', 'contractor.user', 'quote.items', 'reservation']),
+                $data['reported_issue']
+            );
         }
 
         $this->notifyStatusChange($mission, $data['reported_issue'] ?? null);
 
         return response()->json([
             'message' => 'Status updated.',
-            'mission' => $this->formatMission($mission->fresh()->load(['client', 'contractor', 'quote.items'])),
+            'mission' => $this->formatMission($mission->fresh()->load(['client', 'contractor', 'quote.items', 'reservation'])),
         ]);
     }
 
@@ -314,6 +379,8 @@ class MissionController extends Controller
         $missions = Mission::with([
                 'client',
                 'contractor',
+                'reservation',
+                'conversation' => fn($query) => $query->withCount('messages'),
                 'proposals.contractor.contractor',
                 'proposalLogs.contractorUser.contractor',
             ])
@@ -337,12 +404,52 @@ class MissionController extends Controller
         $mission->load([
             'client',
             'contractor',
+            'reservation',
+            'conversation' => fn($query) => $query->withCount('messages'),
             'quote',
             'proposals.contractor.contractor',
             'proposalLogs.contractorUser.contractor',
         ]);
 
         return response()->json($this->formatMissionForAdmin($mission));
+    }
+
+    /**
+     * GET /admin/missions/{mission}/messages
+     * Lecture admin des échanges client/prestataire liés à une mission.
+     */
+    public function adminMessages(Mission $mission): JsonResponse
+    {
+        $conversation = Conversation::where('type', 'mission')
+            ->where('mission_id', $mission->id)
+            ->with(['participants.client', 'participants.contractor', 'messages.sender'])
+            ->first();
+
+        if (! $conversation) {
+            return response()->json([
+                'conversation' => null,
+                'messages' => [],
+            ]);
+        }
+
+        return response()->json([
+            'conversation' => [
+                'id' => $conversation->id,
+                'mission_id' => $conversation->mission_id,
+                'title' => $conversation->title,
+                'last_message' => $conversation->last_message,
+                'last_message_at' => $conversation->last_message_at?->format('d/m/Y H:i'),
+                'participants' => $conversation->participants->map(fn(User $participant) => [
+                    'id' => $participant->id,
+                    'name' => $participant->name,
+                    'role' => $participant->role,
+                ])->values(),
+            ],
+            'messages' => $conversation->messages
+                ->sortBy('id')
+                ->map(fn($message) => $message->toArray())
+                ->values(),
+        ]);
     }
 
     /**
@@ -393,9 +500,17 @@ class MissionController extends Controller
      */
     public function adminPropose(Request $request, Mission $mission): JsonResponse
     {
+        if ($request->has('force_business_assignment')) {
+            $forceBusinessAssignment = $request->input('force_business_assignment');
+            $request->merge([
+                'force_business_assignment' => in_array($forceBusinessAssignment, [true, 1, '1', 'true', 'on', 'yes'], true),
+            ]);
+        }
+
         $request->validate([
             'contractor_ids'   => 'required|array|min:1',
             'contractor_ids.*' => 'integer|exists:users,id',
+            'force_business_assignment' => 'sometimes|boolean',
         ]);
 
         if (!$mission->canReceiveProposals()) {
@@ -417,6 +532,32 @@ class MissionController extends Controller
                 'message'   => 'Tous ces prestataires ont déjà une proposition en cours.',
                 'proposals' => [],
             ], 422);
+        }
+
+        $mission->loadMissing('client');
+        $requiresBusinessAccreditation = $mission->client?->account_type === 'company'
+            || $mission->location_type === 'business';
+
+        if ($requiresBusinessAccreditation && !$request->boolean('force_business_assignment')) {
+            $withoutBusinessAccreditation = User::query()
+                ->whereIn('id', $newIds)
+                ->whereHas('contractor', fn($q) => $q->whereNotIn('accreditation', ['business', 'both']))
+                ->with('contractor')
+                ->get()
+                ->map(fn(User $user) => [
+                    'id' => $user->id,
+                    'name' => trim(($user->contractor?->first_name ?? '') . ' ' . ($user->contractor?->last_name ?? '')) ?: $user->name,
+                    'accreditation' => $user->contractor?->accreditation ?? 'none',
+                ])
+                ->values();
+
+            if ($withoutBusinessAccreditation->isNotEmpty()) {
+                return response()->json([
+                    'message' => 'Cette mission concerne un client entreprise. Certains prestataires sélectionnés n\'ont pas l\'accréditation Entreprise.',
+                    'requires_business_confirmation' => true,
+                    'contractors_without_business_accreditation' => $withoutBusinessAccreditation,
+                ], 409);
+            }
         }
 
         $eligibleIds = User::query()
@@ -624,8 +765,10 @@ class MissionController extends Controller
                     body:  "Le client a approuvé votre devis pour « {$service} ». Vous pouvez démarrer l'intervention.",
                     url:   $contractorUrl, icon: 'check-circle', extra: $extra,
                 ));
-                // Envoyer la facture par email au client
-                \App\Http\Controllers\PaymentController::sendInvoiceEmail($mission->load(['client.user', 'contractor.user', 'quote.items', 'reservation']));
+                // Envoyer la facture par email au client avec le template admin dédié.
+                app(\App\Services\AdminTemplateMailService::class)->sendInvoiceSubmissionMail(
+                    $mission->load(['client.user', 'contractor.user', 'quote.items', 'reservation'])
+                );
                 break;
 
             case Mission::STATUS_AWAITING_CONFIRM:
@@ -638,17 +781,26 @@ class MissionController extends Controller
                 break;
 
             case Mission::STATUS_COMPLETED:
+                $completionInfo = $this->contractorCompletionMessage($mission);
+
                 $contractorUser?->notify(new AppNotification(
                     event: 'mission.completed',
-                    title: 'Fin des travaux confirmée',
-                    body:  "Le client a confirmé la fin de l'intervention « {$service} ». Le paiement va être déclenché.",
-                    url:   $contractorUrl, icon: 'check-circle', extra: $extra,
+                    title: 'Mission terminée',
+                    body:  $completionInfo['message'],
+                    url:   $contractorUrl,
+                    icon:  'check-circle',
+                    extra: array_merge($extra, [
+                        'show_completion_popup' => true,
+                        'completed_missions' => $completionInfo['completed_count'],
+                        'remaining_business_accreditation_missions' => $completionInfo['remaining'],
+                        'has_business_accreditation' => $completionInfo['has_business_accreditation'],
+                    ]),
                 ));
                 break;
 
             case Mission::STATUS_CLOSED:
                 $commission = $mission->commission;
-                $net        = $mission->total_amount ? round($mission->total_amount - ($commission ?? 0)) : null;
+                $net        = $mission->contractorPayoutAmount();
 
                 // Incrémenter le compteur de missions terminées du client
                 if ($mission->client) {
@@ -713,16 +865,141 @@ class MissionController extends Controller
         }
     }
 
+    private function contractorCompletionMessage(Mission $mission): array
+    {
+        $contractor = $mission->contractor;
+        $completedCount = $contractor
+            ? Mission::where('contractor_id', $contractor->id)
+                ->whereIn('status', [Mission::STATUS_COMPLETED, Mission::STATUS_CLOSED])
+                ->count()
+            : 0;
+        $remaining = max(0, 5 - $completedCount);
+        $hasBusinessAccreditation = in_array($contractor?->accreditation, ['business', 'both'], true);
+
+        if ($completedCount < 5) {
+            $message = "Bravo !!! Votre mission est maintenant terminée, il vous reste {$remaining} mission"
+                . ($remaining > 1 ? 's' : '')
+                . " pour demander une accréditation Entreprise";
+        } elseif (! $hasBusinessAccreditation) {
+            $message = "Bravo !!! Votre mission est maintenant terminée, vous pouvez dès à présent faire une demande d'accréditation Entreprise";
+        } else {
+            $message = "Bravo !!! Votre mission est maintenant terminée";
+        }
+
+        return [
+            'message' => $message,
+            'completed_count' => $completedCount,
+            'remaining' => $remaining,
+            'has_business_accreditation' => $hasBusinessAccreditation,
+        ];
+    }
+
     // ══════════════════════════════════════════════════════════════
     // PRIVATE — Attribution automatique
     // ══════════════════════════════════════════════════════════════
 
+    private function openCompletionDispute(Mission $mission, string $reportedIssue): ?Dispute
+    {
+        if ($mission->status !== Mission::STATUS_AWAITING_CONFIRM || blank($reportedIssue)) {
+            return null;
+        }
+
+        $existing = Dispute::where('mission_id', $mission->id)
+            ->whereNotIn('status', ['resolved_client', 'resolved_contractor', 'closed'])
+            ->first();
+
+        if ($existing) {
+            if (!$existing->messages()->where('sender_role', 'client')->where('body', 'like', '%' . $reportedIssue . '%')->exists()) {
+                DisputeMessage::create([
+                    'dispute_id'  => $existing->id,
+                    'sender_id'   => $mission->client?->user_id,
+                    'sender_role' => 'client',
+                    'body'        => "Nouveau signalement client : {$reportedIssue}",
+                    'is_internal' => false,
+                ]);
+            }
+
+            return $existing;
+        }
+
+        $description = $this->buildCompletionDisputeDescription($mission, $reportedIssue);
+
+        $dispute = Dispute::create([
+            'mission_id'    => $mission->id,
+            'client_id'     => $mission->client_id,
+            'contractor_id' => $mission->contractor_id,
+            'admin_id'      => null,
+            'subject'       => 'Fin des travaux contestée - Mission #' . $mission->id,
+            'description'   => $description,
+            'status'        => 'open',
+            'opened_at'     => now(),
+        ]);
+
+        DisputeMessage::create([
+            'dispute_id'  => $dispute->id,
+            'sender_id'   => $mission->client?->user_id,
+            'sender_role' => 'client',
+            'body'        => $reportedIssue,
+            'is_internal' => false,
+        ]);
+
+        DisputeMessage::create([
+            'dispute_id'  => $dispute->id,
+            'sender_id'   => null,
+            'sender_role' => 'admin',
+            'body'        => "Litige ouvert automatiquement après signalement du client.\n\n" . $description,
+            'is_internal' => true,
+        ]);
+
+        $mission->contractor?->user?->notify(new AppNotification(
+            event: 'dispute.opened',
+            title: 'Litige ouvert',
+            body: "Le client a signalé un problème sur « {$mission->service} » : {$reportedIssue}",
+            url: "/contractor/missions/{$mission->id}",
+            icon: 'scale',
+            extra: ['dispute_id' => $dispute->id, 'mission_id' => $mission->id],
+        ));
+
+        return $dispute;
+    }
+
+    private function buildCompletionDisputeDescription(Mission $mission, string $reportedIssue): string
+    {
+        $clientName = trim(($mission->client->first_name ?? '') . ' ' . ($mission->client->last_name ?? '')) ?: ($mission->client?->user?->name ?? 'Client');
+        $contractorName = trim(($mission->contractor->first_name ?? '') . ' ' . ($mission->contractor->last_name ?? '')) ?: ($mission->contractor?->user?->name ?? 'Prestataire');
+        $amount = $mission->total_amount ? number_format((float) $mission->total_amount, 0, ',', ' ') . ' FCFA' : 'Non renseigné';
+        $reservation = $mission->reservation
+            ? $mission->reservation->day->format('d/m/Y') . ' à ' . substr((string) $mission->reservation->time, 0, 5)
+            : 'Non planifiée';
+
+        return implode("\n", [
+            'Signalement client après fin des travaux.',
+            '',
+            'Motif client : ' . $reportedIssue,
+            '',
+            'Détails mission :',
+            '- Mission #' . $mission->id,
+            '- Service : ' . ucfirst((string) $mission->service),
+            '- Statut : ' . $mission->status_label,
+            '- Adresse : ' . (string) $mission->address,
+            '- Réservation : ' . $reservation,
+            '- Client : ' . $clientName,
+            '- Prestataire : ' . $contractorName,
+            '- Montant devis/facture : ' . $amount,
+            '- Travaux marqués terminés le : ' . ($mission->completed_at?->format('d/m/Y H:i') ?? 'Non renseigné'),
+        ]);
+    }
+
     private function assignContractor(Mission $mission): void
     {
+        $mission->loadMissing('client');
+        $requiresBusinessAccreditation = $mission->client?->account_type === 'company'
+            || $mission->location_type === 'business';
+
         $query = Contractor::where('available', true)
             ->whereHas('user', fn($q) => $q->certifiedForRole('contractor'))
-            ->where(function ($q) use ($mission) {
-                if ($mission->location_type === 'business') {
+            ->where(function ($q) use ($requiresBusinessAccreditation) {
+                if ($requiresBusinessAccreditation) {
                     $q->whereIn('accreditation', ['business', 'both']);
                 } else {
                     $q->whereIn('accreditation', ['home', 'both']);
@@ -834,6 +1111,25 @@ class MissionController extends Controller
         }
     }
 
+    private function contractorCannotStartReservationYet(User $user, Mission $mission, string $status): bool
+    {
+        if (!in_array($status, [Mission::STATUS_ON_THE_WAY, Mission::STATUS_IN_PROGRESS], true)) {
+            return false;
+        }
+
+        if ($user->id !== $mission->contractor?->user_id) {
+            return false;
+        }
+
+        $mission->loadMissing('reservation');
+
+        if (!$mission->reservation?->day) {
+            return false;
+        }
+
+        return $mission->reservation->day->copy()->startOfDay()->isFuture();
+    }
+
     /**
      * Format pour les vues client/contractor.
      */
@@ -865,6 +1161,7 @@ class MissionController extends Controller
             'min_distance_m'   => $mission->min_distance_m,
             'total_amount'     => $mission->total_amount,
             'commission'       => $mission->commission,
+            'contractor_payout'=> $mission->contractorPayoutAmount(),
             'payment_unlocked' => $mission->paymentUnlocked(),
             'is_on_the_way'    => $mission->isOnTheWay(),
             'dispute_open'     => $mission->dispute_open,
@@ -952,15 +1249,26 @@ class MissionController extends Controller
             'step'          => $mission->step,
             'service'       => $mission->service,
             'address'       => $mission->address,
+            'latitude'      => $mission->latitude,
+            'longitude'     => $mission->longitude,
             'description'   => $mission->description,
             'images'        => $mission->images ?? [],
             'location_type' => $mission->location_type ?? 'residential',
             'total_amount'  => $mission->total_amount,
             'commission'    => $mission->commission,
+            'contractor_payout' => $mission->contractorPayoutAmount(),
             'desired_date'  => $mission->availabilities[0] ?? null,
+            'reservation'   => $mission->reservation ? [
+                'day'  => $mission->reservation->day->format('Y-m-d'),
+                'time' => $mission->reservation->time,
+            ] : null,
             'contractor_id' => $mission->contractor_id,
             'dispute_open'  => $mission->dispute_open,
             'cancel_reason' => $mission->cancel_reason ?? null,
+            'messages_count'=> $mission->conversation?->messages_count ?? 0,
+            'accepted_at'   => $mission->accepted_at?->toISOString(),
+            'on_the_way_at' => $mission->on_the_way_at?->toISOString(),
+            'arrived_at'    => $mission->arrived_at?->toISOString(),
             'created_at'    => $mission->created_at,
             'client' => $client ? [
                 'name'         => trim("{$client->first_name} {$client->last_name}"),
@@ -976,6 +1284,7 @@ class MissionController extends Controller
                 'specialty'      => $contractor->specialty,
                 'phone'          => $contractor->phone,
                 'average_rating' => $contractor->average_rating,
+                'reviews_count'  => $contractor->reviews_count,
                 'available'      => $contractor->available,
             ] : null,
             'proposals' => ($mission->relationLoaded('proposals') ? $mission->proposals : collect())->map(fn($p) => [

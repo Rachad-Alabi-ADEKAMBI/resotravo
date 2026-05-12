@@ -16,6 +16,7 @@
         :routes="{{ json_encode([
             'missions_index'        => route('admin.missions.index'),
             'missions_show'         => url('/admin/missions/{id}'),
+            'missions_messages'      => url('/admin/missions/{id}/messages'),
             'missions_propose'      => url('/admin/missions/{id}/propose'),
             'missions_cancel'       => url('/admin/missions/{id}/status'),
             'contractors_available' => route('admin.contractors.available'),
